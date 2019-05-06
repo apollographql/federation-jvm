@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: federation-jvm-examples-spring
+server:
+  port: 9000
