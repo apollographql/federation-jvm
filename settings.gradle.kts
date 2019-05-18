@@ -1,4 +1,4 @@
 rootProject.name = "federation-jvm"
 include(
-        ":graphql-java-support",
+        ":libs:graphql-java-support",
         ":examples:spring")
