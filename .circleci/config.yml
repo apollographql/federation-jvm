@@ -2,7 +2,25 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/openjdk:8-jdk-browsers
+      - image: azul/zulu-openjdk:8
     steps:
       - checkout
-      - run: ./gradlew --scan test
+      - run:
+          name: Concatenate all pom.xml
+          command: cat pom.xml */pom.xml > allpoms.xml
+      - restore_cache:
+          key: cache-{{ checksum "allpoms.xml" }}
+      - run:
+          name: Install dependencies
+          # https://issues.apache.org/jira/browse/MDEP-568 for --fail-never
+          command: ./mvnw --settings settings.xml --batch-mode --fail-never dependency:go-offline -DexcludeGroupIds=com.apollographql.federation
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: cache-{{ checksum "allpoms.xml" }}
+      - run:
+          name: Build & install
+          command: ./mvnw --settings settings.xml --batch-mode install
+      - run:
+          name: Test
+          command: ./mvnw --settings settings.xml --batch-mode test
