@@ -1,6 +1,11 @@
 package com.apollographql.federation.graphqljava;
 
-import graphql.schema.*;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLNonNull;
+import graphql.schema.GraphQLTypeReference;
+import graphql.schema.GraphQLUnionType;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Set;
 
@@ -21,7 +26,7 @@ final class _Entity {
             .type(new GraphQLNonNull(new GraphQLList(new GraphQLTypeReference(typeName))))
             .build();
 
-    static GraphQLUnionType build(Set<String> typeNames) {
+    static GraphQLUnionType build(@NotNull Set<String> typeNames) {
         final GraphQLTypeReference[] references = typeNames.stream()
                 .map(GraphQLTypeReference::new)
                 .toArray(GraphQLTypeReference[]::new);

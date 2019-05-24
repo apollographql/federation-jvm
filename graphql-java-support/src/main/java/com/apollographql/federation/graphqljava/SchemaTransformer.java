@@ -1,7 +1,16 @@
 package com.apollographql.federation.graphqljava;
 
 import graphql.GraphQLError;
-import graphql.schema.*;
+import graphql.schema.DataFetcher;
+import graphql.schema.DataFetcherFactory;
+import graphql.schema.FieldCoordinates;
+import graphql.schema.GraphQLCodeRegistry;
+import graphql.schema.GraphQLDirectiveContainer;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLSchema;
+import graphql.schema.GraphQLType;
+import graphql.schema.GraphQLUnionType;
+import graphql.schema.TypeResolver;
 import graphql.schema.idl.SchemaPrinter;
 import graphql.schema.idl.errors.SchemaProblem;
 import org.jetbrains.annotations.NotNull;
@@ -12,6 +21,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class SchemaTransformer {
+    private static final Object DUMMY = new Object();
     private final GraphQLSchema originalSchema;
     private TypeResolver entityTypeResolver = null;
     private DataFetcher entitiesDataFetcher = null;
@@ -48,14 +58,21 @@ public final class SchemaTransformer {
 
         final GraphQLObjectType originalQueryType = originalSchema.getQueryType();
 
-        final GraphQLObjectType.Builder queryType = GraphQLObjectType.newObject(originalQueryType)
-                .field(_Service.field);
-
         final GraphQLCodeRegistry.Builder codeRegistry =
                 GraphQLCodeRegistry.newCodeRegistry(originalSchema.getCodeRegistry());
 
         final String sdl = sdl();
-        codeRegistry.dataFetcher(FieldCoordinates.coordinates(_Service.typeName, _Service.sdlFieldName),
+        final GraphQLObjectType.Builder queryType = GraphQLObjectType.newObject(originalQueryType)
+                .field(_Service.field);
+        codeRegistry.dataFetcher(FieldCoordinates.coordinates(
+                originalQueryType.getName(),
+                _Service.fieldName
+                ),
+                (DataFetcher<Object>) environment -> DUMMY);
+        codeRegistry.dataFetcher(FieldCoordinates.coordinates(
+                _Service.typeName,
+                _Service.sdlFieldName
+                ),
                 (DataFetcher<String>) environment -> sdl);
 
         final Set<String> entityTypeNames = originalSchema.getAllTypesAsList().stream()

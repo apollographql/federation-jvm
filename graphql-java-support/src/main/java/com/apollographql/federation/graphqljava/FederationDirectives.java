@@ -1,7 +1,12 @@
 package com.apollographql.federation.graphqljava;
 
 import graphql.PublicApi;
-import graphql.language.*;
+import graphql.language.DirectiveDefinition;
+import graphql.language.DirectiveLocation;
+import graphql.language.InputValueDefinition;
+import graphql.language.NonNullType;
+import graphql.language.SDLDefinition;
+import graphql.language.TypeName;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLNonNull;
@@ -11,7 +16,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static graphql.Scalars.GraphQLString;
-import static graphql.introspection.Introspection.DirectiveLocation.*;
+import static graphql.introspection.Introspection.DirectiveLocation.FIELD_DEFINITION;
+import static graphql.introspection.Introspection.DirectiveLocation.INTERFACE;
+import static graphql.introspection.Introspection.DirectiveLocation.OBJECT;
 import static graphql.language.DirectiveDefinition.newDirectiveDefinition;
 import static graphql.language.DirectiveLocation.newDirectiveLocation;
 import static graphql.language.InputValueDefinition.newInputValueDefinition;
@@ -29,11 +36,17 @@ public final class FederationDirectives {
             .type(new NonNullType(new TypeName(GraphQLString.getName())))
             .build();
 
-    private static final DirectiveLocation DL_OBJECT = newDirectiveLocation().name("OBJECT").build();
-    private static final DirectiveLocation DL_INTERFACE = newDirectiveLocation().name("INTERFACE").build();
-    private static final DirectiveLocation DL_FIELD_DEFINITION = newDirectiveLocation().name("FIELD_DEFINITION").build();
+    private static final DirectiveLocation DL_OBJECT = newDirectiveLocation()
+            .name("OBJECT")
+            .build();
+    private static final DirectiveLocation DL_INTERFACE = newDirectiveLocation()
+            .name("INTERFACE")
+            .build();
+    private static final DirectiveLocation DL_FIELD_DEFINITION = newDirectiveLocation()
+            .name("FIELD_DEFINITION")
+            .build();
 
-    static final String keyName = "key";
+    public static final String keyName = "key";
     public static final GraphQLDirective key = newDirective()
             .name(keyName)
             .validLocations(OBJECT, INTERFACE)
@@ -45,7 +58,7 @@ public final class FederationDirectives {
             .inputValueDefinition(fieldsDefinition)
             .build();
 
-    static final String externalName = "external";
+    public static final String externalName = "external";
     public static final GraphQLDirective external = newDirective()
             .name(externalName)
             .validLocations(OBJECT, FIELD_DEFINITION)
@@ -55,7 +68,7 @@ public final class FederationDirectives {
             .directiveLocations(Arrays.asList(DL_OBJECT, DL_FIELD_DEFINITION))
             .build();
 
-    static final String requiresName = "requires";
+    public static final String requiresName = "requires";
     public static final GraphQLDirective requires = newDirective()
             .name(requiresName)
             .validLocations(FIELD_DEFINITION)
@@ -67,7 +80,7 @@ public final class FederationDirectives {
             .inputValueDefinition(fieldsDefinition)
             .build();
 
-    static final String providesName = "provides";
+    public static final String providesName = "provides";
     public static final GraphQLDirective provides = newDirective()
             .name(providesName)
             .validLocations(FIELD_DEFINITION)
@@ -79,7 +92,7 @@ public final class FederationDirectives {
             .inputValueDefinition(fieldsDefinition)
             .build();
 
-    static final String extendsName = "extends";
+    public static final String extendsName = "extends";
     public static final GraphQLDirective extends_ = newDirective()
             .name(extendsName)
             .validLocations(OBJECT)
