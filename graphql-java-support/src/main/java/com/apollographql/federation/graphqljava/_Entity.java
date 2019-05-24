@@ -12,10 +12,10 @@ import java.util.Set;
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 
-final class _Entity {
+public final class _Entity {
     static final String typeName = "_Entity";
     static final String fieldName = "_entities";
-    static final String argumentName = "representations";
+    public static final String argumentName = "representations";
 
     static GraphQLFieldDefinition field = newFieldDefinition()
             .name(fieldName)

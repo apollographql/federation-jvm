@@ -7,7 +7,7 @@
     <groupId>com.apollographql.federation</groupId>
     <artifactId>federation-parent</artifactId>
     <name>federation-parent</name>
-    <version>${release}</version>
+    <version>0.0.4</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/apollographql/federation-jvm</url>
@@ -45,7 +45,7 @@
     </scm>
 
     <properties>
-        <release>0.0.3</release>
+        <release>0.0.4</release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -59,7 +59,6 @@
         <lombok-maven-plugin.version>1.18.6.0</lombok-maven-plugin.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <maven-jar-plugin.version>3.1.2</maven-jar-plugin.version>
-        <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
         <maven-source-plugin.version>3.1.0</maven-source-plugin.version>
         <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
         <spring-boot.version>2.1.5.RELEASE</spring-boot.version>
@@ -156,15 +155,6 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>${maven-jar-plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-release-plugin</artifactId>
-                    <version>${maven-release-plugin.version}</version>
-                    <configuration>
-                        <autoVersionSubmodules>true</autoVersionSubmodules>
-                        <tagNameFormat>v@{project.version}</tagNameFormat>
-                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
