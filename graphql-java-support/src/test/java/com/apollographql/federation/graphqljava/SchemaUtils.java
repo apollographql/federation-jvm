@@ -2,12 +2,16 @@ package com.apollographql.federation.graphqljava;
 
 import graphql.ExecutionResult;
 import graphql.schema.GraphQLSchema;
-import graphql.schema.idl.*;
+import graphql.schema.idl.RuntimeWiring;
+import graphql.schema.idl.SchemaGenerator;
+import graphql.schema.idl.SchemaParser;
+import graphql.schema.idl.SchemaPrinter;
+import graphql.schema.idl.TypeDefinitionRegistry;
 
 import java.util.Map;
 
 import static graphql.ExecutionInput.newExecutionInput;
-import static graphql.nextgen.GraphQL.newGraphQL;
+import static graphql.GraphQL.newGraphQL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 

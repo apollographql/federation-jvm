@@ -1,8 +1,21 @@
 package com.apollographql.federation.graphqljava;
 
 import graphql.Assert;
-import graphql.language.*;
-import graphql.schema.*;
+import graphql.language.ArrayValue;
+import graphql.language.BooleanValue;
+import graphql.language.EnumValue;
+import graphql.language.FloatValue;
+import graphql.language.IntValue;
+import graphql.language.NullValue;
+import graphql.language.ObjectField;
+import graphql.language.ObjectValue;
+import graphql.language.StringValue;
+import graphql.schema.Coercing;
+import graphql.schema.CoercingParseLiteralException;
+import graphql.schema.CoercingParseValueException;
+import graphql.schema.CoercingSerializeException;
+import graphql.schema.GraphQLScalarType;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.stream.Collectors;
 
@@ -24,6 +37,7 @@ final class _Any {
                     return input;
                 }
 
+                @Nullable
                 @Override
                 public Object parseLiteral(Object input) throws CoercingParseLiteralException {
                     if (input instanceof NullValue) {
