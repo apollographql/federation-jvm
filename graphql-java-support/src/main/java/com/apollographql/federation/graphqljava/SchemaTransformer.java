@@ -121,7 +121,7 @@ public final class SchemaTransformer {
         final SchemaPrinter.Options options = SchemaPrinter.Options.defaultOptions()
                 .includeScalarTypes(true)
                 .includeExtendedScalarTypes(true)
-                .includeSchemaDefintion(true)
+                .includeSchemaDefintion(false)
                 .includeDirectives(true);
         return new SchemaPrinter(options).print(originalSchema);
     }

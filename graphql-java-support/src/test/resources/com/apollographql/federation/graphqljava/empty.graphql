@@ -1,6 +1,2 @@
-schema {
-  query: Query
-}
-
 type Query {
 }
