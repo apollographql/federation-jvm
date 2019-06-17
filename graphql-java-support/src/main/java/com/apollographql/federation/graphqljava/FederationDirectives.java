@@ -15,7 +15,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static graphql.Scalars.GraphQLString;
 import static graphql.introspection.Introspection.DirectiveLocation.FIELD_DEFINITION;
 import static graphql.introspection.Introspection.DirectiveLocation.INTERFACE;
 import static graphql.introspection.Introspection.DirectiveLocation.OBJECT;
@@ -29,11 +28,11 @@ import static graphql.schema.GraphQLDirective.newDirective;
 public final class FederationDirectives {
     private static final GraphQLArgument fieldsArgument = newArgument()
             .name("fields")
-            .type(new GraphQLNonNull(GraphQLString))
+            .type(new GraphQLNonNull(_FieldSet.type))
             .build();
     private static final InputValueDefinition fieldsDefinition = newInputValueDefinition()
             .name("fields")
-            .type(new NonNullType(new TypeName(GraphQLString.getName())))
+            .type(new NonNullType(new TypeName(_FieldSet.typeName)))
             .build();
 
     private static final DirectiveLocation DL_OBJECT = newDirectiveLocation()

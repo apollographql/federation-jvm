@@ -86,6 +86,8 @@ public final class SchemaTransformer {
             final GraphQLUnionType entityType = _Entity.build(entityTypeNames);
 
             schema
+                    .additionalDirectives(FederationDirectives.allDirectives)
+                    .additionalType(_FieldSet.type)
                     .additionalType(entityType)
                     .additionalType(_Any.type);
 
