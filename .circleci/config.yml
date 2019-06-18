@@ -24,3 +24,9 @@ jobs:
       - run:
           name: Test
           command: ./mvnw --settings settings.xml --batch-mode test
+
+workflows:
+  version: 2
+  Build and Test:
+    jobs:
+      - build
