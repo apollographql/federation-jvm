@@ -60,11 +60,11 @@ public final class FederationDirectives {
     public static final String externalName = "external";
     public static final GraphQLDirective external = newDirective()
             .name(externalName)
-            .validLocations(OBJECT, FIELD_DEFINITION)
+            .validLocations(FIELD_DEFINITION)
             .build();
     public static final DirectiveDefinition externalDefinition = newDirectiveDefinition()
             .name(externalName)
-            .directiveLocations(Arrays.asList(DL_OBJECT, DL_FIELD_DEFINITION))
+            .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION))
             .build();
 
     public static final String requiresName = "requires";
