@@ -9,7 +9,6 @@ import graphql.schema.GraphQLDirectiveContainer;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
-import graphql.schema.GraphQLUnionType;
 import graphql.schema.TypeResolver;
 import graphql.schema.idl.SchemaPrinter;
 import graphql.schema.idl.errors.SchemaProblem;
@@ -82,14 +81,9 @@ public final class SchemaTransformer {
                 .collect(Collectors.toSet());
 
         if (!entityTypeNames.isEmpty()) {
-            queryType.field(_Entity.field);
-            final GraphQLUnionType entityType = _Entity.build(entityTypeNames);
+            queryType.field(_Entity.field(entityTypeNames));
 
-            schema
-                    .additionalDirectives(FederationDirectives.allDirectives)
-                    .additionalType(_FieldSet.type)
-                    .additionalType(entityType)
-                    .additionalType(_Any.type);
+            schema.additionalDirectives(FederationDirectives.allDirectives);
 
             if (entityTypeResolver != null) {
                 codeRegistry.typeResolver(_Entity.typeName, entityTypeResolver);
