@@ -1,0 +1,8 @@
+type Query {
+}
+
+type SomeType @key(fields: "theKey") {
+    theKey: ID!
+    field1: String!
+    field2: Int!
+}

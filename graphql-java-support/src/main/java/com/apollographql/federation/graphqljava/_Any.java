@@ -21,8 +21,8 @@ import java.util.stream.Collectors;
 
 import static graphql.schema.GraphQLScalarType.newScalar;
 
-final class _Any {
-    static final String typeName = "_Any";
+public final class _Any {
+    public static final String typeName = "_Any";
 
     static GraphQLScalarType type = newScalar()
             .name(typeName)

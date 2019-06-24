@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 
 public final class Federation {
     @NotNull
-    public static com.apollographql.federation.graphqljava.SchemaTransformer transform(final GraphQLSchema schema) {
+    public static SchemaTransformer transform(final GraphQLSchema schema) {
         return new SchemaTransformer(schema);
     }
 
