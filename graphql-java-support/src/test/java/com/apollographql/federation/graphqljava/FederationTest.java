@@ -59,7 +59,7 @@ class FederationTest {
         final GraphQLSchema schema = SchemaUtils.buildSchema(sdl);
 
         final GraphQLSchema federated = Federation.transform(schema)
-                .fetchEntities((DataFetcher) env ->
+                .fetchEntities(env ->
                         env.<List<Map<String, Object>>>getArgument(_Entity.argumentName)
                                 .stream()
                                 .map(map -> {
@@ -84,5 +84,19 @@ class FederationTest {
         final List<Map<String, Object>> _entities = (List<Map<String, Object>>) data.get("_entities");
         assertEquals(1, _entities.size());
         assertEquals(180, _entities.get(0).get("price"));
+    }
+
+    // From https://github.com/apollographql/federation-jvm/issues/7
+    @Test
+    void testSchemaTransformationIsolated() {
+        final String sdl = TestUtils.readResource("isolated.graphql");
+        Federation.transform(SchemaUtils.buildSchema(sdl))
+                .resolveEntityType(env -> null)
+                .fetchEntities(environment -> null)
+                .build();
+        Federation.transform(SchemaUtils.buildSchema(sdl))
+                .resolveEntityType(env -> null)
+                .fetchEntities(environment -> null)
+                .build();
     }
 }
