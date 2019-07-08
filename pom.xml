@@ -7,7 +7,7 @@
     <groupId>com.apollographql.federation</groupId>
     <artifactId>federation-parent</artifactId>
     <name>federation-parent</name>
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/apollographql/federation-jvm</url>
@@ -45,13 +45,13 @@
     </scm>
 
     <properties>
-        <release>0.1.0</release>
+        <release>0.2.0-SNAPSHOT</release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
-        <graphql-java.version>12.0</graphql-java.version>
-        <graphql-spring-boot.version>5.9.0</graphql-spring-boot.version>
+        <graphql-java.version>13.0</graphql-java.version>
+        <graphql-spring-boot.version>5.10.0</graphql-spring-boot.version>
         <java.version>1.8</java.version>
         <jetbrains-annotations.version>17.0.0</jetbrains-annotations.version>
         <junit.version>5.4.2</junit.version>
