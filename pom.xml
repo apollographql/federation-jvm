@@ -7,7 +7,7 @@
     <groupId>com.apollographql.federation</groupId>
     <artifactId>federation-parent</artifactId>
     <name>federation-parent</name>
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/apollographql/federation-jvm</url>
@@ -45,13 +45,13 @@
     </scm>
 
     <properties>
-        <release>0.1.0</release>
+        <release>0.2.0-SNAPSHOT</release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
-        <graphql-java.version>12.0</graphql-java.version>
-        <graphql-spring-boot.version>5.9.0</graphql-spring-boot.version>
+        <graphql-java.version>13.0</graphql-java.version>
+        <graphql-spring-boot.version>5.10.0</graphql-spring-boot.version>
         <java.version>1.8</java.version>
         <jetbrains-annotations.version>17.0.0</jetbrains-annotations.version>
         <junit.version>5.4.2</junit.version>
@@ -59,9 +59,10 @@
         <lombok-maven-plugin.version>1.18.6.0</lombok-maven-plugin.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <maven-jar-plugin.version>3.1.2</maven-jar-plugin.version>
+        <maven-javadoc-plugin.version>3.1.1</maven-javadoc-plugin.version>
         <maven-source-plugin.version>3.1.0</maven-source-plugin.version>
         <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
-        <spring-boot.version>2.1.5.RELEASE</spring-boot.version>
+        <spring-boot.version>2.1.6.RELEASE</spring-boot.version>
     </properties>
 
     <modules>
@@ -158,6 +159,22 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${maven-javadoc-plugin.version}</version>
+                    <configuration>
+                        <notimestamp>true</notimestamp>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
                     <version>${maven-source-plugin.version}</version>
                     <executions>
@@ -173,6 +190,10 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire-plugin.version}</version>
+                    <configuration>
+                        <!-- Workaround from https://stackoverflow.com/questions/50661648/spring-boot-fails-to-run-maven-surefire-plugin-classnotfoundexception-org-apache/50661649#50661649 -->
+                        <useSystemClassLoader>false</useSystemClassLoader>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.projectlombok</groupId>

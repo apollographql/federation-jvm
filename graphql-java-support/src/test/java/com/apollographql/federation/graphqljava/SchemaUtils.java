@@ -18,6 +18,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 final class SchemaUtils {
     private static final RuntimeWiring noop = RuntimeWiring.newRuntimeWiring().build();
 
+    private SchemaUtils() {
+    }
+
     static GraphQLSchema buildSchema(String sdl) {
         final TypeDefinitionRegistry typeRegistry = new SchemaParser().parse(sdl);
         final SchemaGenerator.Options options = SchemaGenerator.Options
@@ -47,8 +50,5 @@ final class SchemaUtils {
         assertNotNull(_service);
         final String sdl = (String) _service.get("sdl");
         assertEquals(expected.trim(), sdl.trim());
-    }
-
-    private SchemaUtils() {
     }
 }
