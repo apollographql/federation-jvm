@@ -27,7 +27,7 @@ public final class _Entity {
                 .name(fieldName)
                 .argument(newArgument()
                         .name(argumentName)
-                        .type(new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(_Any.type))))
+                        .type(new GraphQLNonNull(new GraphQLList(new GraphQLTypeReference(_Any.typeName))))
                         .build())
                 .type(new GraphQLNonNull(
                                 new GraphQLList(

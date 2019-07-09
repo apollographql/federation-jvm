@@ -1,12 +1,14 @@
 package com.apollographql.federation.graphqljava;
 
 import graphql.GraphQLError;
+import graphql.schema.Coercing;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetcherFactory;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLDirectiveContainer;
 import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.TypeResolver;
@@ -26,6 +28,7 @@ public final class SchemaTransformer {
     private TypeResolver entityTypeResolver = null;
     private DataFetcher entitiesDataFetcher = null;
     private DataFetcherFactory entitiesDataFetcherFactory = null;
+    private Coercing coercingForAny = _Any.defaultCoercing;
 
     SchemaTransformer(Supplier<GraphQLSchema> schemaSupplier) {
         this.schemaSupplier = schemaSupplier;
@@ -48,6 +51,12 @@ public final class SchemaTransformer {
     public SchemaTransformer fetchEntitiesFactory(DataFetcherFactory entitiesDataFetcherFactory) {
         this.entitiesDataFetcher = null;
         this.entitiesDataFetcherFactory = entitiesDataFetcherFactory;
+        return this;
+    }
+
+
+    public SchemaTransformer coercingForAny(Coercing coercing) {
+        this.coercingForAny = coercing;
         return this;
     }
 
@@ -94,30 +103,40 @@ public final class SchemaTransformer {
             schema.additionalType(_FieldSet.type);
             schema.additionalDirectives(FederationDirectives.allDirectives);
 
-            if (entityTypeResolver != null) {
-                codeRegistry.typeResolver(_Entity.typeName, entityTypeResolver);
+            final GraphQLType existingAnyType = original.getType(_Any.typeName);
+            if (existingAnyType == null) {
+                schema.additionalType(_Any.type(coercingForAny));
             } else {
-                if (!codeRegistry.hasTypeResolver(_Entity.typeName)) {
-                    errors.add(new FederationError("Missing a type resolver for _Entity"));
+                if (!(existingAnyType instanceof GraphQLScalarType)) {
+                    errors.add(new FederationError("The _Any type isn't scalar"));
+                } else if (coercingForAny != _Any.defaultCoercing) {
+                    errors.add(new FederationError("Custom _Any coercing provided, but the _Any type is already defined"));
                 }
             }
+        }
 
-            final FieldCoordinates _entities = FieldCoordinates.coordinates(originalQueryType.getName(), _Entity.fieldName);
-            if (entitiesDataFetcher != null) {
-                codeRegistry.dataFetcher(_entities, entitiesDataFetcher);
-            } else if (entitiesDataFetcherFactory != null) {
-                codeRegistry.dataFetcher(_entities, entitiesDataFetcherFactory);
-            } else if (!codeRegistry.hasDataFetcher(_entities)) {
-                errors.add(new FederationError("Missing a data fetcher for _entities"));
+        if (entityTypeResolver != null) {
+            codeRegistry.typeResolver(_Entity.typeName, entityTypeResolver);
+        } else {
+            if (!codeRegistry.hasTypeResolver(_Entity.typeName)) {
+                errors.add(new FederationError("Missing a type resolver for _Entity"));
             }
+        }
+
+        final FieldCoordinates _entities = FieldCoordinates.coordinates(originalQueryType.getName(), _Entity.fieldName);
+        if (entitiesDataFetcher != null) {
+            codeRegistry.dataFetcher(_entities, entitiesDataFetcher);
+        } else if (entitiesDataFetcherFactory != null) {
+            codeRegistry.dataFetcher(_entities, entitiesDataFetcherFactory);
+        } else if (!codeRegistry.hasDataFetcher(_entities)) {
+            errors.add(new FederationError("Missing a data fetcher for _entities"));
         }
 
         if (!errors.isEmpty()) {
             throw new SchemaProblem(errors);
         }
 
-        return schema
-                .query(queryType.build())
+        return schema.query(queryType.build())
                 .codeRegistry(codeRegistry.build())
                 .build();
     }
