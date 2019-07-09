@@ -2,11 +2,7 @@ package com.apollographql.federation.graphqljava;
 
 import graphql.ExecutionResult;
 import graphql.schema.GraphQLSchema;
-import graphql.schema.idl.RuntimeWiring;
-import graphql.schema.idl.SchemaGenerator;
-import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.SchemaPrinter;
-import graphql.schema.idl.TypeDefinitionRegistry;
 
 import java.util.Map;
 
@@ -16,21 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 final class SchemaUtils {
-    private static final RuntimeWiring noop = RuntimeWiring.newRuntimeWiring().build();
 
     private SchemaUtils() {
-    }
-
-    static GraphQLSchema buildSchema(String sdl) {
-        final TypeDefinitionRegistry typeRegistry = new SchemaParser().parse(sdl);
-        final SchemaGenerator.Options options = SchemaGenerator.Options
-                .defaultOptions()
-                .enforceSchemaDirectives(false);
-
-        return new SchemaGenerator().makeExecutableSchema(
-                options,
-                typeRegistry,
-                noop);
     }
 
     static String printSchema(GraphQLSchema schema) {
@@ -46,7 +29,7 @@ final class SchemaUtils {
         assertEquals(0, inspect.getErrors().size(), "No errors");
         final Map<String, Object> data = inspect.getData();
         assertNotNull(data);
-        final Map<String, Object> _service = (Map<String, Object>) data.get("_service");
+        @SuppressWarnings("unchecked") final Map<String, Object> _service = (Map<String, Object>) data.get("_service");
         assertNotNull(_service);
         final String sdl = (String) _service.get("sdl");
         assertEquals(expected.trim(), sdl.trim());
