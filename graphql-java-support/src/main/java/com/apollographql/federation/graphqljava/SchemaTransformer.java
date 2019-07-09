@@ -17,17 +17,18 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public final class SchemaTransformer {
     private static final Object DUMMY = new Object();
-    private final GraphQLSchema originalSchema;
+    private final Supplier<GraphQLSchema> schemaSupplier;
     private TypeResolver entityTypeResolver = null;
     private DataFetcher entitiesDataFetcher = null;
     private DataFetcherFactory entitiesDataFetcherFactory = null;
 
-    SchemaTransformer(GraphQLSchema originalSchema) {
-        this.originalSchema = originalSchema;
+    SchemaTransformer(Supplier<GraphQLSchema> schemaSupplier) {
+        this.schemaSupplier = schemaSupplier;
     }
 
     @NotNull
@@ -53,14 +54,21 @@ public final class SchemaTransformer {
     @NotNull
     public final GraphQLSchema build() throws SchemaProblem {
         final List<GraphQLError> errors = new ArrayList<>();
-        final GraphQLSchema.Builder schema = GraphQLSchema.newSchema(originalSchema);
+        final GraphQLSchema original = schemaSupplier.get();
 
-        final GraphQLObjectType originalQueryType = originalSchema.getQueryType();
+        final GraphQLSchema.Builder schema = GraphQLSchema.newSchema(original);
+
+        final GraphQLObjectType originalQueryType = original.getQueryType();
 
         final GraphQLCodeRegistry.Builder codeRegistry =
-                GraphQLCodeRegistry.newCodeRegistry(originalSchema.getCodeRegistry());
+                GraphQLCodeRegistry.newCodeRegistry(original.getCodeRegistry());
 
-        final String sdl = sdl();
+        final String sdl = new SchemaPrinter(SchemaPrinter.Options.defaultOptions()
+                .includeScalarTypes(true)
+                .includeExtendedScalarTypes(true)
+                .includeSchemaDefintion(true)
+                .includeDirectives(true)).print(original);
+
         final GraphQLObjectType.Builder queryType = GraphQLObjectType.newObject(originalQueryType)
                 .field(_Service.field);
         codeRegistry.dataFetcher(FieldCoordinates.coordinates(
@@ -74,7 +82,7 @@ public final class SchemaTransformer {
                 ),
                 (DataFetcher<String>) environment -> sdl);
 
-        final Set<String> entityTypeNames = originalSchema.getAllTypesAsList().stream()
+        final Set<String> entityTypeNames = original.getAllTypesAsList().stream()
                 .filter(t -> t instanceof GraphQLDirectiveContainer &&
                         ((GraphQLDirectiveContainer) t).getDirective(FederationDirectives.keyName) != null)
                 .map(GraphQLType::getName)
@@ -83,6 +91,7 @@ public final class SchemaTransformer {
         if (!entityTypeNames.isEmpty()) {
             queryType.field(_Entity.field(entityTypeNames));
 
+            schema.additionalType(_FieldSet.type);
             schema.additionalDirectives(FederationDirectives.allDirectives);
 
             if (entityTypeResolver != null) {
@@ -111,14 +120,5 @@ public final class SchemaTransformer {
                 .query(queryType.build())
                 .codeRegistry(codeRegistry.build())
                 .build();
-    }
-
-    private String sdl() {
-        final SchemaPrinter.Options options = SchemaPrinter.Options.defaultOptions()
-                .includeScalarTypes(true)
-                .includeExtendedScalarTypes(true)
-                .includeSchemaDefintion(true)
-                .includeDirectives(true);
-        return new SchemaPrinter(options).print(originalSchema);
     }
 }
