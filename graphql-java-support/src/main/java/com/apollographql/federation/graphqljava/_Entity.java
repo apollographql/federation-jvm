@@ -13,9 +13,12 @@ import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 
 public final class _Entity {
+    public static final String argumentName = "representations";
     static final String typeName = "_Entity";
     static final String fieldName = "_entities";
-    public static final String argumentName = "representations";
+
+    private _Entity() {
+    }
 
     // graphql-java will mutate GraphQLTypeReference in-place,
     // so we need to create a new instance every time.
@@ -38,8 +41,5 @@ public final class _Entity {
                         )
                 )
                 .build();
-    }
-
-    private _Entity() {
     }
 }
