@@ -1,5 +1,6 @@
 package com.apollographql.federation.graphqljava;
 
+import graphql.language.ObjectTypeDefinition;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
@@ -23,6 +24,7 @@ public final class Federation {
     }
 
     public static SchemaTransformer transform(final TypeDefinitionRegistry typeRegistry, final RuntimeWiring runtimeWiring) {
+        ensureQueryTypeExists(typeRegistry);
         final GraphQLSchema original = new SchemaGenerator().makeExecutableSchema(
                 generatorOptions,
                 typeRegistry,
@@ -60,5 +62,18 @@ public final class Federation {
 
     private static RuntimeWiring emptyWiring() {
         return RuntimeWiring.newRuntimeWiring().build();
+    }
+
+    private static void ensureQueryTypeExists(TypeDefinitionRegistry typeRegistry) {
+        final String queryName = typeRegistry.schemaDefinition()
+                .flatMap(sdef -> sdef.getOperationTypeDefinitions()
+                        .stream()
+                        .filter(op -> "query".equals(op.getName()))
+                        .findFirst()
+                        .map(def -> def.getTypeName().getName()))
+                .orElse("Query");
+        if (!typeRegistry.getType(queryName).isPresent()) {
+            typeRegistry.add(ObjectTypeDefinition.newObjectTypeDefinition().name(queryName).build());
+        }
     }
 }
