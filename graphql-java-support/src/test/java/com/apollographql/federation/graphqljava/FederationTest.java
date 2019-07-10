@@ -4,20 +4,26 @@ import graphql.ExecutionResult;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+import graphql.schema.GraphQLUnionType;
+import graphql.schema.idl.RuntimeWiring;
+import graphql.schema.idl.TypeRuntimeWiring;
 import graphql.schema.idl.errors.SchemaProblem;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FederationTest {
     private final String emptySDL = TestUtils.readResource("empty.graphql");
+    private final String interfacesSDL = TestUtils.readResource("interfaces.graphql");
     private final String isolatedSDL = TestUtils.readResource("isolated.graphql");
     private final String productSDL = TestUtils.readResource("product.graphql");
 
@@ -95,5 +101,30 @@ class FederationTest {
                 .resolveEntityType(env -> null)
                 .fetchEntities(environment -> null)
                 .build();
+    }
+
+    @Test
+    void testInterfacesAreCovered() {
+        final RuntimeWiring wiring = RuntimeWiring.newRuntimeWiring()
+                .type(TypeRuntimeWiring.newTypeWiring("Product")
+                        .typeResolver(env -> null)
+                        .build())
+                .build();
+
+        final GraphQLSchema transformed = Federation.transform(interfacesSDL, wiring)
+                .resolveEntityType(env -> null)
+                .fetchEntities(environment -> null)
+                .build();
+
+        final GraphQLUnionType entityType = (GraphQLUnionType) transformed.getType(_Entity.typeName);
+
+        final Iterable<String> unionTypes = entityType
+                .getTypes()
+                .stream()
+                .map(GraphQLType::getName)
+                .sorted()
+                .collect(Collectors.toList());
+
+        assertIterableEquals(Arrays.asList("Book", "Movie", "Page"), unionTypes);
     }
 }

@@ -88,8 +88,18 @@ public final class SchemaTransformer {
                 .map(GraphQLType::getName)
                 .collect(Collectors.toSet());
 
-        if (!entityTypeNames.isEmpty()) {
-            newQueryType.field(_Entity.field(entityTypeNames));
+        final Set<String> entityConcreteTypeNames = originalSchema.getAllTypesAsList()
+                .stream()
+                .filter(type -> type instanceof GraphQLObjectType)
+                .filter(type -> entityTypeNames.contains(type.getName()) ||
+                        ((GraphQLObjectType) type).getInterfaces()
+                                .stream()
+                                .anyMatch(itf -> entityTypeNames.contains(itf.getName())))
+                .map(GraphQLType::getName)
+                .collect(Collectors.toSet());
+
+        if (!entityConcreteTypeNames.isEmpty()) {
+            newQueryType.field(_Entity.field(entityConcreteTypeNames));
 
             final GraphQLType originalAnyType = originalSchema.getType(_Any.typeName);
             if (originalAnyType == null) {

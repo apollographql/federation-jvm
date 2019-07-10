@@ -1,0 +1,15 @@
+interface Product @key(fields : "id") {
+    id: ID!
+}
+
+type Book implements Product {
+    id: ID!
+}
+
+type Movie implements Product {
+    id: ID!
+}
+
+type Page @key(fields : "url") {
+    url: String!
+}
