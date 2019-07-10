@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 @Component
 public class InventorySchemaProvider extends DefaultGraphQLSchemaProvider implements GraphQLSchemaProvider {
-    public InventorySchemaProvider(@Value("classpath:inventory.graphql") Resource sdl) throws IOException {
+    public InventorySchemaProvider(@Value("classpath:schemas/inventory.graphql") Resource sdl) throws IOException {
         super(Federation.transform(sdl.getFile())
                 .fetchEntities(env -> env.<List<Map<String, Object>>>getArgument(_Entity.argumentName)
                         .stream()

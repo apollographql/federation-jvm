@@ -22,7 +22,7 @@ public class AppTest {
 
     @Test
     public void lookupPlanckProduct() throws IOException {
-        final GraphQLResponse response = graphqlTestTemplate.postForResource("LookupPlanckProduct.graphql");
+        final GraphQLResponse response = graphqlTestTemplate.postForResource("queries/LookupPlanckProduct.graphql");
         assertNotNull(response, "response should not have been null");
         assertTrue(response.isOk(), "response should have been OK");
         final int quantity = response.get("$.data._entities[0].quantity", Integer.class);

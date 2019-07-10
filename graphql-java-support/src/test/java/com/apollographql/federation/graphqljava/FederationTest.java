@@ -22,10 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FederationTest {
-    private final String emptySDL = TestUtils.readResource("empty.graphql");
-    private final String interfacesSDL = TestUtils.readResource("interfaces.graphql");
-    private final String isolatedSDL = TestUtils.readResource("isolated.graphql");
-    private final String productSDL = TestUtils.readResource("product.graphql");
+    private final String emptySDL = TestUtils.readResource("schemas/empty.graphql");
+    private final String interfacesSDL = TestUtils.readResource("schemas/interfaces.graphql");
+    private final String isolatedSDL = TestUtils.readResource("schemas/isolated.graphql");
+    private final String productSDL = TestUtils.readResource("schemas/product.graphql");
 
     @Test
     void testEmpty() {
