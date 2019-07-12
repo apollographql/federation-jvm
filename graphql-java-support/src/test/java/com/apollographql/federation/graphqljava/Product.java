@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 class Product {
-    static final Product PLANCK = new Product("123456789012", "P", "Planck", 180);
+    static final Product PLANCK = new Product("PLANCK", "P", "Planck", 180);
 
     private final String upc;
     private final String sku;

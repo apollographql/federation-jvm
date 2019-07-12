@@ -152,10 +152,13 @@ public final class FederationDirectives {
             .directiveLocations(Arrays.asList(DL_OBJECT))
             .build();
 
+
+    private FederationDirectives() {
+    }
+
     /* Sets */
 
     public static final Set<GraphQLDirective> allDirectives = new HashSet<>();
-
     public static final Set<SDLDefinition> allDefinitions = new HashSet<>();
 
     static {
@@ -169,8 +172,5 @@ public final class FederationDirectives {
         allDefinitions.add(requiresDefinition);
         allDefinitions.add(providesDefinition);
         allDefinitions.add(extendsDefinition);
-    }
-
-    private FederationDirectives() {
     }
 }
