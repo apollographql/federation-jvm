@@ -27,5 +27,4 @@ type Product @key(fields : "upc") {
 type Query {
 }
 
-#Built-in String
 scalar _FieldSet

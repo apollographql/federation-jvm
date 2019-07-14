@@ -15,5 +15,4 @@ directive @requires(fields: _FieldSet!) on FIELD_DEFINITION
 type Query {
 }
 
-#Built-in String
 scalar _FieldSet
