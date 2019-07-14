@@ -6,6 +6,7 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetcherFactory;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLCodeRegistry;
+import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLDirectiveContainer;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
@@ -16,6 +17,7 @@ import graphql.schema.idl.errors.SchemaProblem;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -69,6 +71,7 @@ public final class SchemaTransformer {
                 GraphQLCodeRegistry.newCodeRegistry(originalSchema.getCodeRegistry());
 
         final String sdl = sdl();
+
         final GraphQLObjectType.Builder newQueryType = GraphQLObjectType.newObject(originalQueryType)
                 .field(_Service.field);
         newCodeRegistry.dataFetcher(FieldCoordinates.coordinates(
@@ -140,6 +143,13 @@ public final class SchemaTransformer {
                 .includeExtendedScalarTypes(true)
                 .includeSchemaDefintion(true)
                 .includeDirectives(true);
-        return new SchemaPrinter(options).print(originalSchema);
+        final LinkedHashSet<GraphQLDirective> missingDirectives = FederationDirectives.allDirectives
+                .stream()
+                .filter(dir -> originalSchema.getDirective(dir.getName()) == null)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        final GraphQLSchema printable = GraphQLSchema.newSchema(originalSchema)
+                .additionalDirectives(missingDirectives)
+                .build();
+        return new SchemaPrinter(options).print(printable);
     }
 }

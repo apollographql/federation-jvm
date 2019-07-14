@@ -1,0 +1,19 @@
+schema {
+  query: Query
+}
+
+directive @extends on OBJECT
+
+directive @external on FIELD_DEFINITION
+
+directive @key(fields: _FieldSet!) on OBJECT | INTERFACE
+
+directive @provides(fields: _FieldSet!) on FIELD_DEFINITION
+
+directive @requires(fields: _FieldSet!) on FIELD_DEFINITION
+
+type Query {
+}
+
+#Built-in String
+scalar _FieldSet

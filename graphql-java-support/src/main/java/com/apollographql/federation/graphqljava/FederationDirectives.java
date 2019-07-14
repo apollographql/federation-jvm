@@ -12,7 +12,7 @@ import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLNonNull;
 
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static graphql.introspection.Introspection.DirectiveLocation.FIELD_DEFINITION;
@@ -158,19 +158,19 @@ public final class FederationDirectives {
 
     /* Sets */
 
-    public static final Set<GraphQLDirective> allDirectives = new HashSet<>();
-    public static final Set<SDLDefinition> allDefinitions = new HashSet<>();
+    public static final Set<GraphQLDirective> allDirectives = new LinkedHashSet<>();
+    public static final Set<SDLDefinition> allDefinitions = new LinkedHashSet<>();
 
     static {
-        allDirectives.add(key);
-        allDirectives.add(external);
-        allDirectives.add(requires);
-        allDirectives.add(provides);
         allDirectives.add(extends_);
-        allDefinitions.add(keyDefinition);
-        allDefinitions.add(externalDefinition);
-        allDefinitions.add(requiresDefinition);
-        allDefinitions.add(providesDefinition);
+        allDirectives.add(external);
+        allDirectives.add(key);
+        allDirectives.add(provides);
+        allDirectives.add(requires);
         allDefinitions.add(extendsDefinition);
+        allDefinitions.add(externalDefinition);
+        allDefinitions.add(keyDefinition);
+        allDefinitions.add(providesDefinition);
+        allDefinitions.add(requiresDefinition);
     }
 }

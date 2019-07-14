@@ -22,15 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FederationTest {
-    private final String emptySDL = TestUtils.readResource("schemas/empty.graphql");
-    private final String interfacesSDL = TestUtils.readResource("schemas/interfaces.graphql");
-    private final String isolatedSDL = TestUtils.readResource("schemas/isolated.graphql");
     private final String productSDL = TestUtils.readResource("schemas/product.graphql");
 
     @Test
     void testEmpty() {
-        final GraphQLSchema federated = Federation.transform(emptySDL)
-                .build();
+        final GraphQLSchema federated = Federation.transform(TestUtils.readResource("schemas/empty.graphql")).build();
         Assertions.assertEquals("type Query {\n" +
                 "  _service: _Service\n" +
                 "}\n" +
@@ -45,7 +41,8 @@ class FederationTest {
         assertNotNull(_service, "_service field present");
         assertEquals(_Service, _service.getType(), "_service returns _Service");
 
-        SchemaUtils.assertSDL(federated, emptySDL);
+        SchemaUtils.assertSDL(federated,
+                TestUtils.readResource("schemas/empty.federated.graphql"));
     }
 
     @Test
@@ -74,7 +71,7 @@ class FederationTest {
                 .resolveEntityType(env -> env.getSchema().getObjectType("Product"))
                 .build();
 
-        SchemaUtils.assertSDL(federated, productSDL);
+        SchemaUtils.assertSDL(federated, TestUtils.readResource("schemas/product.federated.graphql"));
 
         final ExecutionResult result = SchemaUtils.execute(federated, "{\n" +
                 "  _entities(representations: [{__typename:\"Product\"}]) {\n" +
@@ -93,11 +90,12 @@ class FederationTest {
     // From https://github.com/apollographql/federation-jvm/issues/7
     @Test
     void testSchemaTransformationIsolated() {
-        Federation.transform(isolatedSDL)
+        final String sdl = TestUtils.readResource("schemas/isolated.graphql");
+        Federation.transform(sdl)
                 .resolveEntityType(env -> null)
                 .fetchEntities(environment -> null)
                 .build();
-        Federation.transform(isolatedSDL)
+        Federation.transform(sdl)
                 .resolveEntityType(env -> null)
                 .fetchEntities(environment -> null)
                 .build();
@@ -111,7 +109,7 @@ class FederationTest {
                         .build())
                 .build();
 
-        final GraphQLSchema transformed = Federation.transform(interfacesSDL, wiring)
+        final GraphQLSchema transformed = Federation.transform(TestUtils.readResource("schemas/interfaces.graphql"), wiring)
                 .resolveEntityType(env -> null)
                 .fetchEntities(environment -> null)
                 .build();

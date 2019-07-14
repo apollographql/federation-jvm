@@ -1,7 +1,3 @@
-schema {
-  query: Query
-}
-
 type Money {
   amount: Int!
   currencyCode: String!
@@ -12,7 +8,4 @@ type Product @key(fields : "upc") {
   price: Int
   sku: String!
   upc: String!
-}
-
-type Query {
 }
