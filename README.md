@@ -5,9 +5,8 @@
 # Apollo Federation on the JVM
 
 Packages published to [our bintray repository](https://bintray.com/apollographql/maven/federation-jvm)
-and available [in jcenter](https://jcenter.bintray.com/com/apollographql/federation/).
-
-We publish [release notes](RELEASE_NOTES.md).
+and available [in jcenter](https://jcenter.bintray.com/com/apollographql/federation/);
+release notes in [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
 An example of [graphql-spring-boot](https://www.graphql-java-kickstart.com/spring-boot/) microservice is available in [spring-example](spring-example).
 
