@@ -50,7 +50,7 @@ You can build a transformed `GraphQLSchema` with `SchemaTransformer#build()`, an
 Otherwise, all types annotated with `@key` will be part of the `_Entity` union type,
 and reachable through `query { _entities(representations: [Any!]!) { … } }`. Before calling `SchemaTransformer#build()`,
 you will also need to provide:
-- A `TypeResolver` for `_Entity` using `SchemaTransformer#resolveEntityType(TypeResolver)`.
+- A `TypeResolver` for `_Entity` using `SchemaTransformer#resolveEntityType(TypeResolver)`;
 - A `DataFetcher` or `DataFetcherFactory` for `_entities`
   using `SchemaTransformer#fetchEntities(DataFetcher|DataFetcherFactory)`.
 
