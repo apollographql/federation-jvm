@@ -1,6 +1,6 @@
 # Release notes
 
-# v0.2.0
+## v0.2.0
 
 *Bugfixes:*
 - When an interface is `@key`ed, its concrete types are added to `_Entity`.
@@ -12,6 +12,6 @@
 *Upgrades:*
 - spring-boot to `2.1.6.RELEASE`.
 
-# v0.1.0
+## v0.1.0
 
 First version tested against the federated Apollo gateway.
