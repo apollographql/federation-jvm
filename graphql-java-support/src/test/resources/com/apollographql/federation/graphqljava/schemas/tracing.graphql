@@ -1,0 +1,8 @@
+type Query {
+    widgets: [Widget!]
+}
+
+type Widget {
+    foo: String
+    bar: String
+}
