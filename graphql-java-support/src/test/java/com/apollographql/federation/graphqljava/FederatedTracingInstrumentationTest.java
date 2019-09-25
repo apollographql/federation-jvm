@@ -2,10 +2,8 @@ package com.apollographql.federation.graphqljava;
 
 import com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation;
 import com.google.protobuf.InvalidProtocolBufferException;
-import graphql.ExceptionWhileDataFetching;
 import graphql.GraphQL;
 import graphql.GraphQLException;
-import graphql.execution.DataFetcherResult;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
@@ -52,11 +50,7 @@ class FederatedTracingInstrumentationTest {
                         // Widget.foo works normally, Widget.bar always throws an error
                         builder.dataFetcher("foo", env -> "hello world")
                                 .dataFetcher("bar", env -> {
-                                    ExceptionWhileDataFetching whoops = new ExceptionWhileDataFetching(
-                                            env.getExecutionStepInfo().getPath(),
-                                            new GraphQLException("whoops"),
-                                            env.getField().getSourceLocation());
-                                    return new DataFetcherResult.Builder().error(whoops).build();
+                                    throw new GraphQLException("whoops");
                                 }))
                 .build();
 
@@ -117,7 +111,7 @@ class FederatedTracingInstrumentationTest {
         assertEquals(1, bar.getErrorCount());
 
         Reports.Trace.Error error = bar.getError(0);
-        assertEquals("Exception while fetching data (/widgets[1]/baz) : whoops", error.getMessage());
+        assertEquals("whoops", error.getMessage());
         assertEquals(1, error.getLocationCount());
         assertEquals(18, error.getLocation(0).getColumn());
         assertEquals(1, error.getLocation(0).getLine());
