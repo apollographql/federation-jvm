@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -142,7 +143,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
          */
         void addNode(ExecutionStepInfo stepInfo, long startFieldNanos, long endFieldNanos, List<GraphQLError> errors, SourceLocation fieldLocation) {
             ExecutionPath path = stepInfo.getPath();
-            Reports.Trace.Node.Builder parent = getParent(path);
+            Reports.Trace.Node.Builder parent = getParentNode(path);
 
             Reports.Trace.Node.Builder node = parent.addChildBuilder()
                     .setStartTime(startFieldNanos)
@@ -175,32 +176,39 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
         }
 
         @NotNull
-        Reports.Trace.Node.Builder getParent(ExecutionPath path) {
-            List<Object> pathParts = path.toList();
-            ExecutionPath parentPath = ExecutionPath.fromList(pathParts.subList(0, pathParts.size() - 1));
-
-            if (!nodesByPath.containsKey(parentPath)) {
-                // This recurses to support nested lists. It will eventually find the root node
-                // created in the constructor.
-                Reports.Trace.Node.Builder missingParent = getParent(parentPath).addChildBuilder();
-
-                // Missing parents are always list items, so we need to add the `index` field to them.
-                // There isn't an instrumentation hook for list items, but we need a node in the trace
-                // tree to contain the fields in the list item. This doesn't apply to scalar values, as
-                // `beginFieldFetch` isn't called for those list items.
-                if (parentPath.getLevel() > 0) {
-                    Object lastPathPart = parentPath.toList().get(parentPath.getLevel());
-                    if (lastPathPart instanceof Number) { // will always be true
-                        int index = ((Number) lastPathPart).intValue();
-                        missingParent.setIndex(index);
-                    }
+        Reports.Trace.Node.Builder getParentNode(ExecutionPath path) {
+            List<Object> pathList = path.toList();
+            List<Integer> missingIndexes = new ArrayList<>();
+            Reports.Trace.Node.Builder ancestorNode;
+            while (true) {
+                if (pathList.isEmpty()) {
+                    throw new RuntimeException("Didn't find any ancestor, even root?");
                 }
-
-                nodesByPath.put(parentPath, missingParent);
-                return missingParent;
+                pathList.remove(pathList.size() - 1);
+                ancestorNode = nodesByPath.get(ExecutionPath.fromList(pathList));
+                if (ancestorNode != null) {
+                    break;
+                }
+                // This ancestor level hasn't had a field fetch call, so it must be a list index
+                // rather than a field name.
+                Object lastElement = pathList.get(pathList.size() - 1);
+                if (!(lastElement instanceof Integer)) {
+                    throw new RuntimeException("Unexpected missing non-index " + lastElement);
+                }
+                missingIndexes.add((Integer) lastElement);
             }
 
-            return nodesByPath.get(parentPath);
+            // We may have had some missing intermediate nodes, so create them all.
+            // We added the most deeply nested indexes first, so reverse before we iterate. (This
+            // list is almost always size 0 or 1 where this is a no-op.)
+            Collections.reverse(missingIndexes);
+            for (Integer missingIndex : missingIndexes) {
+                ancestorNode = ancestorNode.addChildBuilder().setIndex(missingIndex);
+                pathList.add(missingIndex);
+                nodesByPath.put(ExecutionPath.fromList(pathList), ancestorNode);
+            }
+
+            return ancestorNode;
         }
 
         long getStartRequestNanos() {

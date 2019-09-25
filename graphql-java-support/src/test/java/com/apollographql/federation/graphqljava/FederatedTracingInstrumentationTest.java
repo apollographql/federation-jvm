@@ -127,7 +127,7 @@ class FederatedTracingInstrumentationTest {
 
         assertEquals(0, listOfLists.getChild(0).getChild(0).getIndex());
         assertEquals(1, listOfLists.getChild(0).getChild(0).getChildCount());
-        assertEquals(0, listOfLists.getChild(0).getChild(1).getIndex());
+        assertEquals(1, listOfLists.getChild(0).getChild(1).getIndex());
         assertEquals(1, listOfLists.getChild(0).getChild(1).getChildCount());
 
         Reports.Trace.Node deeplyNestedFoo = listOfLists.getChild(0).getChild(0).getChild(0);
