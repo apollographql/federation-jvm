@@ -86,6 +86,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
     // Field resolvers can throw exceptions or add errors to the DataFetchingResult. This method normalizes them to a
     // single list of GraphQLErrors.
+    @NotNull
     private List<GraphQLError> convertErrors(Throwable throwable, Object result) {
         ArrayList<GraphQLError> graphQLErrors = new ArrayList<>();
 
@@ -126,6 +127,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             nodesByPath.put(ExecutionPath.rootPath(), Reports.Trace.Node.newBuilder());
         }
 
+        @NotNull
         Reports.Trace toProto() {
             return Reports.Trace.newBuilder()
                     .setStartTime(getStartTimestamp())
@@ -172,6 +174,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             nodesByPath.put(path, node);
         }
 
+        @NotNull
         Reports.Trace.Node.Builder getParent(ExecutionPath path) {
             List<Object> pathParts = path.toList();
             ExecutionPath parentPath = ExecutionPath.fromList(pathParts.subList(0, pathParts.size() - 1));
@@ -205,16 +208,18 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
         }
 
         @NotNull
-        private static Timestamp instantToTimestamp(Instant startRequestTime2) {
+        private static Timestamp instantToTimestamp(@NotNull Instant startRequestTime2) {
             return Timestamp.newBuilder()
                     .setSeconds(startRequestTime2.getEpochSecond())
                     .setNanos(startRequestTime2.getNano()).build();
         }
 
+        @NotNull
         private Timestamp getStartTimestamp() {
             return instantToTimestamp(startRequestTime);
         }
 
+        @NotNull
         private Timestamp getNowTimestamp() {
             return instantToTimestamp(Instant.now());
         }
@@ -231,7 +236,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             this.debuggingEnabled = debuggingEnabled;
         }
 
-        public static Options newOptions() {
+        public static @NotNull Options newOptions() {
             return new Options(false);
         }
 
