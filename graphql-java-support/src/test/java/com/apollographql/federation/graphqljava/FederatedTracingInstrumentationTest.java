@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -146,6 +147,42 @@ class FederatedTracingInstrumentationTest {
         assertEquals("Query", listOfScalars.getParentType());
         assertEquals("[String!]!", listOfScalars.getType());
         assertEquals("listOfScalars", listOfScalars.getResponseName());
+    }
+
+    @Test
+    void testTracingParseErrors() throws InvalidProtocolBufferException {
+        Map<String, Object> result = graphql.execute("{ widgets { foo }").toSpecification();
+
+        Object extensions = result.get("extensions");
+        assertTrue(extensions instanceof Map);
+
+        String ftv1 = ((Map) extensions).get("ftv1").toString();
+        byte[] decoded = Base64.getDecoder().decode(ftv1);
+
+        Reports.Trace trace = Reports.Trace.parseFrom(decoded);
+        assertEquals(1, trace.getRoot().getErrorCount());
+        Reports.Trace.Error error = trace.getRoot().getError(0);
+        assertEquals("Invalid Syntax : offending token '<EOF>' at line 1 column 18", error.getMessage());
+        assertEquals(1, error.getLocation(0).getLine());
+        assertEquals(18, error.getLocation(0).getColumn());
+    }
+
+    @Test
+    void testTracingValidationErrors() throws InvalidProtocolBufferException {
+        Map<String, Object> result = graphql.execute("{ widgets { notARealThing } }").toSpecification();
+
+        Object extensions = result.get("extensions");
+        assertTrue(extensions instanceof Map);
+
+        String ftv1 = ((Map) extensions).get("ftv1").toString();
+        byte[] decoded = Base64.getDecoder().decode(ftv1);
+
+        Reports.Trace trace = Reports.Trace.parseFrom(decoded);
+        assertEquals(1, trace.getRoot().getErrorCount());
+        Reports.Trace.Error error = trace.getRoot().getError(0);
+        assertEquals("Validation error of type FieldUndefined: Field 'notARealThing' in type 'Widget' is undefined @ 'widgets/notARealThing'", error.getMessage());
+        assertEquals(1, error.getLocation(0).getLine());
+        assertEquals(13, error.getLocation(0).getColumn());
     }
 
     @Test

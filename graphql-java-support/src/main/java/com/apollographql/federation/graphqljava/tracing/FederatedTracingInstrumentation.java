@@ -13,7 +13,11 @@ import graphql.execution.instrumentation.InstrumentationState;
 import graphql.execution.instrumentation.SimpleInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters;
+import graphql.execution.instrumentation.parameters.InstrumentationValidationParameters;
+import graphql.language.Document;
 import graphql.language.SourceLocation;
+import graphql.parser.InvalidSyntaxException;
+import graphql.validation.ValidationError;
 import mdg.engine.proto.Reports;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -85,6 +89,30 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
         });
     }
 
+    @Override
+    public InstrumentationContext<Document> beginParse(InstrumentationExecutionParameters parameters) {
+        FederatedTracingState state = parameters.getInstrumentationState();
+        return whenCompleted((document, throwable) -> {
+            for (GraphQLError error : convertErrors(throwable, null)) {
+                state.addRootError(error);
+            }
+        });
+    }
+
+    @Override
+    public InstrumentationContext<List<ValidationError>> beginValidation(InstrumentationValidationParameters parameters) {
+        FederatedTracingState state = parameters.getInstrumentationState();
+        return whenCompleted((validationErrors, throwable) -> {
+            for (GraphQLError error : convertErrors(throwable, null)) {
+                state.addRootError(error);
+            }
+
+            for (ValidationError error : validationErrors) {
+                state.addRootError(error);
+            }
+        });
+    }
+
     // Field resolvers can throw exceptions or add errors to the DataFetchingResult. This method normalizes them to a
     // single list of GraphQLErrors.
     @NotNull
@@ -95,9 +123,14 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             if (throwable instanceof GraphQLError) {
                 graphQLErrors.add((GraphQLError) throwable);
             } else {
-                graphQLErrors.add(GraphqlErrorBuilder.newError()
-                        .message(throwable.getMessage())
-                        .build());
+                GraphqlErrorBuilder errorBuilder = GraphqlErrorBuilder.newError()
+                        .message(throwable.getMessage());
+
+                if (throwable instanceof InvalidSyntaxException) {
+                    errorBuilder.location(((InvalidSyntaxException) throwable).getLocation());
+                }
+
+                graphQLErrors.add(errorBuilder.build());
             }
         }
 
@@ -209,6 +242,15 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             }
 
             return ancestorNode;
+        }
+
+        void addRootError(GraphQLError error) {
+            Reports.Trace.Error.Builder builder = nodesByPath.get(ExecutionPath.rootPath()).addErrorBuilder()
+                    .setMessage(error.getMessage());
+
+            error.getLocations().forEach(location -> builder.addLocationBuilder()
+                    .setColumn(location.getColumn())
+                    .setLine(location.getLine()));
         }
 
         long getStartRequestNanos() {
