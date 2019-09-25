@@ -13,6 +13,7 @@ import graphql.execution.instrumentation.InstrumentationState;
 import graphql.execution.instrumentation.SimpleInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters;
+import graphql.language.SourceLocation;
 import mdg.engine.proto.Reports;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +70,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
     @Override
     public InstrumentationContext<Object> beginFieldFetch(InstrumentationFieldFetchParameters parameters) {
         FederatedTracingState state = parameters.getInstrumentationState();
+        SourceLocation fieldLocation = parameters.getEnvironment().getField().getSourceLocation();
 
         long startNanos = System.nanoTime();
         return whenCompleted((result, throwable) -> {
@@ -81,7 +83,8 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                     startNanos - state.getStartRequestNanos(),
                     // relative to the trace's start_time, in ns
                     endNanos - state.getStartRequestNanos(),
-                    convertErrors(throwable, result)
+                    convertErrors(throwable, result),
+                    fieldLocation
             );
         });
     }
@@ -140,7 +143,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
         /**
          * Adds node to nodesByPath and recursively ensures that all parent nodes exist.
          */
-        void addNode(ExecutionStepInfo stepInfo, long startFieldNanos, long endFieldNanos, List<GraphQLError> errors) {
+        void addNode(ExecutionStepInfo stepInfo, long startFieldNanos, long endFieldNanos, List<GraphQLError> errors, SourceLocation fieldLocation) {
             ExecutionPath path = stepInfo.getPath();
             Reports.Trace.Node.Builder parent = getParent(path);
 
@@ -160,9 +163,15 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
             errors.forEach(error -> {
                 Reports.Trace.Error.Builder builder = node.addErrorBuilder().setMessage(error.getMessage());
-                error.getLocations().forEach(location -> builder.addLocationBuilder()
-                        .setColumn(location.getColumn())
-                        .setLine(location.getLine()));
+                if (error.getLocations().isEmpty() && fieldLocation != null) {
+                    builder.addLocationBuilder()
+                            .setColumn(fieldLocation.getColumn())
+                            .setLine(fieldLocation.getLine());
+                } else {
+                    error.getLocations().forEach(location -> builder.addLocationBuilder()
+                            .setColumn(location.getColumn())
+                            .setLine(location.getLine()));
+                }
             });
 
             nodesByPath.put(path, node);
