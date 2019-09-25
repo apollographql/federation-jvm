@@ -196,7 +196,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             return nodesByPath.get(parentPath);
         }
 
-        public long getStartRequestNanos() {
+        long getStartRequestNanos() {
             return startRequestNanos;
         }
 
