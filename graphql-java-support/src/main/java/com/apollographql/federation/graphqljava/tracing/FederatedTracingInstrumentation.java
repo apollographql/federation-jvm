@@ -15,16 +15,15 @@ import graphql.execution.instrumentation.parameters.InstrumentationExecutionPara
 import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters;
 import graphql.language.SourceLocation;
 import mdg.engine.proto.Reports;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static graphql.execution.instrumentation.SimpleInstrumentationContext.whenCompleted;
@@ -205,18 +204,19 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             return startRequestNanos;
         }
 
-        private Timestamp getStartTimestamp() {
+        @NotNull
+        private static Timestamp instantToTimestamp(Instant startRequestTime2) {
             return Timestamp.newBuilder()
-                    .setSeconds(startRequestTime.getEpochSecond())
-                    .setNanos(startRequestTime.getNano()).build();
+                    .setSeconds(startRequestTime2.getEpochSecond())
+                    .setNanos(startRequestTime2.getNano()).build();
+        }
+
+        private Timestamp getStartTimestamp() {
+            return instantToTimestamp(startRequestTime);
         }
 
         private Timestamp getNowTimestamp() {
-            Instant now = Instant.now();
-            return Timestamp.newBuilder()
-                    .setSeconds(now.getEpochSecond())
-                    .setNanos(now.getNano())
-                    .build();
+            return instantToTimestamp(Instant.now());
         }
 
         private long getDuration() {
