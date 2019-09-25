@@ -149,7 +149,7 @@ class FederatedTracingInstrumentationTest {
         assertTrue(listOfScalars.getStartTime() > 0, "Field start time is greater than zero");
         assertTrue(listOfScalars.getEndTime() > 0, "Field end time is greater than zero");
         assertEquals("Query", listOfScalars.getParentType());
-        assertEquals("[String]", listOfScalars.getType());
+        assertEquals("[String!]!", listOfScalars.getType());
         assertEquals("listOfScalars", listOfScalars.getResponseName());
     }
 }

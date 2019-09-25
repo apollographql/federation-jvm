@@ -1,5 +1,7 @@
 type Query {
     widgets: [Widget!]
+    listOfLists: [[Widget!]!]
+    listOfScalars: [String!]!
 }
 
 type Widget {
