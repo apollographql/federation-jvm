@@ -18,6 +18,7 @@ import java.util.Base64;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FederatedTracingInstrumentationTest {
@@ -145,5 +146,12 @@ class FederatedTracingInstrumentationTest {
         assertEquals("Query", listOfScalars.getParentType());
         assertEquals("[String!]!", listOfScalars.getType());
         assertEquals("listOfScalars", listOfScalars.getResponseName());
+    }
+
+    @Test
+    void testOptions() {
+        // This test primarily exists so that IntelliJ doesn't encourage you to take 'public' off
+        // of these two methods.
+        assertFalse(FederatedTracingInstrumentation.Options.newOptions().isDebuggingEnabled());
     }
 }
