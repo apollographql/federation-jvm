@@ -101,9 +101,11 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             }
         }
 
-        if (result instanceof DataFetcherResult && ((DataFetcherResult) result).hasErrors()) {
-            DataFetcherResult theResult = (DataFetcherResult) result;
-            graphQLErrors.addAll(theResult.getErrors());
+        if (result instanceof DataFetcherResult<?>) {
+            DataFetcherResult<?> theResult = (DataFetcherResult) result;
+            if (theResult.hasErrors()) {
+                graphQLErrors.addAll(theResult.getErrors());
+            }
         }
 
         return graphQLErrors;
