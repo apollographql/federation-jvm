@@ -51,20 +51,16 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
     @Override
     public CompletableFuture<ExecutionResult> instrumentExecutionResult(ExecutionResult executionResult, InstrumentationExecutionParameters parameters) {
-        FederatedTracingState state = parameters.getInstrumentationState();
-
-        Map<Object, Object> extensions = executionResult.getExtensions();
-        Map<Object, Object> extensionsCopy = new LinkedHashMap<>(extensions == null ? Collections.emptyMap() : extensions);
-
-        Reports.Trace trace = state.toProto();
-
-        extensionsCopy.put(EXTENSION_KEY, Base64.getEncoder().encodeToString(trace.toByteArray()));
+        Reports.Trace trace = parameters.<FederatedTracingState>getInstrumentationState().toProto();
 
         if (options.isDebuggingEnabled()) {
             logger.debug(trace.toString());
         }
 
-        return CompletableFuture.completedFuture(new ExecutionResultImpl(executionResult.getData(), executionResult.getErrors(), extensionsCopy));
+        return CompletableFuture.completedFuture(new ExecutionResultImpl.Builder()
+                .from(executionResult)
+                .addExtension(EXTENSION_KEY, Base64.getEncoder().encodeToString(trace.toByteArray()))
+                .build());
     }
 
     @Override
