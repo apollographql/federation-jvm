@@ -59,7 +59,10 @@ A minimal but complete example is available in
 
 ### Federated tracing
 
-To make your server generate performance traces and return them along with responses to the Apollo Gateway (which then can send them to Apollo Graph Manager), install the `FederatedTracingInstrumentation` into your `GraphQL` object:
+To make your server generate performance traces and return them along with
+responses to the Apollo Gateway (which then can send them to Apollo Graph
+Manager), install the `FederatedTracingInstrumentation` into your `GraphQL`
+object:
 
 ```java
 GraphQL graphql = GraphQL.newGraphQL(graphQLSchema)
