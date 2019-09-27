@@ -12,7 +12,7 @@ An example of [graphql-spring-boot](https://www.graphql-java-kickstart.com/sprin
 
 ## Getting started
 
-### Dependency management
+### Dependency management with Gradle
 
 Make sure JCenter is among your repositories:
 
@@ -56,3 +56,31 @@ you will also need to provide:
 
 A minimal but complete example is available in
 [InventorySchemaProvider](spring-example/src/main/java/com/apollographql/federation/springexample/InventorySchemaProvider.java).
+
+### Federated tracing
+
+To make your server generate performance traces and return them along with responses to the Apollo Gateway (which then can send them to Apollo Graph Manager), install the `FederatedTracingInstrumentation` into your `GraphQL` object:
+
+```java
+GraphQL graphql = GraphQL.newGraphQL(graphQLSchema)
+  .instrumentation(new FederatedTracingInstrumentation())
+  .build()
+```
+
+It is generally desired to only create traces for requests that actually come
+from Apollo Gateway, as they aren't helpful if you're connecting directly to
+your backend service for testing. In order for `FederatedTracingInstrumentation`
+to know if the request is coming from Gateway, you need to give it access to the
+HTTP request's headers, by making the `context` part of your `ExecutionInput`
+implement the `HTTPRequestHeaders` interface.  For example:
+
+```java
+    HTTPRequestHeaders context = new HTTPRequestHeaders() {
+        @Override
+        public @Nullable String getHTTPRequestHeader(String caseInsensitiveHeaderName) {
+            return myIncomingHTTPRequest.getHeader(caseInsensitiveHeaderName);
+        }
+    }
+    graphql.execute(ExecutionInput.newExecutionInput(queryString).context(context));
+
+```
