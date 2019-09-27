@@ -1,7 +1,6 @@
 package com.apollographql.federation.graphqljava.tracing;
 
 import com.google.protobuf.Timestamp;
-import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.ExecutionResultImpl;
 import graphql.GraphQLError;
@@ -29,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -84,8 +82,18 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             logger.debug(trace.toString());
         }
 
-        return CompletableFuture.completedFuture(new ExecutionResultImpl.Builder()
-                .from(executionResult)
+        // Elaborately copy the result into a builder.
+        // Annoyingly, ExecutionResultImpl.Builder.from takes ExecutionResultImpl rather than
+        // ExecutionResult in versions of GraphQL-Java older than v13
+        // (see https://github.com/graphql-java/graphql-java/pull/1491), so to support older versions
+        // we copy the fields by hand, which does result in isDataPresent always being set (ie,
+        // "data": null being included in all results). The built-in TracingInstrumentation has
+        // the same issue. If we decide to only support v13 then this can just change to
+        // ExecutionResultImpl.newExecutionResult().from(executionResult).
+        return CompletableFuture.completedFuture(ExecutionResultImpl.newExecutionResult()
+                .data(executionResult.getData())
+                .errors(executionResult.getErrors())
+                .extensions(executionResult.getExtensions())
                 .addExtension(EXTENSION_KEY, Base64.getEncoder().encodeToString(trace.toByteArray()))
                 .build());
     }
