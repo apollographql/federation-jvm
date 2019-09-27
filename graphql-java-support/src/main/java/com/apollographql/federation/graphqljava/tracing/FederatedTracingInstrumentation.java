@@ -1,6 +1,7 @@
 package com.apollographql.federation.graphqljava.tracing;
 
 import com.google.protobuf.Timestamp;
+import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.ExecutionResultImpl;
 import graphql.GraphQLError;
@@ -244,38 +245,27 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
         @NotNull
         Reports.Trace.Node.Builder getParentNode(ExecutionPath path) {
-            List<Object> pathList = path.toList();
-            List<Integer> missingIndexes = new ArrayList<>();
-            Reports.Trace.Node.Builder ancestorNode;
-            while (true) {
-                if (pathList.isEmpty()) {
-                    throw new RuntimeException("Didn't find any ancestor, even root?");
+            List<Object> pathParts = path.toList();
+            return nodesByPath.computeIfAbsent(ExecutionPath.fromList(pathParts.subList(0, pathParts.size() - 1)), parentPath -> {
+                if (parentPath.equals(ExecutionPath.rootPath())) {
+                    // The root path is inserted at construction time, so this shouldn't happen.
+                    throw new RuntimeException("root path missing from nodesByPath?");
                 }
-                pathList.remove(pathList.size() - 1);
-                ancestorNode = nodesByPath.get(ExecutionPath.fromList(pathList));
-                if (ancestorNode != null) {
-                    break;
-                }
-                // This ancestor level hasn't had a field fetch call, so it must be a list index
-                // rather than a field name.
-                Object lastElement = pathList.get(pathList.size() - 1);
-                if (!(lastElement instanceof Integer)) {
-                    throw new RuntimeException("Unexpected missing non-index " + lastElement);
-                }
-                missingIndexes.add((Integer) lastElement);
-            }
 
-            // We may have had some missing intermediate nodes, so create them all.
-            // We added the most deeply nested indexes first, so reverse before we iterate. (This
-            // list is almost always size 0 or 1 where this is a no-op.)
-            Collections.reverse(missingIndexes);
-            for (Integer missingIndex : missingIndexes) {
-                ancestorNode = ancestorNode.addChildBuilder().setIndex(missingIndex);
-                pathList.add(missingIndex);
-                nodesByPath.put(ExecutionPath.fromList(pathList), ancestorNode);
-            }
+                // Recursively get the grandparent node and start building the parent node.
+                Reports.Trace.Node.Builder missingParent = getParentNode(parentPath).addChildBuilder();
 
-            return ancestorNode;
+                // If the parent was a field name, then its fetcher would have been called before
+                // the fetcher for 'path' and it would be in nodesByPath. So the parent must be
+                // a list index.  Note that we subtract 2 here because we want the last part of
+                // parentPath, not path.
+                Object parentLastPathPart = pathParts.get(pathParts.size() - 2);
+                if (!(parentLastPathPart instanceof Integer)) {
+                    throw new RuntimeException("Unexpected missing non-index " + parentLastPathPart);
+                }
+                missingParent.setIndex((Integer) parentLastPathPart);
+                return missingParent;
+            });
         }
 
         void addRootError(GraphQLError error) {
