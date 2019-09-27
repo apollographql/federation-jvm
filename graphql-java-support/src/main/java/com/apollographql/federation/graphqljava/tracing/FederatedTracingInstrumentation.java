@@ -11,6 +11,7 @@ import graphql.execution.ExecutionStepInfo;
 import graphql.execution.instrumentation.InstrumentationContext;
 import graphql.execution.instrumentation.InstrumentationState;
 import graphql.execution.instrumentation.SimpleInstrumentation;
+import graphql.execution.instrumentation.parameters.InstrumentationCreateStateParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationValidationParameters;
@@ -20,6 +21,7 @@ import graphql.parser.InvalidSyntaxException;
 import graphql.validation.ValidationError;
 import mdg.engine.proto.Reports;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +38,9 @@ import static graphql.schema.GraphQLTypeUtil.simplePrint;
 
 public class FederatedTracingInstrumentation extends SimpleInstrumentation {
     private static final String EXTENSION_KEY = "ftv1";
+    private static final String HEADER_NAME = "apollo-federation-include-trace";
+    private static final String HEADER_VALUE = "ftv1";
+
     private final Options options;
 
     private static final Logger logger = LoggerFactory.getLogger(FederatedTracingInstrumentation.class);
@@ -49,13 +54,30 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
     }
 
     @Override
-    public InstrumentationState createState() {
+    public InstrumentationState createState(InstrumentationCreateStateParameters parameters) {
+        // If we've been configured with a way of reading HTTP headers, we should only be active
+        // if the special HTTP header has the special value. If the header isn't provided or has
+        // a different value, return null for our state, which we'll interpret in the rest of this
+        // file as meaning "don't instrument".  (If we haven't been given access to HTTP headers,
+        // always instrument.)
+        Object context = parameters.getExecutionInput().getContext();
+        if (context instanceof HTTPRequestHeaders) {
+            @Nullable String headerValue = ((HTTPRequestHeaders) context).getHTTPRequestHeader(HEADER_NAME);
+            if (headerValue == null || !headerValue.equals(HEADER_VALUE)) {
+                return null;
+            }
+        }
         return new FederatedTracingState();
     }
 
     @Override
     public CompletableFuture<ExecutionResult> instrumentExecutionResult(ExecutionResult executionResult, InstrumentationExecutionParameters parameters) {
-        Reports.Trace trace = parameters.<FederatedTracingState>getInstrumentationState().toProto();
+        final @Nullable FederatedTracingState state = parameters.<FederatedTracingState>getInstrumentationState();
+        if (state == null) {
+            return super.instrumentExecutionResult(executionResult, parameters);
+        }
+
+        Reports.Trace trace = state.toProto();
 
         if (options.isDebuggingEnabled()) {
             logger.debug(trace.toString());
@@ -70,6 +92,10 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
     @Override
     public InstrumentationContext<Object> beginFieldFetch(InstrumentationFieldFetchParameters parameters) {
         FederatedTracingState state = parameters.getInstrumentationState();
+        if (state == null) {
+            return super.beginFieldFetch(parameters);
+        }
+
         SourceLocation fieldLocation = parameters.getEnvironment().getField().getSourceLocation();
 
         long startNanos = System.nanoTime();
@@ -92,6 +118,10 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
     @Override
     public InstrumentationContext<Document> beginParse(InstrumentationExecutionParameters parameters) {
         FederatedTracingState state = parameters.getInstrumentationState();
+        if (state == null) {
+            return super.beginParse(parameters);
+        }
+
         return whenCompleted((document, throwable) -> {
             for (GraphQLError error : convertErrors(throwable, null)) {
                 state.addRootError(error);
@@ -102,6 +132,10 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
     @Override
     public InstrumentationContext<List<ValidationError>> beginValidation(InstrumentationValidationParameters parameters) {
         FederatedTracingState state = parameters.getInstrumentationState();
+        if (state == null) {
+            return super.beginValidation(parameters);
+        }
+
         return whenCompleted((validationErrors, throwable) -> {
             for (GraphQLError error : convertErrors(throwable, null)) {
                 state.addRootError(error);

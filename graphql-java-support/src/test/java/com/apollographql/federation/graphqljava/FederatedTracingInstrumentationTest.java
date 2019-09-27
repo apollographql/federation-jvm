@@ -1,7 +1,9 @@
 package com.apollographql.federation.graphqljava;
 
 import com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation;
+import com.apollographql.federation.graphqljava.tracing.HTTPRequestHeaders;
 import com.google.protobuf.InvalidProtocolBufferException;
+import graphql.ExecutionInput;
 import graphql.GraphQL;
 import graphql.GraphQLException;
 import graphql.schema.GraphQLSchema;
@@ -15,11 +17,12 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FederatedTracingInstrumentationTest {
@@ -190,5 +193,31 @@ class FederatedTracingInstrumentationTest {
         // This test primarily exists so that IntelliJ doesn't encourage you to take 'public' off
         // of these two methods.
         assertFalse(FederatedTracingInstrumentation.Options.newOptions().isDebuggingEnabled());
+    }
+
+    @Test
+    void testHTTPHeaders() {
+        Map<String, String> headers = new HashMap<>();
+        HTTPRequestHeaders context = headers::get;
+        ExecutionInput input = ExecutionInput.newExecutionInput("{widgets {foo}}")
+                .context(context)
+                .build();
+
+        // Because the context implements HTTPRequestHeaders but the special header isn't there,
+        // we don't get the trace extension (or any extensions).
+        Map<String, Object> result = graphql.execute(input).toSpecification();
+        assertNull(result.get("extensions"));
+
+        // Try again with the header having the wrong value.
+        headers.put("apollo-federation-include-trace", "bla");
+        result = graphql.execute(input).toSpecification();
+        assertNull(result.get("extensions"));
+
+        // Now with the right value.
+        headers.put("apollo-federation-include-trace", "ftv1");
+        result = graphql.execute(input).toSpecification();
+        Object extensions = result.get("extensions");
+        assertTrue(extensions instanceof Map);
+        assertTrue(((Map) extensions).containsKey("ftv1"));
     }
 }
