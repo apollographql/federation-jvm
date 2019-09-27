@@ -1,5 +1,10 @@
 # Release notes
 
+## v0.3.0
+
+*Enhancements:*
+- Federated tracing support.
+
 ## v0.2.0
 
 *Bugfixes:*
