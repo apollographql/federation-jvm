@@ -163,6 +163,8 @@
                     <version>${maven-javadoc-plugin.version}</version>
                     <configuration>
                         <notimestamp>true</notimestamp>
+                        <!-- protobuf generated java classes are missing various tags, so disable 'missing' -->
+                        <doclint>all,-missing</doclint>
                     </configuration>
                     <executions>
                         <execution>
