@@ -12,6 +12,9 @@ public interface HTTPRequestHeaders {
      * Return the value of the given HTTP header from the request, or null if the
      * header is not provided. The header name should be treated as case-insensitive.
      * If the header is provided multiple times, choose the first one.
+     *
+     * @param caseInsensitiveHeaderName the HTTP header name to get
+     * @return the header, or null if not provided
      */
     @Nullable String getHTTPRequestHeader(String caseInsensitiveHeaderName);
 }
