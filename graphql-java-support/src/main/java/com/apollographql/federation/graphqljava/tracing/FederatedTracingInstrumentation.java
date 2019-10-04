@@ -176,6 +176,8 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                     }
 
                     graphQLErrors.add(errorBuilder.build());
+                } else {
+                    logger.debug(throwable.toString());
                 }
             }
         }
