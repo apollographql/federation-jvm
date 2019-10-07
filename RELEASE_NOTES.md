@@ -1,5 +1,10 @@
 # Release notes
 
+## v0.3.2
+
+*Bugfixes:*
+- Fix crash in federated tracing support (new in v0.3.1) when an error with a null message is thrown.
+
 ## v0.3.1
 
 *Enhancements:*
