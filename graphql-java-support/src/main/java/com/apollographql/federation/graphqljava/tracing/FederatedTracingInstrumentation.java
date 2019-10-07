@@ -167,18 +167,17 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                 graphQLErrors.add((GraphQLError) throwable);
             } else {
                 String message = throwable.getMessage();
-                if (message != null) {
-                    GraphqlErrorBuilder errorBuilder = GraphqlErrorBuilder.newError()
-                            .message(message);
-
-                    if (throwable instanceof InvalidSyntaxException) {
-                        errorBuilder.location(((InvalidSyntaxException) throwable).getLocation());
-                    }
-
-                    graphQLErrors.add(errorBuilder.build());
-                } else {
-                    logger.debug(throwable.toString());
+                if (message == null) {
+                    message = "(null)";
                 }
+                GraphqlErrorBuilder errorBuilder = GraphqlErrorBuilder.newError()
+                        .message(message);
+
+                if (throwable instanceof InvalidSyntaxException) {
+                    errorBuilder.location(((InvalidSyntaxException) throwable).getLocation());
+                }
+
+                graphQLErrors.add(errorBuilder.build());
             }
         }
 
