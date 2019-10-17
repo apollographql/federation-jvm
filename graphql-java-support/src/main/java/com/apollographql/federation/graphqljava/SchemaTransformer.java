@@ -98,12 +98,18 @@ public final class SchemaTransformer {
                 .map(GraphQLType::getName)
                 .collect(Collectors.toSet());
 
+        Set<GraphQLType> newAdditionalTypes = originalSchema.getAdditionalTypes()
+                .stream()
+                .filter(additionalType -> additionalType != originalQueryType)
+                .collect(Collectors.toSet());
+
+
         if (!entityConcreteTypeNames.isEmpty()) {
             newQueryType.field(_Entity.field(entityConcreteTypeNames));
 
             final GraphQLType originalAnyType = originalSchema.getType(_Any.typeName);
             if (originalAnyType == null) {
-                newSchema.additionalType(_Any.type(coercingForAny));
+                newAdditionalTypes.add(_Any.type(coercingForAny));
             }
 
             if (entityTypeResolver != null) {
@@ -129,6 +135,8 @@ public final class SchemaTransformer {
         }
 
         return newSchema
+                .clearAdditionalTypes()
+                .additionalTypes(newAdditionalTypes)
                 .query(newQueryType.build())
                 .codeRegistry(newCodeRegistry.build())
                 .build();
