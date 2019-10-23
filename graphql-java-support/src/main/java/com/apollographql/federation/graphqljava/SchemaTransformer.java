@@ -6,6 +6,7 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetcherFactory;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLCodeRegistry;
+import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLDirectiveContainer;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
@@ -16,6 +17,7 @@ import graphql.schema.idl.errors.SchemaProblem;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -88,6 +90,11 @@ public final class SchemaTransformer {
                 .map(GraphQLType::getName)
                 .collect(Collectors.toSet());
 
+        Set<GraphQLType> newAdditionalTypes = originalSchema.getAdditionalTypes()
+                .stream()
+                .filter(additionalType -> additionalType != originalQueryType)
+                .collect(Collectors.toSet());
+
         final Set<String> entityConcreteTypeNames = originalSchema.getAllTypesAsList()
                 .stream()
                 .filter(type -> type instanceof GraphQLObjectType)
@@ -103,7 +110,7 @@ public final class SchemaTransformer {
 
             final GraphQLType originalAnyType = originalSchema.getType(_Any.typeName);
             if (originalAnyType == null) {
-                newSchema.additionalType(_Any.type(coercingForAny));
+                newAdditionalTypes.add(_Any.type(coercingForAny));
             }
 
             if (entityTypeResolver != null) {
@@ -129,6 +136,8 @@ public final class SchemaTransformer {
         }
 
         return newSchema
+                .clearAdditionalTypes()
+                .additionalTypes(newAdditionalTypes)
                 .query(newQueryType.build())
                 .codeRegistry(newCodeRegistry.build())
                 .build();

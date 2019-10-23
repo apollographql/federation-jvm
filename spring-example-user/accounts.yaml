@@ -1,0 +1,44 @@
+---
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata:
+  name: "account"
+  namespace: "default"
+  labels:
+    app: "account"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: "account"
+  template:
+    metadata:
+      labels:
+        app: "account"
+    spec:
+      containers:
+      - name: "account"
+        image: "us.gcr.io/vuclip-personalization-dev/account:v3"
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2Gi
+          requests:
+            cpu: 700m
+            memory: 1536Mi
+---
+apiVersion: "autoscaling/v1"
+kind: "HorizontalPodAutoscaler"
+metadata:
+  name: "account-hpa"
+  namespace: "default"
+  labels:
+    app: "account"
+spec:
+  scaleTargetRef:
+    kind: "Deployment"
+    name: "account"
+    apiVersion: "apps/v1beta1"
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80

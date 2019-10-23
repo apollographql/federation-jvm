@@ -65,7 +65,10 @@
 
     <modules>
         <module>graphql-java-support</module>
-        <module>spring-example</module>
+        <module>spring-example-inventory</module>
+        <module>spring-example-product</module>
+        <module>spring-example-review</module>
+        <module>spring-example-user</module>
     </modules>
 
     <distributionManagement>

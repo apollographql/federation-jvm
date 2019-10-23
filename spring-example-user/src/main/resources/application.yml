@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: federation-jvm-spring-example
+server:
+  port: 4001
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+logging:
+  level:
+    org:
+      springframework:
+        web:
+          filter:
+            CommonsRequestLoggingFilter:  debug

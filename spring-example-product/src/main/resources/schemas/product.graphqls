@@ -1,0 +1,11 @@
+type Product @key(fields: "upc") {
+    upc: String!
+    name: Boolean
+    price: Int
+    weight: Int
+    fieldx: Int
+}
+
+type Query {
+    topProducts(first: Int = 5): [Product]
+}

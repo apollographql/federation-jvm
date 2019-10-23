@@ -1,0 +1,44 @@
+---
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata:
+  name: "inventory"
+  namespace: "default"
+  labels:
+    app: "inventory"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: "inventory"
+  template:
+    metadata:
+      labels:
+        app: "inventory"
+    spec:
+      containers:
+      - name: "inventory"
+        image: "us.gcr.io/vuclip-personalization-dev/inventory:v2"
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2Gi
+          requests:
+            cpu: 700m
+            memory: 1536Mi
+---
+apiVersion: "autoscaling/v1"
+kind: "HorizontalPodAutoscaler"
+metadata:
+  name: "inventory-hpa"
+  namespace: "default"
+  labels:
+    app: "inventory"
+spec:
+  scaleTargetRef:
+    kind: "Deployment"
+    name: "inventory"
+    apiVersion: "apps/v1beta1"
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80

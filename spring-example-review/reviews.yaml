@@ -1,0 +1,44 @@
+---
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata:
+  name: "reviews"
+  namespace: "default"
+  labels:
+    app: "reviews"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: "reviews"
+  template:
+    metadata:
+      labels:
+        app: "reviews"
+    spec:
+      containers:
+      - name: "reviews"
+        image: "us.gcr.io/vuclip-personalization-dev/reviews:v2"
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2Gi
+          requests:
+            cpu: 700m
+            memory: 1536Mi
+---
+apiVersion: "autoscaling/v1"
+kind: "HorizontalPodAutoscaler"
+metadata:
+  name: "reviews-hpa"
+  namespace: "default"
+  labels:
+    app: "reviews"
+spec:
+  scaleTargetRef:
+    kind: "Deployment"
+    name: "reviews"
+    apiVersion: "apps/v1beta1"
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80

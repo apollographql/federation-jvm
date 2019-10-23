@@ -1,0 +1,12 @@
+query LookupPlanckProduct {
+    _entities(representations: [{
+        __typename: "Product",
+        upc: "1"
+    }]) {
+        ... on Product {
+            upc
+            price
+            weight
+        }
+    }
+}
