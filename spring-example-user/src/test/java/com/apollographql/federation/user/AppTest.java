@@ -2,28 +2,20 @@ package com.apollographql.federation.user;
 
 import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTest;
-import com.graphql.spring.boot.test.GraphQLTestAutoConfiguration;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
-import com.oembedler.moon.graphql.boot.GraphQLJavaToolsAutoConfiguration;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(SpringRunner.class)
 @GraphQLTest
-@SpringBootTest
-@ImportAutoConfiguration(classes = {GraphQLJavaToolsAutoConfiguration.class,
-        JacksonAutoConfiguration.class, GraphQLTestAutoConfiguration.class})
+@Import({TestUserConfiguration.class, GraphQLConfig.class})
 public class AppTest {
 
     @Autowired

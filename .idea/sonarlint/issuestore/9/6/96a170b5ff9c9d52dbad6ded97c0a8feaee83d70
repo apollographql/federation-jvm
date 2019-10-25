@@ -1,0 +1,17 @@
+
+u2squid:RightCurlyBraceDifferentLineAsNextBlockCheck"1Move this "else" keyword to a new dedicated line.(ŞÂšşÿÿÿÿ
+Asquid:S2333?"%"final" is redundant in this context.(°Öõ˜ıÿÿÿÿ
+`squid:S1941B"DMove the declaration of "newSchema" closer to the code that uses it.(‹¬©Àûÿÿÿÿ
+¨%squid:RedundantThrowsDeclarationCheck?"rRemove the declaration of thrown exception 'graphql.schema.idl.errors.SchemaProblem' which is a runtime exception.(°Öõ˜ıÿÿÿÿ
+hsquid:S00103|"KSplit this 124 characters long line (which is greater than 120 authorized).(›âí¢ÿÿÿÿÿ
+`squid:UselessImportCheck	"<Remove this unused import 'graphql.schema.GraphQLDirective'.(‹˜±
+_squid:S3052"HRemove this initialization to "null", the compiler will do that for you.(Õ˜Îã
+dsquid:S3052"HRemove this initialization to "null", the compiler will do that for you.(‘†—¨üÿÿÿÿ
+t2squid:RightCurlyBraceDifferentLineAsNextBlockCheck"1Move this "else" keyword to a new dedicated line.(³êÛ‰ûÿÿÿÿ
+o2squid:RightCurlyBraceDifferentLineAsNextBlockCheckv"1Move this "else" keyword to a new dedicated line.(å¥‡
+dsquid:S3052"HRemove this initialization to "null", the compiler will do that for you.(”ÊßÃÿÿÿÿÿ
+W
+squid:S126";"if ... else if" constructs should end with "else" clauses.(ŞÂšşÿÿÿÿ
+nsquid:S00117|"QRename this local variable to match the regular expression '^[a-z][a-zA-Z0-9]*$'.(›âí¢ÿÿÿÿÿ
+]squid:UselessImportCheck"4Remove this unused import 'java.util.LinkedHashSet'.(à€¼úÿÿÿÿ
+nsquid:S3776?"RRefactor this method to reduce its Cognitive Complexity from 16 to the 15 allowed.(°Öõ˜ıÿÿÿÿ
