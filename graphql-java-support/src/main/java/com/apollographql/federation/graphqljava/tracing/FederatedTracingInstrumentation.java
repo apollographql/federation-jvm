@@ -28,10 +28,10 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static graphql.execution.instrumentation.SimpleInstrumentationContext.whenCompleted;
 import static graphql.schema.GraphQLTypeUtil.simplePrint;
@@ -198,7 +198,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
     private static class FederatedTracingState implements InstrumentationState {
         private final Instant startRequestTime;
         private final long startRequestNanos;
-        private final ConcurrentHashMap<ExecutionPath, Reports.Trace.Node.Builder> nodesByPath;
+        private final ConcurrentMap<ExecutionPath, Reports.Trace.Node.Builder> nodesByPath;
 
         private FederatedTracingState() {
             // record start time when creating instrumentation state for a request
