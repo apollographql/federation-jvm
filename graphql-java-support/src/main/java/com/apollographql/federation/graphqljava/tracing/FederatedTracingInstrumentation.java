@@ -113,7 +113,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             long endNanos = System.nanoTime();
 
             ExecutionStepInfo executionStepInfo = parameters.getEnvironment().getExecutionStepInfo();
-            state.addNode(
+            state.addNodeData(
                     executionStepInfo,
                     // relative to the trace's start_time, in ns
                     startNanos - state.getStartRequestNanos(),
@@ -198,7 +198,9 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
     private static class FederatedTracingState implements InstrumentationState {
         private final Instant startRequestTime;
         private final long startRequestNanos;
-        private final ConcurrentMap<ExecutionPath, Reports.Trace.Node.Builder> nodesByPath;
+        // It is necessary to use ConcurrentHashMap here due to its computeIfAbsent guaranteeing
+        // at-most-once execution of the lambda (ConcurrentMap does not guarantee this).
+        private final ConcurrentHashMap<ExecutionPath, Reports.Trace.Node.Builder> nodesByPath;
 
         private FederatedTracingState() {
             // record start time when creating instrumentation state for a request
@@ -220,65 +222,81 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
         }
 
         /**
-         * Adds node to nodesByPath and recursively ensures that all parent nodes exist.
+         * Ensure node exists in nodesByPath (creating it and its parents if needed), and add data to it.
          */
-        void addNode(ExecutionStepInfo stepInfo, long startFieldNanos, long endFieldNanos, List<GraphQLError> errors, SourceLocation fieldLocation) {
+        void addNodeData(ExecutionStepInfo stepInfo, long startFieldNanos, long endFieldNanos, List<GraphQLError> errors, SourceLocation fieldLocation) {
             ExecutionPath path = stepInfo.getPath();
-            Reports.Trace.Node.Builder parent = getParentNode(path);
+            Reports.Trace.Node.Builder node = getOrCreateNode(path);
 
-            Reports.Trace.Node.Builder node = parent.addChildBuilder()
-                    .setStartTime(startFieldNanos)
-                    .setEndTime(endFieldNanos)
-                    .setParentType(simplePrint(stepInfo.getParent().getUnwrappedNonNullType()))
-                    .setType(stepInfo.simplePrint())
-                    .setResponseName(stepInfo.getResultKey());
+            synchronized(node) {
+                node.setStartTime(startFieldNanos);
+                node.setEndTime(endFieldNanos);
+                node.setParentType(simplePrint(stepInfo.getParent().getUnwrappedNonNullType()));
+                node.setType(stepInfo.simplePrint());
+                node.setResponseName(stepInfo.getResultKey());
 
-            String originalFieldName = stepInfo.getField().getName();
-
-            // set originalFieldName only when a field alias was used
-            if (!originalFieldName.equals(stepInfo.getResultKey())) {
-                node.setOriginalFieldName(originalFieldName);
-            }
-
-            errors.forEach(error -> {
-                Reports.Trace.Error.Builder builder = node.addErrorBuilder().setMessage(error.getMessage());
-                if (error.getLocations().isEmpty() && fieldLocation != null) {
-                    builder.addLocationBuilder()
-                            .setColumn(fieldLocation.getColumn())
-                            .setLine(fieldLocation.getLine());
-                } else {
-                    error.getLocations().forEach(location -> builder.addLocationBuilder()
-                            .setColumn(location.getColumn())
-                            .setLine(location.getLine()));
+                // set originalFieldName only when a field alias was used
+                String originalFieldName = stepInfo.getField().getName();
+                if (!originalFieldName.equals(stepInfo.getResultKey())) {
+                    node.setOriginalFieldName(originalFieldName);
                 }
-            });
 
-            nodesByPath.put(path, node);
+                errors.forEach(error -> {
+                    Reports.Trace.Error.Builder builder = node.addErrorBuilder().setMessage(error.getMessage());
+                    if (error.getLocations().isEmpty() && fieldLocation != null) {
+                        builder.addLocationBuilder()
+                                .setColumn(fieldLocation.getColumn())
+                                .setLine(fieldLocation.getLine());
+                    } else {
+                        error.getLocations().forEach(location -> builder.addLocationBuilder()
+                                .setColumn(location.getColumn())
+                                .setLine(location.getLine()));
+                    }
+                });
+            }
         }
 
+        /**
+         * Get node for given path in nodesByPath (creating it and its parents if needed).
+         */
         @NotNull
-        Reports.Trace.Node.Builder getParentNode(ExecutionPath path) {
-            List<Object> pathParts = path.toList();
-            return nodesByPath.computeIfAbsent(ExecutionPath.fromList(pathParts.subList(0, pathParts.size() - 1)), parentPath -> {
-                if (parentPath.equals(ExecutionPath.rootPath())) {
-                    // The root path is inserted at construction time, so this shouldn't happen.
+        Reports.Trace.Node.Builder getOrCreateNode(ExecutionPath path) {
+            // Fast path for when the node already exists.
+            Reports.Trace.Node.Builder current = nodesByPath.get(path);
+            if (current != null) return current;
+
+            // Find the latest ancestor that exists in the map.
+            List<Object> pathSegments = path.toList();
+            int currentSegmentIndex = pathSegments.size();
+            while (current == null) {
+                if (currentSegmentIndex <= 0) {
+                    // The root path's node is inserted at construction time, so this shouldn't happen.
                     throw new RuntimeException("root path missing from nodesByPath?");
                 }
+                currentSegmentIndex--;
+                ExecutionPath currentPath = ExecutionPath.fromList(pathSegments.subList(0, currentSegmentIndex));
+                current = nodesByPath.get(currentPath);
+            }
 
-                // Recursively get the grandparent node and start building the parent node.
-                Reports.Trace.Node.Builder missingParent = getParentNode(parentPath).addChildBuilder();
-
-                // If the parent was a field name, then its fetcher would have been called before
-                // the fetcher for 'path' and it would be in nodesByPath. So the parent must be
-                // a list index.  Note that we subtract 2 here because we want the last part of
-                // parentPath, not path.
-                Object parentLastPathPart = pathParts.get(pathParts.size() - 2);
-                if (!(parentLastPathPart instanceof Integer)) {
-                    throw new RuntimeException("Unexpected missing non-index " + parentLastPathPart);
+            // Travel back down to the requested node, creating child nodes along the way as needed.
+            for (; currentSegmentIndex < pathSegments.size(); currentSegmentIndex++) {
+                Reports.Trace.Node.Builder parent = current;
+                ExecutionPath childPath = ExecutionPath.fromList(pathSegments.subList(0, currentSegmentIndex + 1));
+                Object childSegment = pathSegments.get(currentSegmentIndex);
+                synchronized(parent) {
+                    // Note that the correctness of this statement depends on ConcurrentHashMap's
+                    // guarantee that computeIfAbsent will execute the lambda at most once.
+                    current = nodesByPath.computeIfAbsent(childPath, __ -> {
+                        Reports.Trace.Node.Builder child = parent.addChildBuilder();
+                        if (childSegment instanceof Integer) {
+                            child.setIndex((Integer) childSegment);
+                        }
+                        return child;
+                    });
                 }
-                missingParent.setIndex((Integer) parentLastPathPart);
-                return missingParent;
-            });
+            }
+
+            return current;
         }
 
         void addRootError(GraphQLError error) {
