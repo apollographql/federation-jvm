@@ -259,26 +259,33 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
         @NotNull
         Reports.Trace.Node.Builder getParentNode(ExecutionPath path) {
             List<Object> pathParts = path.toList();
-            return nodesByPath.computeIfAbsent(ExecutionPath.fromList(pathParts.subList(0, pathParts.size() - 1)), parentPath -> {
-                if (parentPath.equals(ExecutionPath.rootPath())) {
-                    // The root path is inserted at construction time, so this shouldn't happen.
-                    throw new RuntimeException("root path missing from nodesByPath?");
-                }
+            ExecutionPath parentPath = ExecutionPath.fromList(pathParts.subList(0, pathParts.size() - 1));
 
-                // Recursively get the grandparent node and start building the parent node.
-                Reports.Trace.Node.Builder missingParent = getParentNode(parentPath).addChildBuilder();
+            if (nodesByPath.containsKey(parentPath)) {
+                return nodesByPath.get(parentPath);
+            }
 
-                // If the parent was a field name, then its fetcher would have been called before
-                // the fetcher for 'path' and it would be in nodesByPath. So the parent must be
-                // a list index.  Note that we subtract 2 here because we want the last part of
-                // parentPath, not path.
-                Object parentLastPathPart = pathParts.get(pathParts.size() - 2);
-                if (!(parentLastPathPart instanceof Integer)) {
-                    throw new RuntimeException("Unexpected missing non-index " + parentLastPathPart);
-                }
-                missingParent.setIndex((Integer) parentLastPathPart);
-                return missingParent;
-            });
+            if (parentPath.equals(ExecutionPath.rootPath())) {
+                // The root path is inserted at construction time, so this shouldn't happen.
+                throw new RuntimeException("root path missing from nodesByPath?");
+            }
+
+            // Recursively get the grandparent node and start building the parent node.
+            Reports.Trace.Node.Builder missingParent = getParentNode(parentPath).addChildBuilder();
+
+            // If the parent was a field name, then its fetcher would have been called before
+            // the fetcher for 'path' and it would be in nodesByPath. So the parent must be
+            // a list index.  Note that we subtract 2 here because we want the last part of
+            // parentPath, not path.
+            Object parentLastPathPart = pathParts.get(pathParts.size() - 2);
+            if (!(parentLastPathPart instanceof Integer)) {
+                throw new RuntimeException("Unexpected missing non-index " + parentLastPathPart);
+            }
+
+            missingParent.setIndex((Integer) parentLastPathPart);
+            nodesByPath.put(parentPath, missingParent);
+
+            return missingParent;
         }
 
         void addRootError(GraphQLError error) {
