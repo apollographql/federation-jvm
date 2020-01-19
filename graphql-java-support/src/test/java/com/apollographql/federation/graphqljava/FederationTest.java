@@ -9,6 +9,8 @@ import graphql.schema.GraphQLUnionType;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.TypeRuntimeWiring;
 import graphql.schema.idl.errors.SchemaProblem;
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +31,8 @@ class FederationTest {
     private final String isolatedSDL = TestUtils.readResource("schemas/isolated.graphql");
     private final String productSDL = TestUtils.readResource("schemas/product.graphql");
     private final String productSDLOutput = TestUtils.readResource("schemas/product-output.graphql");
+    private final String directiveSDL = TestUtils.readResource("schemas/directives.graphql");
+    private final String directiveSDLOutput = TestUtils.readResource("schemas/directives-output.graphql");
 
     @Test
     void testEmpty() {
@@ -42,8 +46,22 @@ class FederationTest {
         final GraphQLFieldDefinition _service = federated.getQueryType().getFieldDefinition("_service");
         assertNotNull(_service, "_service field present");
         assertEquals(_Service, _service.getType(), "_service returns _Service");
+    }
 
-        SchemaUtils.assertSDL(federated, emptySDLOutput);
+    @Test
+    void testDirectivePredicate() {
+        Set<String> directivesToExclude = new HashSet<>();
+        directivesToExclude.add("_mappedInputType");
+        directivesToExclude.add("_mappedType");
+        directivesToExclude.add("_mappedOperation");
+
+        final GraphQLSchema federated = Federation.transform(directiveSDL)
+            .fetchEntities(env -> Product.PLANCK)
+            .resolveEntityType(env -> env.getSchema().getObjectType("Product"))
+            .directivePredicate(directive -> !directivesToExclude.contains(directive.getName()))
+            .build();
+
+        SchemaUtils.assertSDL(federated, directiveSDLOutput);
     }
 
     @Test

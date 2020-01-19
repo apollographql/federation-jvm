@@ -1,0 +1,11 @@
+type Query {
+}
+
+type Product @key(fields : "upc") @_mappedType {
+  upc: String! @_mappedOperation
+  name: String @_mappedOperation
+}
+
+input ProductInput @_mappedInputType {
+  name: String
+}

@@ -6,6 +6,7 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetcherFactory;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLCodeRegistry;
+import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLDirectiveContainer;
 import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLObjectType;
@@ -14,6 +15,7 @@ import graphql.schema.GraphQLType;
 import graphql.schema.TypeResolver;
 import graphql.schema.idl.SchemaPrinter;
 import graphql.schema.idl.errors.SchemaProblem;
+import java.util.function.Predicate;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -28,6 +30,7 @@ public final class SchemaTransformer {
     private DataFetcher entitiesDataFetcher = null;
     private DataFetcherFactory entitiesDataFetcherFactory = null;
     private Coercing coercingForAny = _Any.defaultCoercing;
+    private Predicate<GraphQLDirective> directivePredicate = (directive) -> true;
 
     SchemaTransformer(GraphQLSchema originalSchema) {
         this.originalSchema = originalSchema;
@@ -43,6 +46,12 @@ public final class SchemaTransformer {
     public SchemaTransformer fetchEntities(DataFetcher entitiesDataFetcher) {
         this.entitiesDataFetcher = entitiesDataFetcher;
         this.entitiesDataFetcherFactory = null;
+        return this;
+    }
+
+    @NotNull
+    public SchemaTransformer directivePredicate(Predicate<GraphQLDirective> directivePredicate) {
+        this.directivePredicate = directivePredicate;
         return this;
     }
 
@@ -140,7 +149,7 @@ public final class SchemaTransformer {
                 .includeScalarTypes(true)
                 .includeExtendedScalarTypes(true)
                 .includeSchemaDefinition(true)
-                .includeDirectives(true);
+                .includeDirectives(directivePredicate);
 
         return new SchemaPrinter(options).print(originalSchema);
     }
