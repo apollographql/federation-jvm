@@ -2,6 +2,7 @@ package com.apollographql.federation.graphqljava;
 
 import graphql.ExecutionResult;
 import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
@@ -23,21 +24,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FederationTest {
     private final String emptySDL = TestUtils.readResource("schemas/empty.graphql");
+    private final String emptySDLOutput = TestUtils.readResource("schemas/empty-output.graphql");
     private final String interfacesSDL = TestUtils.readResource("schemas/interfaces.graphql");
     private final String isolatedSDL = TestUtils.readResource("schemas/isolated.graphql");
     private final String productSDL = TestUtils.readResource("schemas/product.graphql");
+    private final String productSDLOutput = TestUtils.readResource("schemas/product-output.graphql");
 
     @Test
     void testEmpty() {
         final GraphQLSchema federated = Federation.transform(emptySDL)
                 .build();
-        Assertions.assertEquals("type Query {\n" +
-                "  _service: _Service\n" +
-                "}\n" +
-                "\n" +
-                "type _Service {\n" +
-                "  sdl: String!\n" +
-                "}\n", SchemaUtils.printSchema(federated));
+
+        SchemaUtils.assertSDL(federated, emptySDLOutput);
 
         final GraphQLType _Service = federated.getType("_Service");
         assertNotNull(_Service, "_Service type present");
@@ -45,7 +43,7 @@ class FederationTest {
         assertNotNull(_service, "_service field present");
         assertEquals(_Service, _service.getType(), "_service returns _Service");
 
-        SchemaUtils.assertSDL(federated, emptySDL);
+        SchemaUtils.assertSDL(federated, emptySDLOutput);
     }
 
     @Test
@@ -74,7 +72,7 @@ class FederationTest {
                 .resolveEntityType(env -> env.getSchema().getObjectType("Product"))
                 .build();
 
-        SchemaUtils.assertSDL(federated, productSDL);
+        SchemaUtils.assertSDL(federated, productSDLOutput);
 
         final ExecutionResult result = SchemaUtils.execute(federated, "{\n" +
                 "  _entities(representations: [{__typename:\"Product\"}]) {\n" +
@@ -121,7 +119,7 @@ class FederationTest {
         final Iterable<String> unionTypes = entityType
                 .getTypes()
                 .stream()
-                .map(GraphQLType::getName)
+                .map(GraphQLNamedType::getName)
                 .sorted()
                 .collect(Collectors.toList());
 
