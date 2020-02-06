@@ -7,6 +7,7 @@ import graphql.schema.DataFetcherFactory;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLDirectiveContainer;
+import graphql.schema.GraphQLNamedSchemaElement;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
@@ -85,7 +86,7 @@ public final class SchemaTransformer {
         final Set<String> entityTypeNames = originalSchema.getAllTypesAsList().stream()
                 .filter(t -> t instanceof GraphQLDirectiveContainer &&
                         ((GraphQLDirectiveContainer) t).getDirective(FederationDirectives.keyName) != null)
-                .map(GraphQLType::getName)
+                .map(GraphQLNamedSchemaElement::getName)
                 .collect(Collectors.toSet());
 
         final Set<String> entityConcreteTypeNames = originalSchema.getAllTypesAsList()
@@ -95,7 +96,7 @@ public final class SchemaTransformer {
                         ((GraphQLObjectType) type).getInterfaces()
                                 .stream()
                                 .anyMatch(itf -> entityTypeNames.contains(itf.getName())))
-                .map(GraphQLType::getName)
+                .map(GraphQLNamedSchemaElement::getName)
                 .collect(Collectors.toSet());
 
         if (!entityConcreteTypeNames.isEmpty()) {
@@ -138,7 +139,7 @@ public final class SchemaTransformer {
         final SchemaPrinter.Options options = SchemaPrinter.Options.defaultOptions()
                 .includeScalarTypes(true)
                 .includeExtendedScalarTypes(true)
-                .includeSchemaDefintion(true)
+                .includeSchemaDefinition(true)
                 .includeDirectives(true);
         return new SchemaPrinter(options).print(originalSchema);
     }

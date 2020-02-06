@@ -2,6 +2,7 @@ package com.apollographql.federation.graphqljava;
 
 import graphql.ExecutionResult;
 import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
@@ -37,7 +38,7 @@ class FederationTest {
                 "\n" +
                 "type _Service {\n" +
                 "  sdl: String!\n" +
-                "}\n", SchemaUtils.printSchema(federated));
+                "}", SchemaUtils.removeDirectives(SchemaUtils.printSchema(federated)).trim());
 
         final GraphQLType _Service = federated.getType("_Service");
         assertNotNull(_Service, "_Service type present");
@@ -121,7 +122,7 @@ class FederationTest {
         final Iterable<String> unionTypes = entityType
                 .getTypes()
                 .stream()
-                .map(GraphQLType::getName)
+                .map(GraphQLNamedType::getName)
                 .sorted()
                 .collect(Collectors.toList());
 
