@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 final class SchemaUtils {
 
-    private final static String directivesExclude = TestUtils.readResource("schemas/directives.graphql");
+    private final static String directivesExclude = TestUtils.readResource("schemas/build-in-directives.graphql");
 
     private SchemaUtils() {
     }
@@ -34,10 +34,10 @@ final class SchemaUtils {
         @SuppressWarnings("unchecked") final Map<String, Object> _service = (Map<String, Object>) data.get("_service");
         assertNotNull(_service);
         final String sdl = (String) _service.get("sdl");
-        assertEquals(expected.replaceAll("\n\n", "").trim(), sdl.replace(directivesExclude, "").replaceAll("\n\n", "").trim());
+        assertEquals(expected.trim(), removeBuiltInDirectives(sdl).replaceAll("\n\n\n", "\n").trim());
     }
 
-    static String removeDirectives(String sdl) {
+    static String removeBuiltInDirectives(String sdl) {
         return sdl.replace(directivesExclude, "");
     }
 }

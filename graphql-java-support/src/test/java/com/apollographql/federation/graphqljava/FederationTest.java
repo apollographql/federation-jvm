@@ -38,7 +38,7 @@ class FederationTest {
                 "\n" +
                 "type _Service {\n" +
                 "  sdl: String!\n" +
-                "}", SchemaUtils.removeDirectives(SchemaUtils.printSchema(federated)).trim());
+                "}", SchemaUtils.removeBuiltInDirectives(SchemaUtils.printSchema(federated)).trim());
 
         final GraphQLType _Service = federated.getType("_Service");
         assertNotNull(_Service, "_Service type present");
