@@ -1,0 +1,8 @@
+query ($_representations: [_Any!]!) {
+  _entities(representations: $_representations) {
+    ... on LongEntityDummy {
+      id
+      field
+    }
+  }
+}

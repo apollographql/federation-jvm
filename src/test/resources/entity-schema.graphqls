@@ -1,0 +1,12 @@
+type Query {
+}
+
+type LongEntityDummy @key(fields: "id") @extends {
+    id: Long! @external
+    field: String!
+}
+
+type StringEntityDummy @key(fields: "id") @extends {
+    id: String! @external
+    field: String!
+}
