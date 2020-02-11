@@ -1,5 +1,6 @@
 package com.apollographql.federation.graphqljava;
 
+import com.apollographql.federation.graphqljava.misc.Constants;
 import graphql.Assert;
 import graphql.language.ArrayValue;
 import graphql.language.BooleanValue;
@@ -22,7 +23,6 @@ import java.util.stream.Collectors;
 import static graphql.schema.GraphQLScalarType.newScalar;
 
 public final class _Any {
-    public static final String typeName = "_Any";
 
     static final Coercing defaultCoercing = new Coercing() {
         @Override
@@ -69,7 +69,7 @@ public final class _Any {
 
     static GraphQLScalarType type(Coercing coercing) {
         return newScalar()
-                .name(typeName)
+                .name(Constants.ANY_TYPE_NAME)
                 .coercing(coercing)
                 .build();
     }

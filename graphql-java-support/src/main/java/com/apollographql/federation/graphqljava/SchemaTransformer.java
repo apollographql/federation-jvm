@@ -1,5 +1,6 @@
 package com.apollographql.federation.graphqljava;
 
+import com.apollographql.federation.graphqljava.misc.Constants;
 import graphql.GraphQLError;
 import graphql.schema.Coercing;
 import graphql.schema.DataFetcher;
@@ -73,12 +74,12 @@ public final class SchemaTransformer {
                 .field(_Service.field);
         newCodeRegistry.dataFetcher(FieldCoordinates.coordinates(
                 originalQueryType.getName(),
-                _Service.fieldName
+                Constants.SERVICE_FIELD_NAME
                 ),
                 (DataFetcher<Object>) environment -> DUMMY);
         newCodeRegistry.dataFetcher(FieldCoordinates.coordinates(
-                _Service.typeName,
-                _Service.sdlFieldName
+                Constants.SERVICE_TYPE_NAME,
+                Constants.SDL_FIELD_NAME
                 ),
                 (DataFetcher<String>) environment -> sdl);
 
@@ -101,20 +102,20 @@ public final class SchemaTransformer {
         if (!entityConcreteTypeNames.isEmpty()) {
             newQueryType.field(_Entity.field(entityConcreteTypeNames));
 
-            final GraphQLType originalAnyType = originalSchema.getType(_Any.typeName);
+            final GraphQLType originalAnyType = originalSchema.getType(Constants.ANY_TYPE_NAME);
             if (originalAnyType == null) {
                 newSchema.additionalType(_Any.type(coercingForAny));
             }
 
             if (entityTypeResolver != null) {
-                newCodeRegistry.typeResolver(_Entity.typeName, entityTypeResolver);
+                newCodeRegistry.typeResolver(Constants.ENTITY_TYPE_NAME, entityTypeResolver);
             } else {
-                if (!newCodeRegistry.hasTypeResolver(_Entity.typeName)) {
+                if (!newCodeRegistry.hasTypeResolver(Constants.ENTITY_TYPE_NAME)) {
                     errors.add(new FederationError("Missing a type resolver for _Entity"));
                 }
             }
 
-            final FieldCoordinates _entities = FieldCoordinates.coordinates(originalQueryType.getName(), _Entity.fieldName);
+            final FieldCoordinates _entities = FieldCoordinates.coordinates(originalQueryType.getName(), Constants.ENTITIES_FIELD_NAME);
             if (entitiesDataFetcher != null) {
                 newCodeRegistry.dataFetcher(_entities, entitiesDataFetcher);
             } else if (entitiesDataFetcherFactory != null) {

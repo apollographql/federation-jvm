@@ -1,5 +1,6 @@
 package com.apollographql.federation.graphqljava;
 
+import com.apollographql.federation.graphqljava.misc.Constants;
 import graphql.ExecutionResult;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
@@ -62,7 +63,7 @@ class FederationTest {
     void testSimpleService() {
         final GraphQLSchema federated = Federation.transform(productSDL)
                 .fetchEntities(env ->
-                        env.<List<Map<String, Object>>>getArgument(_Entity.argumentName)
+                        env.<List<Map<String, Object>>>getArgument(Constants.ARGUMENT_NAME)
                                 .stream()
                                 .map(map -> {
                                     if ("Product".equals(map.get("__typename"))) {
@@ -116,7 +117,7 @@ class FederationTest {
                 .fetchEntities(environment -> null)
                 .build();
 
-        final GraphQLUnionType entityType = (GraphQLUnionType) transformed.getType(_Entity.typeName);
+        final GraphQLUnionType entityType = (GraphQLUnionType) transformed.getType(Constants.ENTITY_TYPE_NAME);
 
         final Iterable<String> unionTypes = entityType
                 .getTypes()

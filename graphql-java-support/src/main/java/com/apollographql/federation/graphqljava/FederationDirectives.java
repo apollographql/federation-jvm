@@ -1,5 +1,6 @@
 package com.apollographql.federation.graphqljava;
 
+import com.apollographql.federation.graphqljava.misc.Constants;
 import graphql.PublicApi;
 import graphql.language.DirectiveDefinition;
 import graphql.language.DirectiveLocation;
@@ -55,7 +56,7 @@ public final class FederationDirectives {
 
     private static final InputValueDefinition fieldsDefinition = newInputValueDefinition()
             .name("fields")
-            .type(new NonNullType(new TypeName(_FieldSet.typeName)))
+            .type(new NonNullType(new TypeName(Constants.FIELD_SET_TYPE_NAME)))
             .build();
 
     /* directive @key(fields: _FieldSet!) on OBJECT | INTERFACE */

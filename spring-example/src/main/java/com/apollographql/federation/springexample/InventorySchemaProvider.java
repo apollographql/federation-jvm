@@ -1,7 +1,7 @@
 package com.apollographql.federation.springexample;
 
 import com.apollographql.federation.graphqljava.Federation;
-import com.apollographql.federation.graphqljava._Entity;
+import com.apollographql.federation.graphqljava.misc.Constants;
 import graphql.servlet.config.DefaultGraphQLSchemaProvider;
 import graphql.servlet.config.GraphQLSchemaProvider;
 import org.jetbrains.annotations.NotNull;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class InventorySchemaProvider extends DefaultGraphQLSchemaProvider implements GraphQLSchemaProvider {
     public InventorySchemaProvider(@Value("classpath:schemas/inventory.graphql") Resource sdl) throws IOException {
         super(Federation.transform(sdl.getFile())
-                .fetchEntities(env -> env.<List<Map<String, Object>>>getArgument(_Entity.argumentName)
+                .fetchEntities(env -> env.<List<Map<String, Object>>>getArgument(Constants.ARGUMENT_NAME)
                         .stream()
                         .map(values -> {
                             if ("Product".equals(values.get("__typename"))) {

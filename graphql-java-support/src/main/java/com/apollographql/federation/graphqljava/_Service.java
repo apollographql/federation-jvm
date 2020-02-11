@@ -1,5 +1,6 @@
 package com.apollographql.federation.graphqljava;
 
+import com.apollographql.federation.graphqljava.misc.Constants;
 import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLNonNull;
@@ -9,20 +10,17 @@ import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLObjectType.newObject;
 
 final class _Service {
-    static final String typeName = "_Service";
-    static final String fieldName = "_service";
-    static final String sdlFieldName = "sdl";
 
     static final GraphQLObjectType type = newObject()
-            .name(typeName)
+            .name(Constants.SERVICE_TYPE_NAME)
             .field(newFieldDefinition()
-                    .name(sdlFieldName)
+                    .name(Constants.SDL_FIELD_NAME)
                     .type(new GraphQLNonNull(Scalars.GraphQLString))
                     .build())
             .build();
 
     static final GraphQLFieldDefinition field = newFieldDefinition()
-            .name(fieldName)
+            .name(Constants.SERVICE_FIELD_NAME)
             .type(type)
             .build();
 
