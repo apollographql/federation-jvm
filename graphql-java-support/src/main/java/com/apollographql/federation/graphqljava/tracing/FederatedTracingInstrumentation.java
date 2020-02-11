@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -297,14 +298,13 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
          */
         private static class ProtoBuilderTree {
             private final Node root;
-            // It's necessary to use ConcurrentHashMap here due to its computeIfAbsent guaranteeing
-            // at-most-once execution of the lambda (ConcurrentMap does not guarantee this).
-            private final ConcurrentHashMap<ExecutionPath, Node> nodesByPath;
+            private final ConcurrentMap<ExecutionPath, Node> nodesByPath;
             // We use a whole-tree read-write lock to prevent the protobuf conversion step from
             // having to acquire each node's lock.
             private final ReadWriteLock treeLock;
             // This flag is used to ensure protobuf conversion occurs once, and that builders can't
-            // be edited afterwards.
+            // be edited afterwards. We intentionally leave this field to be default initialized as
+            // false.
             private boolean isFinalized;
 
             public ProtoBuilderTree() {
@@ -312,18 +312,6 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                 nodesByPath = new ConcurrentHashMap<>();
                 nodesByPath.put(ExecutionPath.rootPath(), root);
                 treeLock = new ReentrantReadWriteLock();
-
-                // This locking is necessary to establish a happens-before relationship between
-                // initialization of isFinalized and the first read, since isFinalized isn't final.
-                // We could technically rely on default initialization here, but this is generally
-                // considered bad practice.
-                Lock l = treeLock.writeLock();
-                l.lock();
-                try {
-                    isFinalized = false;
-                } finally {
-                    l.unlock();
-                }
             }
 
             /**
@@ -347,6 +335,8 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
             /**
              * Get node for the given path in nodesByPath (creating it and its parents if needed).
+             *
+             * Note that {@link #treeLock}'s read lock must be held when calling this method.
              */
             @NotNull
             private Node getOrCreateNode(ExecutionPath path) {
@@ -375,22 +365,39 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                     ExecutionPath childPath = ExecutionPath.fromList(pathSegments.subList(0, currentSegmentIndex + 1));
                     Object childSegment = pathSegments.get(currentSegmentIndex);
 
-                    // Note that the correctness of this statement depends on ConcurrentHashMap's
-                    // guarantee that computeIfAbsent will execute the lambda at most once.
-                    current = nodesByPath.computeIfAbsent(childPath, __ -> {
-                        Reports.Trace.Node.Builder childBuilder = Reports.Trace.Node.newBuilder();
-                        if (childSegment instanceof Integer) {
-                            childBuilder.setIndex((Integer) childSegment);
-                        }
-                        Node childNode = new Node(childBuilder);
+                    Reports.Trace.Node.Builder childBuilder = Reports.Trace.Node.newBuilder();
+                    if (childSegment instanceof Integer) {
+                        childBuilder.setIndex((Integer) childSegment);
+                    } else if (currentSegmentIndex < pathSegments.size() - 1) {
+                        // We've encountered a field name node that is an ancestor of the requested
+                        // node. However, the fetcher for that field name should have ultimately
+                        // called getOrCreateNode() on its node before getOrCreateNode() was called
+                        // on the requested node, meaning that this field name node should already
+                        // be in nodesByPath. Accordingly, we should never encounter such field
+                        // name ancestor nodes, and we throw when we do.
+                        throw new RuntimeException("Unexpected missing non-index " + childSegment);
+                    }
+                    Node childNode = new Node(childBuilder);
+
+                    // Note that putIfAbsent() here will give the child node if it already existed,
+                    // or null if it didn't (in which case the node passed to putIfAbsent() becomes
+                    // the child node).
+                    current = nodesByPath.putIfAbsent(childPath, childNode);
+                    if (current == null) {
+                        current = childNode;
                         parent.children.add(childNode);
-                        return childNode;
-                    });
+                    }
                 }
 
                 return current;
             }
 
+            /**
+             * Convert the entire builder tree to protobuf, forming the parent-child relationships
+             * as needed.
+             *
+             * Note that no builder may be edited after this method is called.
+             */
             @NotNull
             public Reports.Trace.Node toProto() {
                 Lock l = treeLock.writeLock();
@@ -406,6 +413,12 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                 }
             }
 
+            /**
+             * Recursively build the protobuf builder for the given node, forming the parent-child
+             * relationships between builders of descendant nodes as needed.
+             *
+             * Note that {@link #treeLock}'s write lock must be held when calling this method.
+             */
             private void buildDescendants(Node node) {
                 for (Node childNode: node.children) {
                     buildDescendants(childNode);
