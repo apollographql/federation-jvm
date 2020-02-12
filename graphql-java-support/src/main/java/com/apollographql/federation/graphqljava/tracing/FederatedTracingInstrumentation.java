@@ -31,7 +31,12 @@ import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 
 import static graphql.execution.instrumentation.SimpleInstrumentationContext.whenCompleted;
 import static graphql.schema.GraphQLTypeUtil.simplePrint;
@@ -113,7 +118,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             long endNanos = System.nanoTime();
 
             ExecutionStepInfo executionStepInfo = parameters.getEnvironment().getExecutionStepInfo();
-            state.addNode(
+            state.addFieldFetchData(
                     executionStepInfo,
                     // relative to the trace's start_time, in ns
                     startNanos - state.getStartRequestNanos(),
@@ -198,15 +203,14 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
     private static class FederatedTracingState implements InstrumentationState {
         private final Instant startRequestTime;
         private final long startRequestNanos;
-        private final ConcurrentMap<ExecutionPath, Reports.Trace.Node.Builder> nodesByPath;
+        private final ProtoBuilderTree protoBuilderTree;
 
         private FederatedTracingState() {
             // record start time when creating instrumentation state for a request
             startRequestTime = Instant.now();
             startRequestNanos = System.nanoTime();
 
-            nodesByPath = new ConcurrentHashMap<>();
-            nodesByPath.put(ExecutionPath.rootPath(), Reports.Trace.Node.newBuilder());
+            protoBuilderTree = new ProtoBuilderTree();
         }
 
         @NotNull
@@ -215,79 +219,53 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                     .setStartTime(getStartTimestamp())
                     .setEndTime(getNowTimestamp())
                     .setDurationNs(getDuration())
-                    .setRoot(nodesByPath.get(ExecutionPath.rootPath()))
+                    .setRoot(protoBuilderTree.toProto())
                     .build();
         }
 
         /**
-         * Adds node to nodesByPath and recursively ensures that all parent nodes exist.
+         * Adds stats data collected from a field fetch.
          */
-        void addNode(ExecutionStepInfo stepInfo, long startFieldNanos, long endFieldNanos, List<GraphQLError> errors, SourceLocation fieldLocation) {
+        void addFieldFetchData(ExecutionStepInfo stepInfo, long startFieldNanos, long endFieldNanos, List<GraphQLError> errors, SourceLocation fieldLocation) {
             ExecutionPath path = stepInfo.getPath();
-            Reports.Trace.Node.Builder parent = getParentNode(path);
+            protoBuilderTree.editBuilder(path, (builder) -> {
+                builder.setStartTime(startFieldNanos)
+                        .setEndTime(endFieldNanos)
+                        .setParentType(simplePrint(stepInfo.getParent().getUnwrappedNonNullType()))
+                        .setType(stepInfo.simplePrint())
+                        .setResponseName(stepInfo.getResultKey());
 
-            Reports.Trace.Node.Builder node = parent.addChildBuilder()
-                    .setStartTime(startFieldNanos)
-                    .setEndTime(endFieldNanos)
-                    .setParentType(simplePrint(stepInfo.getParent().getUnwrappedNonNullType()))
-                    .setType(stepInfo.simplePrint())
-                    .setResponseName(stepInfo.getResultKey());
-
-            String originalFieldName = stepInfo.getField().getName();
-
-            // set originalFieldName only when a field alias was used
-            if (!originalFieldName.equals(stepInfo.getResultKey())) {
-                node.setOriginalFieldName(originalFieldName);
-            }
-
-            errors.forEach(error -> {
-                Reports.Trace.Error.Builder builder = node.addErrorBuilder().setMessage(error.getMessage());
-                if (error.getLocations().isEmpty() && fieldLocation != null) {
-                    builder.addLocationBuilder()
-                            .setColumn(fieldLocation.getColumn())
-                            .setLine(fieldLocation.getLine());
-                } else {
-                    error.getLocations().forEach(location -> builder.addLocationBuilder()
-                            .setColumn(location.getColumn())
-                            .setLine(location.getLine()));
-                }
-            });
-
-            nodesByPath.put(path, node);
-        }
-
-        @NotNull
-        Reports.Trace.Node.Builder getParentNode(ExecutionPath path) {
-            List<Object> pathParts = path.toList();
-            return nodesByPath.computeIfAbsent(ExecutionPath.fromList(pathParts.subList(0, pathParts.size() - 1)), parentPath -> {
-                if (parentPath.equals(ExecutionPath.rootPath())) {
-                    // The root path is inserted at construction time, so this shouldn't happen.
-                    throw new RuntimeException("root path missing from nodesByPath?");
+                // set originalFieldName only when a field alias was used
+                String originalFieldName = stepInfo.getField().getName();
+                if (!originalFieldName.equals(stepInfo.getResultKey())) {
+                    builder.setOriginalFieldName(originalFieldName);
                 }
 
-                // Recursively get the grandparent node and start building the parent node.
-                Reports.Trace.Node.Builder missingParent = getParentNode(parentPath).addChildBuilder();
-
-                // If the parent was a field name, then its fetcher would have been called before
-                // the fetcher for 'path' and it would be in nodesByPath. So the parent must be
-                // a list index.  Note that we subtract 2 here because we want the last part of
-                // parentPath, not path.
-                Object parentLastPathPart = pathParts.get(pathParts.size() - 2);
-                if (!(parentLastPathPart instanceof Integer)) {
-                    throw new RuntimeException("Unexpected missing non-index " + parentLastPathPart);
-                }
-                missingParent.setIndex((Integer) parentLastPathPart);
-                return missingParent;
+                errors.forEach(error -> {
+                    Reports.Trace.Error.Builder errorBuilder = builder.addErrorBuilder()
+                            .setMessage(error.getMessage());
+                    if (error.getLocations().isEmpty() && fieldLocation != null) {
+                        errorBuilder.addLocationBuilder()
+                                .setColumn(fieldLocation.getColumn())
+                                .setLine(fieldLocation.getLine());
+                    } else {
+                        error.getLocations().forEach(location -> errorBuilder.addLocationBuilder()
+                                .setColumn(location.getColumn())
+                                .setLine(location.getLine()));
+                    }
+                });
             });
         }
 
         void addRootError(GraphQLError error) {
-            Reports.Trace.Error.Builder builder = nodesByPath.get(ExecutionPath.rootPath()).addErrorBuilder()
-                    .setMessage(error.getMessage());
+            protoBuilderTree.editBuilder(ExecutionPath.rootPath(), (builder) -> {
+                Reports.Trace.Error.Builder errorBuilder = builder.addErrorBuilder()
+                        .setMessage(error.getMessage());
 
-            error.getLocations().forEach(location -> builder.addLocationBuilder()
-                    .setColumn(location.getColumn())
-                    .setLine(location.getLine()));
+                error.getLocations().forEach(location -> errorBuilder.addLocationBuilder()
+                        .setColumn(location.getColumn())
+                        .setLine(location.getLine()));
+            });
         }
 
         long getStartRequestNanos() {
@@ -313,6 +291,150 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
         private long getDuration() {
             return System.nanoTime() - startRequestNanos;
+        }
+
+        /**
+         * A thread-safe class for storing field information and converting it to a protobuf.
+         */
+        private static class ProtoBuilderTree {
+            private final Node root;
+            private final ConcurrentMap<ExecutionPath, Node> nodesByPath;
+            // We use a whole-tree read-write lock to prevent the protobuf conversion step from
+            // having to acquire each node's lock.
+            private final ReadWriteLock treeLock;
+            // This flag is used to ensure protobuf conversion occurs once, and that builders can't
+            // be edited afterwards. We intentionally leave this field to be default initialized as
+            // false.
+            private boolean isFinalized;
+
+            public ProtoBuilderTree() {
+                root = new Node(Reports.Trace.Node.newBuilder());
+                nodesByPath = new ConcurrentHashMap<>();
+                nodesByPath.put(ExecutionPath.rootPath(), root);
+                treeLock = new ReentrantReadWriteLock();
+            }
+
+            /**
+             * Edit builder for the node at the given path (creating it and its parents if needed).
+             */
+            public void editBuilder(ExecutionPath path, Consumer<Reports.Trace.Node.Builder> builderConsumer) {
+                Lock l = treeLock.readLock();
+                l.lock();
+                try {
+                    if (isFinalized) {
+                        throw new RuntimeException("Cannot edit builder after protobuf conversion.");
+                    }
+                    Node node = getOrCreateNode(path);
+                    synchronized (node.builder) {
+                        builderConsumer.accept(node.builder);
+                    }
+                } finally {
+                    l.unlock();
+                }
+            }
+
+            /**
+             * Get node for the given path in nodesByPath (creating it and its parents if needed).
+             *
+             * Note that {@link #treeLock}'s read lock must be held when calling this method.
+             */
+            @NotNull
+            private Node getOrCreateNode(ExecutionPath path) {
+                // Fast path for when the node already exists.
+                Node current = nodesByPath.get(path);
+                if (current != null) return current;
+
+                // Find the latest ancestor that exists in the map.
+                List<Object> pathSegments = path.toList();
+                int currentSegmentIndex = pathSegments.size();
+                while (current == null) {
+                    if (currentSegmentIndex <= 0) {
+                        // The root path's node is inserted at construction time, so this shouldn't
+                        // happen.
+                        throw new RuntimeException("root path missing from nodesByPath?");
+                    }
+                    currentSegmentIndex--;
+                    ExecutionPath currentPath = ExecutionPath.fromList(pathSegments.subList(0, currentSegmentIndex));
+                    current = nodesByPath.get(currentPath);
+                }
+
+                // Travel back down to the requested node, creating child nodes along the way as
+                // needed.
+                for (; currentSegmentIndex < pathSegments.size(); currentSegmentIndex++) {
+                    Node parent = current;
+                    ExecutionPath childPath = ExecutionPath.fromList(pathSegments.subList(0, currentSegmentIndex + 1));
+                    Object childSegment = pathSegments.get(currentSegmentIndex);
+
+                    Reports.Trace.Node.Builder childBuilder = Reports.Trace.Node.newBuilder();
+                    if (childSegment instanceof Integer) {
+                        childBuilder.setIndex((Integer) childSegment);
+                    } else if (currentSegmentIndex < pathSegments.size() - 1) {
+                        // We've encountered a field name node that is an ancestor of the requested
+                        // node. However, the fetcher for that field name should have ultimately
+                        // called getOrCreateNode() on its node before getOrCreateNode() was called
+                        // on the requested node, meaning that this field name node should already
+                        // be in nodesByPath. Accordingly, we should never encounter such field
+                        // name ancestor nodes, and we throw when we do.
+                        throw new RuntimeException("Unexpected missing non-index " + childSegment);
+                    }
+                    Node childNode = new Node(childBuilder);
+
+                    // Note that putIfAbsent() here will give the child node if it already existed,
+                    // or null if it didn't (in which case the node passed to putIfAbsent() becomes
+                    // the child node).
+                    current = nodesByPath.putIfAbsent(childPath, childNode);
+                    if (current == null) {
+                        current = childNode;
+                        parent.children.add(childNode);
+                    }
+                }
+
+                return current;
+            }
+
+            /**
+             * Convert the entire builder tree to protobuf, forming the parent-child relationships
+             * as needed.
+             *
+             * Note that no builder may be edited after this method is called.
+             */
+            @NotNull
+            public Reports.Trace.Node toProto() {
+                Lock l = treeLock.writeLock();
+                l.lock();
+                try {
+                    if (!isFinalized) {
+                        buildDescendants(root);
+                        isFinalized = true;
+                    }
+                    return root.builder.build();
+                } finally {
+                    l.unlock();
+                }
+            }
+
+            /**
+             * Recursively build the protobuf builder for the given node, forming the parent-child
+             * relationships between builders of descendant nodes as needed.
+             *
+             * Note that {@link #treeLock}'s write lock must be held when calling this method.
+             */
+            private void buildDescendants(Node node) {
+                for (Node childNode: node.children) {
+                    buildDescendants(childNode);
+                    node.builder.addChild(childNode.builder.build());
+                }
+            }
+
+            private static class Node {
+                public final Reports.Trace.Node.Builder builder;
+                public final ConcurrentLinkedQueue<Node> children;
+
+                public Node(Reports.Trace.Node.Builder builder) {
+                    this.builder = builder;
+                    this.children = new ConcurrentLinkedQueue<>();
+                }
+            }
         }
     }
 
