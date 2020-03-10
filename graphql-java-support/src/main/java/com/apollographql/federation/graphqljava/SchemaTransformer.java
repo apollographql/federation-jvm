@@ -61,6 +61,7 @@ public final class SchemaTransformer {
     public final GraphQLSchema build() throws SchemaProblem {
         final List<GraphQLError> errors = new ArrayList<>();
 
+        // Make new Schema
         final GraphQLSchema.Builder newSchema = GraphQLSchema.newSchema(originalSchema);
 
         final GraphQLObjectType originalQueryType = originalSchema.getQueryType();
@@ -68,6 +69,7 @@ public final class SchemaTransformer {
         final GraphQLCodeRegistry.Builder newCodeRegistry =
                 GraphQLCodeRegistry.newCodeRegistry(originalSchema.getCodeRegistry());
 
+        // Print the original schema as sdl and expose it as query { _service { sdl } }
         final String sdl = sdl();
         final GraphQLObjectType.Builder newQueryType = GraphQLObjectType.newObject(originalQueryType)
                 .field(_Service.field);
@@ -82,6 +84,7 @@ public final class SchemaTransformer {
                 ),
                 (DataFetcher<String>) environment -> sdl);
 
+        // Collecting all entity types: Types with @key directive and all types that implement them
         final Set<String> entityTypeNames = originalSchema.getAllTypesAsList().stream()
                 .filter(t -> t instanceof GraphQLDirectiveContainer &&
                         ((GraphQLDirectiveContainer) t).getDirective(FederationDirectives.keyName) != null)
@@ -98,6 +101,7 @@ public final class SchemaTransformer {
                 .map(GraphQLType::getName)
                 .collect(Collectors.toSet());
 
+        // If there are entity types install: Query._entities(representations: [_Any!]!): [_Entity]!
         if (!entityConcreteTypeNames.isEmpty()) {
             newQueryType.field(_Entity.field(entityConcreteTypeNames));
 
