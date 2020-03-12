@@ -50,7 +50,7 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
-        <graphql-java.version>13.0</graphql-java.version>
+        <graphql-java.version>14.0</graphql-java.version>
         <graphql-spring-boot.version>5.10.0</graphql-spring-boot.version>
         <java.version>1.8</java.version>
         <jetbrains-annotations.version>17.0.0</jetbrains-annotations.version>
