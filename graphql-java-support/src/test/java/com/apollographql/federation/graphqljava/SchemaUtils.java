@@ -15,12 +15,6 @@ final class SchemaUtils {
     private SchemaUtils() {
     }
 
-    static String printSchema(GraphQLSchema schema) {
-        return new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
-                .includeScalarTypes(true)
-        ).print(schema);
-    }
-
     static ExecutionResult execute(GraphQLSchema schema, String query) {
         return newGraphQL(schema).build().execute(newExecutionInput().query(query).build());
     }
