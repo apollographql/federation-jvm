@@ -525,23 +525,28 @@ public class FederationSdlPrinter {
                         .build();
                 Comparator<? super GraphQLSchemaElement> comparator = options.comparatorRegistry.getComparator(environment);
 
-                out.format("input %s%s {\n", type.getName(), directivesString(GraphQLInputObjectType.class, type.getDirectives()));
-                visibility.getFieldDefinitions(type)
-                        .stream()
-                        .sorted(comparator)
-                        .forEach(fd -> {
-                            printComments(out, fd, "  ");
-                            out.format("  %s: %s",
-                                    fd.getName(), typeString(fd.getType()));
-                            Object defaultValue = fd.getDefaultValue();
-                            if (defaultValue != null) {
-                                String astValue = printAst(defaultValue, fd.getType());
-                                out.format(" = %s", astValue);
-                            }
-                            out.format(directivesString(GraphQLInputObjectField.class, fd.getDirectives()));
-                            out.format("\n");
-                        });
-                out.format("}\n\n");
+                out.format("input %s%s", type.getName(), directivesString(GraphQLInputObjectType.class, type.getDirectives()));
+                List<GraphQLInputObjectField> inputObjectFields = visibility.getFieldDefinitions(type);
+                if (inputObjectFields.size() > 0) {
+                    out.format(" {\n");
+                    inputObjectFields
+                            .stream()
+                            .sorted(comparator)
+                            .forEach(fd -> {
+                                printComments(out, fd, "  ");
+                                out.format("  %s: %s",
+                                        fd.getName(), typeString(fd.getType()));
+                                Object defaultValue = fd.getDefaultValue();
+                                if (defaultValue != null) {
+                                    String astValue = printAst(defaultValue, fd.getType());
+                                    out.format(" = %s", astValue);
+                                }
+                                out.format(directivesString(GraphQLInputObjectField.class, fd.getDirectives()));
+                                out.format("\n");
+                            });
+                    out.format("}");
+                }
+                out.format("\n\n");
             }
         };
     }
