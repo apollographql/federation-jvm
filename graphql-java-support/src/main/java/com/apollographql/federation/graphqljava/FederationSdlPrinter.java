@@ -386,7 +386,7 @@ public class FederationSdlPrinter {
             }
             printComments(out, type, "");
             if (type.getInterfaces().isEmpty()) {
-                out.format("type %s%s {\n", type.getName(), directivesString(GraphQLObjectType.class, type.getDirectives()));
+                out.format("type %s%s", type.getName(), directivesString(GraphQLObjectType.class, type.getDirectives()));
             } else {
 
                 GraphqlTypeComparatorEnvironment environment = GraphqlTypeComparatorEnvironment.newEnvironment()
@@ -399,7 +399,7 @@ public class FederationSdlPrinter {
                         .stream()
                         .sorted(implementsComparator)
                         .map(GraphQLType::getName);
-                out.format("type %s implements %s%s {\n",
+                out.format("type %s implements %s%s",
                         type.getName(),
                         interfaceNames.collect(joining(" & ")),
                         directivesString(GraphQLObjectType.class, type.getDirectives()));
@@ -411,16 +411,21 @@ public class FederationSdlPrinter {
                     .build();
             Comparator<? super GraphQLType> comparator = options.comparatorRegistry.getComparator(environment);
 
-            visibility.getFieldDefinitions(type)
-                    .stream()
-                    .sorted(comparator)
-                    .forEach(fd -> {
-                        printComments(out, fd, "  ");
-                        out.format("  %s%s: %s%s\n",
-                                fd.getName(), argsString(GraphQLFieldDefinition.class, fd.getArguments()), typeString(fd.getType()),
-                                directivesString(GraphQLFieldDefinition.class, fd.getDirectives()));
-                    });
-            out.format("}\n\n");
+            List<GraphQLFieldDefinition> fieldDefinitions = visibility.getFieldDefinitions(type);
+            if (fieldDefinitions.size() > 0) {
+                out.format(" {\n");
+                fieldDefinitions
+                        .stream()
+                        .sorted(comparator)
+                        .forEach(fd -> {
+                            printComments(out, fd, "  ");
+                            out.format("  %s%s: %s%s\n",
+                                    fd.getName(), argsString(GraphQLFieldDefinition.class, fd.getArguments()), typeString(fd.getType()),
+                                    directivesString(GraphQLFieldDefinition.class, fd.getDirectives()));
+                        });
+                out.format("}");
+            }
+            out.format("\n\n");
         };
     }
 
