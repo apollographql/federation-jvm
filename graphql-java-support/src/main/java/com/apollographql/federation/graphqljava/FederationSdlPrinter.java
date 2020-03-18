@@ -479,7 +479,7 @@ public class FederationSdlPrinter {
             } else {
                 printComments(out, type, "");
                 if (type.getInterfaces().isEmpty()) {
-                    out.format("type %s%s {\n", type.getName(), directivesString(GraphQLObjectType.class, type.getDirectives()));
+                    out.format("type %s%s", type.getName(), directivesString(GraphQLObjectType.class, type.getDirectives()));
                 } else {
 
                     GraphqlTypeComparatorEnvironment environment = GraphqlTypeComparatorEnvironment.newEnvironment()
@@ -492,7 +492,7 @@ public class FederationSdlPrinter {
                             .stream()
                             .sorted(implementsComparator)
                             .map(GraphQLNamedType::getName);
-                    out.format("type %s implements %s%s {\n",
+                    out.format("type %s implements %s%s",
                             type.getName(),
                             interfaceNames.collect(joining(" & ")),
                             directivesString(GraphQLObjectType.class, type.getDirectives()));
@@ -505,7 +505,7 @@ public class FederationSdlPrinter {
                 Comparator<? super GraphQLSchemaElement> comparator = options.comparatorRegistry.getComparator(environment);
 
                 printFieldDefinitions(out, comparator, visibility.getFieldDefinitions(type));
-                out.format("}\n\n");
+                out.format("\n\n");
             }
         };
     }
