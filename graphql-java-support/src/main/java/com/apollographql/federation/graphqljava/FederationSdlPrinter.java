@@ -429,9 +429,9 @@ public class FederationSdlPrinter {
                 printAsAst(out, type.getDefinition(), type.getExtensionDefinitions());
             } else {
                 printComments(out, type, "");
-                out.format("interface %s%s {\n", type.getName(), directivesString(GraphQLInterfaceType.class, type.getDirectives()));
+                out.format("interface %s%s", type.getName(), directivesString(GraphQLInterfaceType.class, type.getDirectives()));
                 printFieldDefinitions(out, comparator, visibility.getFieldDefinitions(type));
-                out.format("}\n\n");
+                out.format("\n\n");
             }
         };
     }
