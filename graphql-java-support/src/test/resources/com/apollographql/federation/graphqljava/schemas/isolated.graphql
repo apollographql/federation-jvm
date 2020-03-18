@@ -1,5 +1,4 @@
-type Query {
-}
+type Query
 
 type SomeType @key(fields: "theKey") {
     theKey: ID!
