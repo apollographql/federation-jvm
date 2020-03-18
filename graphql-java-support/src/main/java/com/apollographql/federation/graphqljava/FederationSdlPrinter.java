@@ -391,6 +391,11 @@ public class FederationSdlPrinter {
     }
 
     private void printFieldDefinitions(PrintWriter out, Comparator<? super GraphQLSchemaElement> comparator, List<GraphQLFieldDefinition> fieldDefinitions) {
+        if (fieldDefinitions.size() == 0) {
+            return;
+        }
+
+        out.format(" {\n");
         fieldDefinitions
                 .stream()
                 .sorted(comparator)
@@ -405,6 +410,7 @@ public class FederationSdlPrinter {
                             fd.getName(), argsString(GraphQLFieldDefinition.class, fd.getArguments()), typeString(fd.getType()),
                             directivesString(GraphQLFieldDefinition.class, fieldDirectives));
                 });
+        out.format("}");
     }
 
     private TypePrinter<GraphQLInterfaceType> interfacePrinter() {
