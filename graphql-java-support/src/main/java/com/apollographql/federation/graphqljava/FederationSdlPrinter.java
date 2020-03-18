@@ -331,17 +331,22 @@ public class FederationSdlPrinter {
             Comparator<? super GraphQLType> comparator = options.comparatorRegistry.getComparator(environment);
 
             printComments(out, type, "");
-            out.format("interface %s%s {\n", type.getName(), directivesString(GraphQLInterfaceType.class, type.getDirectives()));
-            visibility.getFieldDefinitions(type)
-                    .stream()
-                    .sorted(comparator)
-                    .forEach(fd -> {
-                        printComments(out, fd, "  ");
-                        out.format("  %s%s: %s%s\n",
-                                fd.getName(), argsString(GraphQLFieldDefinition.class, fd.getArguments()), typeString(fd.getType()),
-                                directivesString(GraphQLFieldDefinition.class, fd.getDirectives()));
-                    });
-            out.format("}\n\n");
+            out.format("interface %s%s", type.getName(), directivesString(GraphQLInterfaceType.class, type.getDirectives()));
+            List<GraphQLFieldDefinition> fieldDefinitions = visibility.getFieldDefinitions(type);
+            if (fieldDefinitions.size() > 0) {
+                out.format(" {\n");
+                fieldDefinitions
+                        .stream()
+                        .sorted(comparator)
+                        .forEach(fd -> {
+                            printComments(out, fd, "  ");
+                            out.format("  %s%s: %s%s\n",
+                                    fd.getName(), argsString(GraphQLFieldDefinition.class, fd.getArguments()), typeString(fd.getType()),
+                                    directivesString(GraphQLFieldDefinition.class, fd.getDirectives()));
+                        });
+                out.format("}");
+            }
+            out.format("\n\n");
         };
     }
 
