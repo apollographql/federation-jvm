@@ -6,6 +6,9 @@ import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
 import graphql.schema.idl.RuntimeWiring;
+import graphql.schema.idl.SchemaGenerator;
+import graphql.schema.idl.SchemaParser;
+import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.TypeRuntimeWiring;
 import graphql.schema.idl.errors.SchemaProblem;
 import org.junit.jupiter.api.Assertions;
@@ -26,6 +29,7 @@ class FederationTest {
     private final String interfacesSDL = TestUtils.readResource("schemas/interfaces.graphql");
     private final String isolatedSDL = TestUtils.readResource("schemas/isolated.graphql");
     private final String productSDL = TestUtils.readResource("schemas/product.graphql");
+    private final String printerSDL = TestUtils.readResource("schemas/printer.graphql");
 
     @Test
     void testEmpty() {
@@ -126,5 +130,23 @@ class FederationTest {
                 .collect(Collectors.toList());
 
         assertIterableEquals(Arrays.asList("Book", "Movie", "Page"), unionTypes);
+    }
+
+    @Test
+    void testPrinter() {
+        TypeDefinitionRegistry typeDefinitionRegistry = new SchemaParser().parse(printerSDL);
+        RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring()
+                .type("Interface1", typeWiring -> typeWiring
+                        .typeResolver(env -> null)
+                )
+                .type("Interface2", typeWiring -> typeWiring
+                        .typeResolver(env -> null)
+                )
+                .build();
+        GraphQLSchema graphQLSchema = new SchemaGenerator().makeExecutableSchema(
+                typeDefinitionRegistry,
+                runtimeWiring
+        );
+        Assertions.assertEquals(printerSDL.trim(), new FederationSdlPrinter().print(graphQLSchema).trim());
     }
 }
