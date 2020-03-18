@@ -11,7 +11,6 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.TypeResolver;
-import graphql.schema.idl.SchemaPrinter;
 import graphql.schema.idl.errors.SchemaProblem;
 import org.jetbrains.annotations.NotNull;
 
@@ -139,11 +138,11 @@ public final class SchemaTransformer {
     }
 
     private String sdl() {
-        final SchemaPrinter.Options options = SchemaPrinter.Options.defaultOptions()
+        final FederationSdlPrinter.Options options = FederationSdlPrinter.Options.defaultOptions()
                 .includeScalarTypes(true)
                 .includeExtendedScalarTypes(true)
                 .includeSchemaDefintion(true)
                 .includeDirectives(true);
-        return new SchemaPrinter(options).print(originalSchema);
+        return new FederationSdlPrinter(options).print(originalSchema);
     }
 }

@@ -2,7 +2,6 @@ package com.apollographql.federation.graphqljava;
 
 import graphql.ExecutionResult;
 import graphql.schema.GraphQLSchema;
-import graphql.schema.idl.SchemaPrinter;
 
 import java.util.Map;
 
@@ -17,7 +16,7 @@ final class SchemaUtils {
     }
 
     static String printSchema(GraphQLSchema schema) {
-        return new SchemaPrinter().print(schema);
+        return new FederationSdlPrinter().print(schema);
     }
 
     static ExecutionResult execute(GraphQLSchema schema, String query) {
