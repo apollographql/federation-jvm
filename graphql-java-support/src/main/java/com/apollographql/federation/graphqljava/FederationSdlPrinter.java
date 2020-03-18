@@ -301,16 +301,20 @@ public class FederationSdlPrinter {
             Comparator<? super GraphQLType> comparator = options.comparatorRegistry.getComparator(environment);
 
             printComments(out, type, "");
-            out.format("enum %s%s {\n", type.getName(), directivesString(GraphQLEnumType.class, type.getDirectives()));
+            out.format("enum %s%s", type.getName(), directivesString(GraphQLEnumType.class, type.getDirectives()));
             List<GraphQLEnumValueDefinition> values = type.getValues()
                     .stream()
                     .sorted(comparator)
                     .collect(toList());
-            for (GraphQLEnumValueDefinition enumValueDefinition : values) {
-                printComments(out, enumValueDefinition, "  ");
-                out.format("  %s%s\n", enumValueDefinition.getName(), directivesString(GraphQLEnumValueDefinition.class, enumValueDefinition.getDirectives()));
+            if (values.size() > 0) {
+                out.format(" {\n");
+                for (GraphQLEnumValueDefinition enumValueDefinition : values) {
+                    printComments(out, enumValueDefinition, "  ");
+                    out.format("  %s%s\n", enumValueDefinition.getName(), directivesString(GraphQLEnumValueDefinition.class, enumValueDefinition.getDirectives()));
+                }
+                out.format("}");
             }
-            out.format("}\n\n");
+            out.format("\n\n");
         };
     }
 
