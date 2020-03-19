@@ -14,5 +14,4 @@ type Product @key(fields : "upc") {
   upc: String!
 }
 
-type Query {
-}
+type Query

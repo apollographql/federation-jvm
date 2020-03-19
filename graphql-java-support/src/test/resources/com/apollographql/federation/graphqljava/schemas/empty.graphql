@@ -2,5 +2,4 @@ schema {
   query: Query
 }
 
-type Query {
-}
+type Query
