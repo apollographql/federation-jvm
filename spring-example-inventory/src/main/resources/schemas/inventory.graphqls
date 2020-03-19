@@ -1,0 +1,11 @@
+type Product @key(fields: "upc") @extends {
+    upc: String! @external
+    weight: Int @external
+    price: Int @external
+    inStock: Boolean
+    shippingEstimate: Int @requires(fields: "price weight")
+}
+
+type Query {
+    trivial: Product
+}

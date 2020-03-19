@@ -1,0 +1,7 @@
+query  {
+  _entities(representations: [{__typename:"User",id:"2"}]) {
+      ... on User {
+        name
+      }
+    }
+  }

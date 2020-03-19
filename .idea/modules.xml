@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/graphql-java-support/federation-graphql-java-support.iml" filepath="$PROJECT_DIR$/graphql-java-support/federation-graphql-java-support.iml" />
+      <module fileurl="file://$PROJECT_DIR$/federation-parent.iml" filepath="$PROJECT_DIR$/federation-parent.iml" />
+      <module fileurl="file://$PROJECT_DIR$/spring-example-inventory/spring-example-inventory.iml" filepath="$PROJECT_DIR$/spring-example-inventory/spring-example-inventory.iml" />
+      <module fileurl="file://$PROJECT_DIR$/spring-example-product/spring-example-product.iml" filepath="$PROJECT_DIR$/spring-example-product/spring-example-product.iml" />
+      <module fileurl="file://$PROJECT_DIR$/spring-example-review/spring-example-review.iml" filepath="$PROJECT_DIR$/spring-example-review/spring-example-review.iml" />
+      <module fileurl="file://$PROJECT_DIR$/spring-example-user/spring-example-user.iml" filepath="$PROJECT_DIR$/spring-example-user/spring-example-user.iml" />
+    </modules>
+  </component>
+</project>

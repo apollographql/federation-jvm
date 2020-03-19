@@ -7,9 +7,20 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="spring-example-inventory" />
+        <module name="spring-example-user" />
         <module name="federation-graphql-java-support" />
-        <module name="federation-spring-example" />
+        <module name="spring-example-review" />
+        <module name="spring-example-product" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="federation-graphql-java-support" target="1.8" />
+      <module name="federation-parent" target="1.8" />
+      <module name="spring-example-inventory" target="1.8" />
+      <module name="spring-example-product" target="1.8" />
+      <module name="spring-example-review" target="1.8" />
+      <module name="spring-example-user" target="1.8" />
+    </bytecodeTargetLevel>
   </component>
 </project>

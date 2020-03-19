@@ -1,0 +1,15 @@
+query  {
+  _entities(representations: [{__typename:"User",id:"2"}]) {
+
+      ... on User {
+        reviews {
+          id
+          body
+          product {
+            upc
+            __typename
+          }
+        }
+      }
+    }
+  }
