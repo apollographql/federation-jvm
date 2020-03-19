@@ -138,6 +138,9 @@ public final class SchemaTransformer {
     }
 
     private String sdl() {
+        // Note that FederationSdlPrinter is a copy of graphql-java's SchemaPrinter that fixes a
+        // specific bug. Once graphql-java releases a bugfix (the PR in question is specifically
+        // graphql-java/graphql-java#1798 ) and backports it, we should revert to SchemaPrinter.
         final FederationSdlPrinter.Options options = FederationSdlPrinter.Options.defaultOptions()
                 .includeScalarTypes(true)
                 .includeExtendedScalarTypes(true)
