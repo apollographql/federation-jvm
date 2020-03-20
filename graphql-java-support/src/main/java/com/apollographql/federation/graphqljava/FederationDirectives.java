@@ -5,7 +5,6 @@ import graphql.language.DirectiveDefinition;
 import graphql.language.DirectiveLocation;
 import graphql.language.InputValueDefinition;
 import graphql.language.NonNullType;
-import graphql.language.SDLDefinition;
 import graphql.language.TypeName;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
@@ -191,4 +190,5 @@ public final class FederationDirectives {
                 .map(DirectiveDefinition::getName)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
+
 }
