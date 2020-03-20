@@ -159,7 +159,7 @@ public final class FederationDirectives {
     /* Sets */
 
     public static final Set<GraphQLDirective> allDirectives = new HashSet<>();
-    public static final Set<SDLDefinition> allDefinitions = new HashSet<>();
+    public static final Set<DirectiveDefinition> allDefinitions = new HashSet<>();
 
     static {
         allDirectives.add(key);
