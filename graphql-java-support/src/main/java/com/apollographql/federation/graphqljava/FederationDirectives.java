@@ -158,6 +158,7 @@ public final class FederationDirectives {
 
     /* Sets */
 
+    public static final Set<String> allNames = new HashSet<>();
     public static final Set<GraphQLDirective> allDirectives = new HashSet<>();
     public static final Set<DirectiveDefinition> allDefinitions = new HashSet<>();
 
@@ -172,5 +173,8 @@ public final class FederationDirectives {
         allDefinitions.add(requiresDefinition);
         allDefinitions.add(providesDefinition);
         allDefinitions.add(extendsDefinition);
+        allDefinitions.stream()
+                .map(DirectiveDefinition::getName)
+                .forEach(allNames::add);
     }
 }
