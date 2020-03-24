@@ -1,5 +1,13 @@
 # Release notes
 
+## v0.3.3
+
+This release requires graphql-java v13, due to the backport below.
+
+*Bugfixes:*
+- Fix thread-safety bug in federated tracing support.
+- Backport bugfix in graphql-java's `SchemaPrinter` to graphql-java v13.
+
 ## v0.3.2
 
 *Bugfixes:*
