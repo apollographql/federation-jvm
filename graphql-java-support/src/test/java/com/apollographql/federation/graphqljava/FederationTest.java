@@ -35,13 +35,25 @@ class FederationTest {
     void testEmpty() {
         final GraphQLSchema federated = Federation.transform(emptySDL)
                 .build();
-        Assertions.assertEquals("type Query {\n" +
+        Assertions.assertEquals("directive @extends on OBJECT\n" +
+                "\n" +
+                "directive @external on FIELD_DEFINITION\n" +
+                "\n" +
+                "directive @key(fields: _FieldSet!) on OBJECT | INTERFACE\n" +
+                "\n" +
+                "directive @provides(fields: _FieldSet!) on FIELD_DEFINITION\n" +
+                "\n" +
+                "directive @requires(fields: _FieldSet!) on FIELD_DEFINITION\n" +
+                "\n" +
+                "type Query {\n" +
                 "  _service: _Service\n" +
                 "}\n" +
                 "\n" +
                 "type _Service {\n" +
                 "  sdl: String!\n" +
-                "}\n", SchemaUtils.printSchema(federated));
+                "}\n" +
+                "\n" +
+                "scalar _FieldSet\n", SchemaUtils.printSchema(federated));
 
         final GraphQLType _Service = federated.getType("_Service");
         assertNotNull(_Service, "_Service type present");
