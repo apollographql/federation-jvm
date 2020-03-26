@@ -16,6 +16,7 @@ import graphql.schema.idl.errors.SchemaProblem;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -23,6 +24,9 @@ import java.util.stream.Collectors;
 
 public final class SchemaTransformer {
     private static final Object DUMMY = new Object();
+    // Apollo Gateway will fail composition if it sees standard directive definitions.
+    private static final Set<String> STANDARD_DIRECTIVES =
+            new HashSet<>(Arrays.asList("deprecated", "include", "skip"));
     private final GraphQLSchema originalSchema;
     private TypeResolver entityTypeResolver = null;
     private DataFetcher entitiesDataFetcher = null;
@@ -141,7 +145,9 @@ public final class SchemaTransformer {
 
     public static String sdl(GraphQLSchema schema) {
         // Gather directive definitions to hide.
-        final Set<String> hiddenDirectiveDefinitions = new HashSet<>(FederationDirectives.allNames);
+        final Set<String> hiddenDirectiveDefinitions = new HashSet<>();
+        hiddenDirectiveDefinitions.addAll(STANDARD_DIRECTIVES);
+        hiddenDirectiveDefinitions.addAll(FederationDirectives.allNames);
 
         // Gather type definitions to hide.
         final Set<String> hiddenTypeDefinitions = new HashSet<>();
