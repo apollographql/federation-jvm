@@ -141,7 +141,7 @@ public final class Federation {
         runtimeWiring.getRegisteredDirectiveWiring().forEach(builder::directive);
         runtimeWiring.getDirectiveWiring().forEach(builder::directiveWiring);
         builder.comparatorRegistry(runtimeWiring.getComparatorRegistry());
-        runtimeWiring.getSchemaTransformers().forEach(builder::transformer);
+        runtimeWiring.getSchemaGeneratorPostProcessings().forEach(builder::transformer);
 
         return builder;
     }
