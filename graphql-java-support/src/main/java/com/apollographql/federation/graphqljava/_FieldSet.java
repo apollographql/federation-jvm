@@ -9,6 +9,7 @@ public final class _FieldSet {
 
     public static GraphQLScalarType type = GraphQLScalarType.newScalar(Scalars.GraphQLString)
             .name(typeName)
+            .description(null)
             .coercing(Scalars.GraphQLString.getCoercing())
             .build();
 

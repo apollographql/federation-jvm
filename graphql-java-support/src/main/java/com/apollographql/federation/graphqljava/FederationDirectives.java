@@ -5,15 +5,17 @@ import graphql.language.DirectiveDefinition;
 import graphql.language.DirectiveLocation;
 import graphql.language.InputValueDefinition;
 import graphql.language.NonNullType;
-import graphql.language.SDLDefinition;
 import graphql.language.TypeName;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLNonNull;
 
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static graphql.introspection.Introspection.DirectiveLocation.FIELD_DEFINITION;
 import static graphql.introspection.Introspection.DirectiveLocation.INTERFACE;
@@ -158,19 +160,35 @@ public final class FederationDirectives {
 
     /* Sets */
 
-    public static final Set<GraphQLDirective> allDirectives = new HashSet<>();
-    public static final Set<SDLDefinition> allDefinitions = new HashSet<>();
+    public static final Set<String> allNames;
+    public static final Set<GraphQLDirective> allDirectives;
+    public static final Set<DirectiveDefinition> allDefinitions;
 
     static {
-        allDirectives.add(key);
-        allDirectives.add(external);
-        allDirectives.add(requires);
-        allDirectives.add(provides);
-        allDirectives.add(extends_);
-        allDefinitions.add(keyDefinition);
-        allDefinitions.add(externalDefinition);
-        allDefinitions.add(requiresDefinition);
-        allDefinitions.add(providesDefinition);
-        allDefinitions.add(extendsDefinition);
+        // We need to maintain sorted order here for tests, since SchemaPrinter doesn't sort
+        // directive definitions.
+        allDirectives = Stream.of(
+                key,
+                external,
+                requires,
+                provides,
+                extends_
+        )
+                .sorted(Comparator.comparing(GraphQLDirective::getName))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        allDefinitions = Stream.of(
+                keyDefinition,
+                externalDefinition,
+                requiresDefinition,
+                providesDefinition,
+                extendsDefinition
+        )
+                .sorted(Comparator.comparing(DirectiveDefinition::getName))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        allNames = allDefinitions
+                .stream()
+                .map(DirectiveDefinition::getName)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
+
 }

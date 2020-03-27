@@ -15,6 +15,7 @@ import graphql.schema.idl.errors.SchemaProblem;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -69,7 +70,7 @@ public final class SchemaTransformer {
                 GraphQLCodeRegistry.newCodeRegistry(originalSchema.getCodeRegistry());
 
         // Print the original schema as sdl and expose it as query { _service { sdl } }
-        final String sdl = sdl();
+        final String sdl = sdl(originalSchema);
         final GraphQLObjectType.Builder newQueryType = GraphQLObjectType.newObject(originalQueryType)
                 .field(_Service.field);
         newCodeRegistry.dataFetcher(FieldCoordinates.coordinates(
@@ -137,15 +138,34 @@ public final class SchemaTransformer {
                 .build();
     }
 
-    private String sdl() {
-        // Note that FederationSdlPrinter is a copy of graphql-java's SchemaPrinter that fixes a
-        // specific bug. Once graphql-java releases a bugfix (the PR in question is specifically
-        // graphql-java/graphql-java#1798 ) and backports it, we should revert to SchemaPrinter.
+    public static String sdl(GraphQLSchema schema) {
+        // Gather directive definitions to hide.
+        final Set<String> hiddenDirectiveDefinitions = new HashSet<>(FederationDirectives.allNames);
+
+        // Gather type definitions to hide.
+        final Set<String> hiddenTypeDefinitions = new HashSet<>();
+        hiddenTypeDefinitions.add(_Any.typeName);
+        hiddenTypeDefinitions.add(_Entity.typeName);
+        hiddenTypeDefinitions.add(_FieldSet.typeName);
+        hiddenTypeDefinitions.add(_Service.typeName);
+
+        // Note that FederationSdlPrinter is a copy of graphql-java's SchemaPrinter that:
+        // - fixes a specific bug in graphql-java that hasn't been backported yet, specifically
+        //   graphql-java/graphql-java#1798
+        // - adds the ability to filter out directive and type definitions, which is required
+        //   by federation spec.
+        //
+        // FederationSdlPrinter will need to be updated whenever graphql-java changes versions. It
+        // can be removed when the bug is fixed/backported, and when either graphql-java adds
+        // native support for filtering out directive and type definitions or federation spec
+        // changes to allow the currently forbidden directive and type definitions.
         final FederationSdlPrinter.Options options = FederationSdlPrinter.Options.defaultOptions()
                 .includeScalarTypes(true)
                 .includeExtendedScalarTypes(true)
                 .includeSchemaDefintion(true)
-                .includeDirectives(true);
-        return new FederationSdlPrinter(options).print(originalSchema);
+                .includeDirectives(true)
+                .includeDirectiveDefinitions(def -> !hiddenDirectiveDefinitions.contains(def.getName()))
+                .includeTypeDefinitions(def -> !hiddenTypeDefinitions.contains(def.getName()));
+        return new FederationSdlPrinter(options).print(schema);
     }
 }

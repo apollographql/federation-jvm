@@ -1,7 +1,9 @@
 package com.apollographql.federation.graphqljava;
 
 import graphql.ExecutionResult;
+import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
@@ -29,19 +31,33 @@ class FederationTest {
     private final String interfacesSDL = TestUtils.readResource("schemas/interfaces.graphql");
     private final String isolatedSDL = TestUtils.readResource("schemas/isolated.graphql");
     private final String productSDL = TestUtils.readResource("schemas/product.graphql");
-    private final String printerSDL = TestUtils.readResource("schemas/printer.graphql");
+    private final String printerEmptySDL = TestUtils.readResource("schemas/printerEmpty.graphql");
+    private final String printerFilterSDL = TestUtils.readResource("schemas/printerFilter.graphql");
+    private final String printerFilterExpectedSDL = TestUtils.readResource("schemas/printerFilterExpected.graphql");
 
     @Test
     void testEmpty() {
         final GraphQLSchema federated = Federation.transform(emptySDL)
                 .build();
-        Assertions.assertEquals("type Query {\n" +
+        Assertions.assertEquals("directive @extends on OBJECT\n" +
+                "\n" +
+                "directive @external on FIELD_DEFINITION\n" +
+                "\n" +
+                "directive @key(fields: _FieldSet!) on OBJECT | INTERFACE\n" +
+                "\n" +
+                "directive @provides(fields: _FieldSet!) on FIELD_DEFINITION\n" +
+                "\n" +
+                "directive @requires(fields: _FieldSet!) on FIELD_DEFINITION\n" +
+                "\n" +
+                "type Query {\n" +
                 "  _service: _Service\n" +
                 "}\n" +
                 "\n" +
                 "type _Service {\n" +
                 "  sdl: String!\n" +
-                "}\n", SchemaUtils.printSchema(federated));
+                "}\n" +
+                "\n" +
+                "scalar _FieldSet\n", SchemaUtils.printSchema(federated));
 
         final GraphQLType _Service = federated.getType("_Service");
         assertNotNull(_Service, "_Service type present");
@@ -133,8 +149,8 @@ class FederationTest {
     }
 
     @Test
-    void testPrinter() {
-        TypeDefinitionRegistry typeDefinitionRegistry = new SchemaParser().parse(printerSDL);
+    void testPrinterEmpty() {
+        TypeDefinitionRegistry typeDefinitionRegistry = new SchemaParser().parse(printerEmptySDL);
         RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring()
                 .type("Interface1", typeWiring -> typeWiring
                         .typeResolver(env -> null)
@@ -147,6 +163,41 @@ class FederationTest {
                 typeDefinitionRegistry,
                 runtimeWiring
         );
-        Assertions.assertEquals(printerSDL.trim(), new FederationSdlPrinter().print(graphQLSchema).trim());
+        Assertions.assertEquals(printerEmptySDL.trim(), new FederationSdlPrinter().print(graphQLSchema).trim());
+    }
+
+    @Test
+    void testPrinterFilter() {
+        TypeDefinitionRegistry typeDefinitionRegistry = new SchemaParser().parse(printerFilterSDL);
+        RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring()
+                .type("Interface1", typeWiring -> typeWiring
+                        .typeResolver(env -> null)
+                )
+                .type("Interface2", typeWiring -> typeWiring
+                        .typeResolver(env -> null)
+                )
+                .scalar(GraphQLScalarType.newScalar()
+                        .name("Scalar1")
+                        .coercing(Scalars.GraphQLString.getCoercing())
+                        .build()
+                )
+                .scalar(GraphQLScalarType.newScalar()
+                        .name("Scalar2")
+                        .coercing(Scalars.GraphQLString.getCoercing())
+                        .build()
+                )
+                .build();
+        GraphQLSchema graphQLSchema = new SchemaGenerator().makeExecutableSchema(
+                typeDefinitionRegistry,
+                runtimeWiring
+        );
+        Assertions.assertEquals(
+                printerFilterExpectedSDL.trim(),
+                new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
+                        .includeScalarTypes(true)
+                        .includeDirectiveDefinitions(def -> !def.getName().endsWith("1"))
+                        .includeTypeDefinitions(def -> !def.getName().endsWith("1"))
+                ).print(graphQLSchema).trim()
+        );
     }
 }
