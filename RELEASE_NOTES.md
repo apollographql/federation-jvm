@@ -1,5 +1,15 @@
 # Release notes
 
+## v0.3.4
+
+*Bugfixes:*
+- Remove bad description text in `_FieldSet.type`.
+- Remove federation directive definitions and type definitions from `query { _service { sdl } }`.
+
+*Enhancements:*
+- Enforce that directives used in a `TypeDefinitionRegistry` have a definition and are valid according to that definition.
+- Automatically add federation directive definitions and type definitions to `TypeDefinitionRegistry` if it doesn't already have them.
+
 ## v0.3.3
 
 This release requires graphql-java v13, due to the backport below.
