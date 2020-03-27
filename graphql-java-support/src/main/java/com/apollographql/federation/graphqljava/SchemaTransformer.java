@@ -7,6 +7,7 @@ import graphql.schema.DataFetcherFactory;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLDirectiveContainer;
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
@@ -15,6 +16,7 @@ import graphql.schema.idl.errors.SchemaProblem;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -22,6 +24,9 @@ import java.util.stream.Collectors;
 
 public final class SchemaTransformer {
     private static final Object DUMMY = new Object();
+    // Apollo Gateway will fail composition if it sees standard directive definitions.
+    private static final Set<String> STANDARD_DIRECTIVES =
+            new HashSet<>(Arrays.asList("deprecated", "include", "skip"));
     private final GraphQLSchema originalSchema;
     private TypeResolver entityTypeResolver = null;
     private DataFetcher entitiesDataFetcher = null;
@@ -88,7 +93,7 @@ public final class SchemaTransformer {
         final Set<String> entityTypeNames = originalSchema.getAllTypesAsList().stream()
                 .filter(t -> t instanceof GraphQLDirectiveContainer &&
                         ((GraphQLDirectiveContainer) t).getDirective(FederationDirectives.keyName) != null)
-                .map(GraphQLType::getName)
+                .map(GraphQLNamedType::getName)
                 .collect(Collectors.toSet());
 
         final Set<String> entityConcreteTypeNames = originalSchema.getAllTypesAsList()
@@ -98,7 +103,7 @@ public final class SchemaTransformer {
                         ((GraphQLObjectType) type).getInterfaces()
                                 .stream()
                                 .anyMatch(itf -> entityTypeNames.contains(itf.getName())))
-                .map(GraphQLType::getName)
+                .map(GraphQLNamedType::getName)
                 .collect(Collectors.toSet());
 
         // If there are entity types install: Query._entities(representations: [_Any!]!): [_Entity]!
@@ -140,7 +145,9 @@ public final class SchemaTransformer {
 
     public static String sdl(GraphQLSchema schema) {
         // Gather directive definitions to hide.
-        final Set<String> hiddenDirectiveDefinitions = new HashSet<>(FederationDirectives.allNames);
+        final Set<String> hiddenDirectiveDefinitions = new HashSet<>();
+        hiddenDirectiveDefinitions.addAll(STANDARD_DIRECTIVES);
+        hiddenDirectiveDefinitions.addAll(FederationDirectives.allNames);
 
         // Gather type definitions to hide.
         final Set<String> hiddenTypeDefinitions = new HashSet<>();
@@ -162,7 +169,7 @@ public final class SchemaTransformer {
         final FederationSdlPrinter.Options options = FederationSdlPrinter.Options.defaultOptions()
                 .includeScalarTypes(true)
                 .includeExtendedScalarTypes(true)
-                .includeSchemaDefintion(true)
+                .includeSchemaDefinition(true)
                 .includeDirectives(true)
                 .includeDirectiveDefinitions(def -> !hiddenDirectiveDefinitions.contains(def.getName()))
                 .includeTypeDefinitions(def -> !hiddenTypeDefinitions.contains(def.getName()));

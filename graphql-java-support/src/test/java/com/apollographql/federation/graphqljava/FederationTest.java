@@ -3,6 +3,7 @@ package com.apollographql.federation.graphqljava;
 import graphql.ExecutionResult;
 import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
@@ -17,8 +18,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,6 +37,8 @@ class FederationTest {
     private final String printerEmptySDL = TestUtils.readResource("schemas/printerEmpty.graphql");
     private final String printerFilterSDL = TestUtils.readResource("schemas/printerFilter.graphql");
     private final String printerFilterExpectedSDL = TestUtils.readResource("schemas/printerFilterExpected.graphql");
+    private final Set<String> standardDirectives =
+            new HashSet<>(Arrays.asList("deprecated", "include", "skip"));
 
     @Test
     void testEmpty() {
@@ -57,7 +62,12 @@ class FederationTest {
                 "  sdl: String!\n" +
                 "}\n" +
                 "\n" +
-                "scalar _FieldSet\n", SchemaUtils.printSchema(federated));
+                "scalar _FieldSet\n",
+                new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
+                        .includeScalarTypes(true)
+                        .includeDirectiveDefinitions(def -> !standardDirectives.contains(def.getName()))
+                ).print(federated)
+        );
 
         final GraphQLType _Service = federated.getType("_Service");
         assertNotNull(_Service, "_Service type present");
@@ -141,7 +151,7 @@ class FederationTest {
         final Iterable<String> unionTypes = entityType
                 .getTypes()
                 .stream()
-                .map(GraphQLType::getName)
+                .map(GraphQLNamedType::getName)
                 .sorted()
                 .collect(Collectors.toList());
 
@@ -163,7 +173,12 @@ class FederationTest {
                 typeDefinitionRegistry,
                 runtimeWiring
         );
-        Assertions.assertEquals(printerEmptySDL.trim(), new FederationSdlPrinter().print(graphQLSchema).trim());
+        Assertions.assertEquals(
+                printerEmptySDL.trim(),
+                new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
+                        .includeDirectiveDefinitions(def -> !standardDirectives.contains(def.getName()))
+                ).print(graphQLSchema).trim()
+        );
     }
 
     @Test
@@ -195,7 +210,9 @@ class FederationTest {
                 printerFilterExpectedSDL.trim(),
                 new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
                         .includeScalarTypes(true)
-                        .includeDirectiveDefinitions(def -> !def.getName().endsWith("1"))
+                        .includeDirectiveDefinitions(def ->
+                                !def.getName().endsWith("1") && !standardDirectives.contains(def.getName())
+                        )
                         .includeTypeDefinitions(def -> !def.getName().endsWith("1"))
                 ).print(graphQLSchema).trim()
         );

@@ -4,7 +4,7 @@ schema {
 
 type Money {
   amount: Int!
-  currencyCode: String!
+  currencyCode: String! @deprecated(reason : "dummy")
 }
 
 type Product @key(fields : "upc") {
