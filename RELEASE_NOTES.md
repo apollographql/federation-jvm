@@ -1,5 +1,12 @@
 # Release notes
 
+## v0.4.0
+
+This is an upgrade release for graphql-java v14. This release is incompatible with earlier graphql-java versions due to breaking changes in their API.
+
+*Upgrades:*
+- graphql-java to `14.0`.
+
 ## v0.3.4
 
 *Bugfixes:*
