@@ -26,7 +26,7 @@ Add a dependency to `graphql-java-support`:
 
 ```groovy
 dependencies {
-    implementation 'com.apollographql.federation:federation-graphql-java-support:0.3.3'
+    implementation 'com.apollographql.federation:federation-graphql-java-support:0.3.4'
 }
 ```
 
