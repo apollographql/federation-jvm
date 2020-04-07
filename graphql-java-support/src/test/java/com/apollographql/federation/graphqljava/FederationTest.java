@@ -44,7 +44,7 @@ class FederationTest {
     void testEmpty() {
         final GraphQLSchema federated = Federation.transform(emptySDL)
                 .build();
-        Assertions.assertEquals("directive @extends on OBJECT\n" +
+        Assertions.assertEquals("directive @extends on OBJECT | INTERFACE\n" +
                 "\n" +
                 "directive @external on FIELD_DEFINITION\n" +
                 "\n" +
