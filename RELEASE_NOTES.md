@@ -1,5 +1,10 @@
 # Release notes
 
+## v0.4.1
+
+*Bugfixes:*
+- Update `@extends` definition to include interfaces, as per GraphQL spec
+
 ## v0.4.0
 
 This is an upgrade release for graphql-java v14. This release is incompatible with earlier graphql-java versions due to breaking changes in their API.
