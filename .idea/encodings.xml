@@ -3,6 +3,9 @@
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/graphql-java-support" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/graphql-java-support/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/spring-example" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/spring-example/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/spring-example/src/main/resources" charset="UTF-8" />
   </component>
 </project>

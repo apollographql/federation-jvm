@@ -11,6 +11,7 @@ import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLNonNull;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -49,7 +50,7 @@ public final class FederationDirectives {
             .type(new GraphQLNonNull(_FieldSet.type))
             .build();
 
-    private static final GraphQLArgument fieldsArgument(String value) {
+    private static GraphQLArgument fieldsArgument(String value) {
         return newArgument(fieldsArgument)
                 .value(value)
                 .build();
@@ -70,7 +71,7 @@ public final class FederationDirectives {
             .argument(fieldsArgument)
             .build();
 
-    public static final GraphQLDirective key(String fields) {
+    public static GraphQLDirective key(String fields) {
         return newDirective(key)
                 .argument(fieldsArgument(fields))
                 .build();
@@ -93,7 +94,7 @@ public final class FederationDirectives {
 
     public static final DirectiveDefinition externalDefinition = newDirectiveDefinition()
             .name(externalName)
-            .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION))
+            .directiveLocations(Collections.singletonList(DL_FIELD_DEFINITION))
             .build();
 
     /* directive @requires(fields: _FieldSet!) on FIELD_DEFINITION */
@@ -106,7 +107,7 @@ public final class FederationDirectives {
             .argument(fieldsArgument)
             .build();
 
-    public static final GraphQLDirective requires(String fields) {
+    public static GraphQLDirective requires(String fields) {
         return newDirective(requires)
                 .argument(fieldsArgument(fields))
                 .build();
@@ -114,7 +115,7 @@ public final class FederationDirectives {
 
     public static final DirectiveDefinition requiresDefinition = newDirectiveDefinition()
             .name(requiresName)
-            .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION))
+            .directiveLocations(Collections.singletonList(DL_FIELD_DEFINITION))
             .inputValueDefinition(fieldsDefinition)
             .build();
 
@@ -128,7 +129,7 @@ public final class FederationDirectives {
             .argument(fieldsArgument)
             .build();
 
-    public static final GraphQLDirective provides(String fields) {
+    public static GraphQLDirective provides(String fields) {
         return newDirective(provides)
                 .argument(fieldsArgument(fields))
                 .build();
@@ -136,7 +137,7 @@ public final class FederationDirectives {
 
     public static final DirectiveDefinition providesDefinition = newDirectiveDefinition()
             .name(providesName)
-            .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION))
+            .directiveLocations(Collections.singletonList(DL_FIELD_DEFINITION))
             .inputValueDefinition(fieldsDefinition)
             .build();
 
@@ -146,12 +147,12 @@ public final class FederationDirectives {
 
     public static final GraphQLDirective extends_ = newDirective()
             .name(extendsName)
-            .validLocations(OBJECT)
+            .validLocations(OBJECT, INTERFACE)
             .build();
 
     public static final DirectiveDefinition extendsDefinition = newDirectiveDefinition()
             .name(extendsName)
-            .directiveLocations(Arrays.asList(DL_OBJECT))
+            .directiveLocations(Arrays.asList(DL_OBJECT, DL_INTERFACE))
             .build();
 
 
