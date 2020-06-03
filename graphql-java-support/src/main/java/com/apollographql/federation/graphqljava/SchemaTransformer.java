@@ -26,7 +26,7 @@ public final class SchemaTransformer {
     private static final Object DUMMY = new Object();
     // Apollo Gateway will fail composition if it sees standard directive definitions.
     private static final Set<String> STANDARD_DIRECTIVES =
-            new HashSet<>(Arrays.asList("deprecated", "include", "skip"));
+            new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
     private final GraphQLSchema originalSchema;
     private TypeResolver entityTypeResolver = null;
     private DataFetcher entitiesDataFetcher = null;
@@ -157,18 +157,14 @@ public final class SchemaTransformer {
         hiddenTypeDefinitions.add(_Service.typeName);
 
         // Note that FederationSdlPrinter is a copy of graphql-java's SchemaPrinter that:
-        // - fixes a specific bug in graphql-java that hasn't been backported yet, specifically
-        //   graphql-java/graphql-java#1798
-        // - adds the ability to filter out directive and type definitions, which is required
+        // - Adds the ability to filter out directive and type definitions, which is required
         //   by federation spec.
         //
-        // FederationSdlPrinter will need to be updated whenever graphql-java changes versions. It
-        // can be removed when the bug is fixed/backported, and when either graphql-java adds
-        // native support for filtering out directive and type definitions or federation spec
-        // changes to allow the currently forbidden directive and type definitions.
+        // FederationSdlPrinter will need to be updated whenever graphql-java changes versions.
+        // It can be removed when either graphql-java adds native support for filtering out
+        // type definitions or federation spec changes to allow the currently forbidden directive and type definitions.
         final FederationSdlPrinter.Options options = FederationSdlPrinter.Options.defaultOptions()
                 .includeScalarTypes(true)
-                .includeExtendedScalarTypes(true)
                 .includeSchemaDefinition(true)
                 .includeDirectives(true)
                 .includeDirectiveDefinitions(def -> !hiddenDirectiveDefinitions.contains(def.getName()))
