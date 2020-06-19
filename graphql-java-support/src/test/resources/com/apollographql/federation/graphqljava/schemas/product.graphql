@@ -8,7 +8,11 @@ type Money {
 }
 
 type Product @key(fields : "upc") {
+  """
+  The product "name".
+  """
   name: String
+  "Price in pennies"
   price: Int
   sku: String!
   upc: String!

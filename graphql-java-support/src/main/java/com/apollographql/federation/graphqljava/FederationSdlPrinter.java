@@ -932,14 +932,16 @@ public class FederationSdlPrinter {
             List<String> lines = Arrays.asList(descriptionText.split("\n"));
             if (options.isDescriptionsAsHashComments()) {
                 printMultiLineHashDescription(out, prefix, lines);
+            } else if (needsBlockString(descriptionText)) {
+                printMultiLineDescription(out, prefix, lines);
             } else {
-                if (lines.size() > 1) {
-                    printMultiLineDescription(out, prefix, lines);
-                } else {
-                    printSingleLineDescription(out, prefix, lines.get(0));
-                }
+                printSingleLineDescription(out, prefix, descriptionText);
             }
         }
+    }
+
+    private boolean needsBlockString(String description) {
+        return description.contains("\"") || description.contains("\n") | description.contains("\r");
     }
 
     private void printMultiLineHashDescription(PrintWriter out, String prefix, List<String> lines) {
