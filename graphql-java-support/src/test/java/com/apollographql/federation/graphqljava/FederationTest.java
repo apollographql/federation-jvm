@@ -35,6 +35,8 @@ class FederationTest {
     private final String isolatedSDL = TestUtils.readResource("schemas/isolated.graphql");
     private final String productSDL = TestUtils.readResource("schemas/product.graphql");
     private final String printerEmptySDL = TestUtils.readResource("schemas/printerEmpty.graphql");
+    private final String printerEscapingSDL = TestUtils.readResource("schemas/printerEscaping.graphql");
+    private final String printerEscapingExpectedSDL = TestUtils.readResource("schemas/printerEscapingExpected.graphql");
     private final String printerFilterSDL = TestUtils.readResource("schemas/printerFilter.graphql");
     private final String printerFilterExpectedSDL = TestUtils.readResource("schemas/printerFilterExpected.graphql");
     private final Set<String> standardDirectives =
@@ -175,6 +177,21 @@ class FederationTest {
         );
         Assertions.assertEquals(
                 printerEmptySDL.trim(),
+                new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
+                        .includeDirectiveDefinitions(def -> !standardDirectives.contains(def.getName()))
+                ).print(graphQLSchema).trim()
+        );
+    }
+
+    @Test
+    void testPrinterEscaping() {
+        TypeDefinitionRegistry typeDefinitionRegistry = new SchemaParser().parse(printerEscapingSDL);
+        GraphQLSchema graphQLSchema = new SchemaGenerator().makeExecutableSchema(
+                typeDefinitionRegistry,
+                RuntimeWiring.newRuntimeWiring().build()
+        );
+        Assertions.assertEquals(
+                printerEscapingExpectedSDL.trim(),
                 new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
                         .includeDirectiveDefinitions(def -> !standardDirectives.contains(def.getName()))
                 ).print(graphQLSchema).trim()

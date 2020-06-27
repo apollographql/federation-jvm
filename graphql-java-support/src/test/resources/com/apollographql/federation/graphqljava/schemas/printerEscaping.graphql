@@ -1,0 +1,16 @@
+type Query {
+  "escaped\"quotes"
+  field1: String
+  "escaped\\backslash"
+  field2: String
+  "escaped\bbackspace"
+  field3: String
+  "escaped\fform feed"
+  field4: String
+  "escaped\nnewline"
+  field5: String
+  "escaped\rcarriage return"
+  field6: String
+  "escaped\ttab"
+  field7: String
+}
