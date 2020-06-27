@@ -26,7 +26,7 @@ public final class SchemaTransformer {
     private static final Object DUMMY = new Object();
     // Apollo Gateway will fail composition if it sees standard directive definitions.
     private static final Set<String> STANDARD_DIRECTIVES =
-            new HashSet<>(Arrays.asList("deprecated", "include", "skip"));
+            new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
     private final GraphQLSchema originalSchema;
     private TypeResolver entityTypeResolver = null;
     private DataFetcher entitiesDataFetcher = null;

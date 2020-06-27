@@ -40,7 +40,7 @@ class FederationTest {
     private final String printerFilterSDL = TestUtils.readResource("schemas/printerFilter.graphql");
     private final String printerFilterExpectedSDL = TestUtils.readResource("schemas/printerFilterExpected.graphql");
     private final Set<String> standardDirectives =
-            new HashSet<>(Arrays.asList("deprecated", "include", "skip"));
+            new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
 
     @Test
     void testEmpty() {
