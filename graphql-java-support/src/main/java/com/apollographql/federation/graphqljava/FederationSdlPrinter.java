@@ -953,7 +953,43 @@ public class FederationSdlPrinter {
     }
 
     private void printSingleLineDescription(PrintWriter out, String prefix, String s) {
-        out.printf("%s\"%s\"\n", prefix, s);
+        // See: https://github.com/graphql/graphql-spec/issues/148
+        String desc = escapeJsonString(s);
+        out.printf("%s\"%s\"\n", prefix, desc);
+    }
+
+    private String escapeJsonString(String stringValue) {
+        int len = stringValue.length();
+        StringBuilder sb = new StringBuilder(len);
+        for (int i = 0; i < len; i++) {
+            char ch = stringValue.charAt(i);
+            switch (ch) {
+                case '"':
+                    sb.append("\\\"");
+                    break;
+                case '\\':
+                    sb.append("\\\\");
+                    break;
+                case '\b':
+                    sb.append("\\b");
+                    break;
+                case '\f':
+                    sb.append("\\f");
+                    break;
+                case '\n':
+                    sb.append("\\n");
+                    break;
+                case '\r':
+                    sb.append("\\r");
+                    break;
+                case '\t':
+                    sb.append("\\t");
+                    break;
+                default:
+                    sb.append(ch);
+            }
+        }
+        return sb.toString();
     }
 
     private boolean hasDescription(Object descriptionHolder) {
