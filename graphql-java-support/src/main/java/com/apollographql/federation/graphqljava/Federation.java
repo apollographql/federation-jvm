@@ -15,8 +15,7 @@ import java.io.Reader;
 import java.util.Comparator;
 
 public final class Federation {
-    private static final SchemaGenerator.Options generatorOptions = SchemaGenerator.Options.defaultOptions()
-            .enforceSchemaDirectives(true);
+    private static final SchemaGenerator.Options generatorOptions = SchemaGenerator.Options.defaultOptions();
 
     private Federation() {
     }
