@@ -166,7 +166,6 @@ public final class SchemaTransformer {
         // and type definitions.
         final FederationSdlPrinter.Options options = FederationSdlPrinter.Options.defaultOptions()
                 .includeScalarTypes(true)
-                .includeExtendedScalarTypes(true)
                 .includeSchemaDefinition(true)
                 .includeDirectives(true)
                 .includeDirectiveDefinitions(def -> !hiddenDirectiveDefinitions.contains(def.getName()))
