@@ -1,5 +1,10 @@
 # Release notes
 
+## v0.4.2
+
+*Bugfixes:*
+- Backport bugfix in graphql-java v15's `SchemaPrinter` regarding escaping in single-quoted descriptions to `FederationSdlPrinter`.
+
 ## v0.4.1
 
 *Bugfixes:*
