@@ -7,7 +7,7 @@
     <groupId>com.apollographql.federation</groupId>
     <artifactId>federation-parent</artifactId>
     <name>federation-parent</name>
-    <version>0.4.2</version>
+    <version>0.4.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/apollographql/federation-jvm</url>
@@ -45,7 +45,7 @@
     </scm>
 
     <properties>
-        <release>0.4.2</release>
+        <release>0.4.3-SNAPSHOT</release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
