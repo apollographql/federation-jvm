@@ -1,5 +1,12 @@
 # Release notes
 
+## v0.5.0
+
+This is an upgrade release for graphql-java v15. This release is incompatible with earlier graphql-java versions due to backwards-incompatible changes in their `SchemaPrinter`.
+
+*Upgrades:*
+- graphql-java to `15.0`.
+
 ## v0.4.3
 
 *Bugfixes:*
