@@ -263,7 +263,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                 Reports.Trace.Error.Builder errorBuilder = builder.addErrorBuilder()
                         .setMessage(error.getMessage());
 
-                if (locations != null) {
+                if (error.getLocations() != null) {
                     error.getLocations().forEach(location -> errorBuilder.addLocationBuilder()
                             .setColumn(location.getColumn())
                             .setLine(location.getLine()));
