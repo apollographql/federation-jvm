@@ -244,11 +244,12 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                 errors.forEach(error -> {
                     Reports.Trace.Error.Builder errorBuilder = builder.addErrorBuilder()
                             .setMessage(error.getMessage());
-                    if (error.getLocations().isEmpty() && fieldLocation != null) {
+                    List<SourceLocation> locations = error.getLocations();
+                    if ((locations == null || locations.isEmpty()) && fieldLocation != null) {
                         errorBuilder.addLocationBuilder()
                                 .setColumn(fieldLocation.getColumn())
                                 .setLine(fieldLocation.getLine());
-                    } else {
+                    } else if (locations != null) {
                         error.getLocations().forEach(location -> errorBuilder.addLocationBuilder()
                                 .setColumn(location.getColumn())
                                 .setLine(location.getLine()));
@@ -262,9 +263,11 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                 Reports.Trace.Error.Builder errorBuilder = builder.addErrorBuilder()
                         .setMessage(error.getMessage());
 
-                error.getLocations().forEach(location -> errorBuilder.addLocationBuilder()
-                        .setColumn(location.getColumn())
-                        .setLine(location.getLine()));
+                if (locations != null) {
+                    error.getLocations().forEach(location -> errorBuilder.addLocationBuilder()
+                            .setColumn(location.getColumn())
+                            .setLine(location.getLine()));
+                }
             });
         }
 
