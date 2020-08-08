@@ -1,0 +1,44 @@
+directive @directive1 on FIELD_DEFINITION
+
+directive @directive2 on OBJECT
+
+interface Interface1 {
+  dummy: Enum2 @directive1
+}
+
+interface Interface2 {
+  dummy: Interface1 @directive1
+}
+
+type Object1 @directive2 {
+  dummy: Scalar2 @directive1
+}
+
+type Object2 @directive2 {
+  dummy: Object1 @directive1
+}
+
+type Query {
+  dummyEnum: Enum1 @directive1
+  dummyScalar: Scalar1 @directive1
+}
+
+enum Enum1 {
+  DUMMY
+}
+
+enum Enum2 {
+  DUMMY
+}
+
+scalar Scalar1
+
+scalar Scalar2
+
+input InputObject1 {
+  dummy: String
+}
+
+input InputObject2 {
+  dummy: InputObject1
+}

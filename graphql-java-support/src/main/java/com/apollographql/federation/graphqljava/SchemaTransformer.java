@@ -32,6 +32,7 @@ public final class SchemaTransformer {
     private DataFetcher entitiesDataFetcher = null;
     private DataFetcherFactory entitiesDataFetcherFactory = null;
     private Coercing coercingForAny = _Any.defaultCoercing;
+    private Set<String> excludedDirectives = null;
 
     SchemaTransformer(GraphQLSchema originalSchema) {
         this.originalSchema = originalSchema;
@@ -62,6 +63,18 @@ public final class SchemaTransformer {
         return this;
     }
 
+    public SchemaTransformer excludeDirectives(@NotNull  Set<String> excludedDirectives){
+        FederationDirectives.allNames
+                .stream()
+                .filter(federationDirectiveName -> excludedDirectives.contains(federationDirectiveName))
+                .findAny()
+                .ifPresent(federationDirectiveName -> {
+                    throw new FederationError("Cannot exclude "+federationDirectiveName + " directive");
+                });
+        this.excludedDirectives = excludedDirectives;
+        return this;
+    }
+
     @NotNull
     public final GraphQLSchema build() throws SchemaProblem {
         final List<GraphQLError> errors = new ArrayList<>();
@@ -75,7 +88,7 @@ public final class SchemaTransformer {
                 GraphQLCodeRegistry.newCodeRegistry(originalSchema.getCodeRegistry());
 
         // Print the original schema as sdl and expose it as query { _service { sdl } }
-        final String sdl = sdl(originalSchema);
+        final String sdl = sdl(originalSchema,excludedDirectives);
         final GraphQLObjectType.Builder newQueryType = GraphQLObjectType.newObject(originalQueryType)
                 .field(_Service.field);
         newCodeRegistry.dataFetcher(FieldCoordinates.coordinates(
@@ -143,7 +156,7 @@ public final class SchemaTransformer {
                 .build();
     }
 
-    public static String sdl(GraphQLSchema schema) {
+    public static String sdl(GraphQLSchema schema,Set<String> excludedDirectives) {
         // Gather directive definitions to hide.
         final Set<String> hiddenDirectiveDefinitions = new HashSet<>();
         hiddenDirectiveDefinitions.addAll(STANDARD_DIRECTIVES);
@@ -167,7 +180,7 @@ public final class SchemaTransformer {
         final FederationSdlPrinter.Options options = FederationSdlPrinter.Options.defaultOptions()
                 .includeScalarTypes(true)
                 .includeSchemaDefinition(true)
-                .includeDirectives(true)
+                .includeDirectives(directive -> excludedDirectives == null || !excludedDirectives.contains(directive.getName()))
                 .includeDirectiveDefinitions(def -> !hiddenDirectiveDefinitions.contains(def.getName()))
                 .includeTypeDefinitions(def -> !hiddenTypeDefinitions.contains(def.getName()));
         return new FederationSdlPrinter(options).print(schema);

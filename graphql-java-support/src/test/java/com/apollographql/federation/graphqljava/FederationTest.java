@@ -39,9 +39,12 @@ class FederationTest {
     private final String printerEscapingExpectedSDL = TestUtils.readResource("schemas/printerEscapingExpected.graphql");
     private final String printerFilterSDL = TestUtils.readResource("schemas/printerFilter.graphql");
     private final String printerFilterExpectedSDL = TestUtils.readResource("schemas/printerFilterExpected.graphql");
+    private final String printerFilterDirectiveSDL = TestUtils.readResource("schemas/printerFilterDirective.graphql");
+    private final String printerFilterDirectiveExpectedSDL = TestUtils.readResource("schemas/printerFilterDirectiveExpected.graphql");
     private final Set<String> standardDirectives =
             new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
-
+    private final Set<String> excludedDirectives =
+            new HashSet<>(Arrays.asList("directive2"));
     @Test
     void testEmpty() {
         final GraphQLSchema federated = Federation.transform(emptySDL)
@@ -229,6 +232,45 @@ class FederationTest {
                         .includeScalarTypes(true)
                         .includeDirectiveDefinitions(def ->
                                 !def.getName().endsWith("1") && !standardDirectives.contains(def.getName())
+                        )
+                        .includeTypeDefinitions(def -> !def.getName().endsWith("1"))
+                ).print(graphQLSchema).trim()
+        );
+    }
+
+    @Test
+    void testPrinterFilterExcluded() {
+        TypeDefinitionRegistry typeDefinitionRegistry = new SchemaParser().parse(printerFilterDirectiveSDL);
+        RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring()
+                .type("Interface1", typeWiring -> typeWiring
+                        .typeResolver(env -> null)
+                )
+                .type("Interface2", typeWiring -> typeWiring
+                        .typeResolver(env -> null)
+                )
+                .scalar(GraphQLScalarType.newScalar()
+                        .name("Scalar1")
+                        .coercing(Scalars.GraphQLString.getCoercing())
+                        .build()
+                )
+                .scalar(GraphQLScalarType.newScalar()
+                        .name("Scalar2")
+                        .coercing(Scalars.GraphQLString.getCoercing())
+                        .build()
+                )
+                .build();
+        GraphQLSchema graphQLSchema = new SchemaGenerator().makeExecutableSchema(
+                typeDefinitionRegistry,
+                runtimeWiring
+        );
+        Assertions.assertEquals(
+                printerFilterDirectiveExpectedSDL.trim(),
+                new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
+                        .includeScalarTypes(true)
+                        .includeDirectives(def ->
+                                !excludedDirectives.contains(def.getName()))
+                        .includeDirectiveDefinitions(def ->
+                                !def.getName().endsWith("1") && !def.getName().endsWith("2") && !standardDirectives.contains(def.getName())
                         )
                         .includeTypeDefinitions(def -> !def.getName().endsWith("1"))
                 ).print(graphQLSchema).trim()
