@@ -1,4 +1,6 @@
-type Query
+type Query {
+    dummy: String
+}
 
 type SomeType @key(fields: "theKey") {
     theKey: ID!

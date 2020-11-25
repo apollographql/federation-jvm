@@ -58,6 +58,7 @@ class FederationTest {
                 "\n" +
                 "type Query {\n" +
                 "  _service: _Service\n" +
+                "  dummy: String\n" +
                 "}\n" +
                 "\n" +
                 "type _Service {\n" +
@@ -165,9 +166,6 @@ class FederationTest {
         TypeDefinitionRegistry typeDefinitionRegistry = new SchemaParser().parse(printerEmptySDL);
         RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring()
                 .type("Interface1", typeWiring -> typeWiring
-                        .typeResolver(env -> null)
-                )
-                .type("Interface2", typeWiring -> typeWiring
                         .typeResolver(env -> null)
                 )
                 .build();

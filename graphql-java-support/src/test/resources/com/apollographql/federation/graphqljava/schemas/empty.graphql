@@ -2,4 +2,6 @@ schema {
   query: Query
 }
 
-type Query
+type Query {
+  dummy: String
+}

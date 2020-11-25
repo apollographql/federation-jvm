@@ -1,3 +1,7 @@
+type Query {
+    dummy: String
+}
+
 interface Product @key(fields : "id") {
     id: ID!
 }

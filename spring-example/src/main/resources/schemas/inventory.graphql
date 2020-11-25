@@ -1,3 +1,7 @@
+type Query {
+    dummy: String
+}
+
 type Product @key(fields: "upc") @extends {
     upc: String! @external
     inStock: Boolean
