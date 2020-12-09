@@ -1,7 +1,9 @@
 package com.apollographql.federation.graphqljava;
 
-import graphql.language.DirectiveDefinition;
+import graphql.language.FieldDefinition;
 import graphql.language.ObjectTypeDefinition;
+import graphql.language.TypeDefinition;
+import graphql.language.TypeName;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
@@ -12,7 +14,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.Reader;
-import java.util.Comparator;
 
 public final class Federation {
     private static final SchemaGenerator.Options generatorOptions = SchemaGenerator.Options.defaultOptions();
@@ -22,17 +23,28 @@ public final class Federation {
 
     @NotNull
     public static SchemaTransformer transform(final GraphQLSchema schema) {
-        return new SchemaTransformer(schema);
+        return new SchemaTransformer(schema, false);
+    }
+
+    // Note that GraphQLSchema does not support empty object types as of graphql-java v16. If you
+    // would like the query type to be empty, then add a dummy field to the query type in the given
+    // GraphQLSchema and pass queryTypeShouldBeEmpty as true. You can also use a transform()
+    // overload that accepts something other than a GraphQLSchema, as those overloads will
+    // automatically handle this for you. The output schema won't contain the dummy field, nor will
+    // it be visible to the gateway.
+    @NotNull
+    public static SchemaTransformer transform(final GraphQLSchema schema, final boolean queryTypeShouldBeEmpty) {
+        return new SchemaTransformer(schema, queryTypeShouldBeEmpty);
     }
 
     public static SchemaTransformer transform(final TypeDefinitionRegistry typeRegistry, final RuntimeWiring runtimeWiring) {
-        ensureQueryTypeExists(typeRegistry);
+        final boolean queryTypeShouldBeEmpty = ensureQueryTypeExists(typeRegistry);
         RuntimeWiring newRuntimeWiring = ensureFederationDirectiveDefinitionsExist(typeRegistry, runtimeWiring);
         final GraphQLSchema original = new SchemaGenerator().makeExecutableSchema(
                 generatorOptions,
                 typeRegistry,
                 newRuntimeWiring);
-        return transform(original);
+        return transform(original, queryTypeShouldBeEmpty);
     }
 
     public static SchemaTransformer transform(final TypeDefinitionRegistry typeRegistry) {
@@ -67,7 +79,8 @@ public final class Federation {
         return RuntimeWiring.newRuntimeWiring().build();
     }
 
-    private static void ensureQueryTypeExists(TypeDefinitionRegistry typeRegistry) {
+    // Returns true if a dummy field was added to the query type to ensure it's not empty.
+    private static boolean ensureQueryTypeExists(TypeDefinitionRegistry typeRegistry) {
         final String queryName = typeRegistry.schemaDefinition()
                 .flatMap(sdef -> sdef.getOperationTypeDefinitions()
                         .stream()
@@ -75,9 +88,25 @@ public final class Federation {
                         .findFirst()
                         .map(def -> def.getTypeName().getName()))
                 .orElse("Query");
-        if (!typeRegistry.getType(queryName).isPresent()) {
-            typeRegistry.add(ObjectTypeDefinition.newObjectTypeDefinition().name(queryName).build());
+        TypeDefinition<?> newQueryType = typeRegistry
+                .getType(queryName)
+                .orElse(ObjectTypeDefinition.newObjectTypeDefinition().name(queryName).build());
+        final boolean addDummyField = newQueryType instanceof ObjectTypeDefinition
+                && ((ObjectTypeDefinition) newQueryType).getFieldDefinitions().isEmpty();
+        if (addDummyField) {
+            newQueryType = ((ObjectTypeDefinition) newQueryType).transform(objectTypeDefinitionBuilder ->
+                    objectTypeDefinitionBuilder.fieldDefinition(FieldDefinition.newFieldDefinition()
+                            .name("_dummy")
+                            .type(new TypeName("String"))
+                            .build()
+                    )
+            );
         }
+        // Note that TypeDefinitionRegistry will throw if you attempt to redefine a type, but it
+        // reacts fine if you try to remove a type that doesn't exist.
+        typeRegistry.remove(newQueryType);
+        typeRegistry.add(newQueryType);
+        return addDummyField;
     }
 
     private static RuntimeWiring ensureFederationDirectiveDefinitionsExist(
