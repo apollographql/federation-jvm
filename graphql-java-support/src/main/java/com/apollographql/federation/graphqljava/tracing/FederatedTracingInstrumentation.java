@@ -88,20 +88,11 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             logger.debug(trace.toString());
         }
 
-        // Elaborately copy the result into a builder.
-        // Annoyingly, ExecutionResultImpl.Builder.from takes ExecutionResultImpl rather than
-        // ExecutionResult in versions of GraphQL-Java older than v13
-        // (see https://github.com/graphql-java/graphql-java/pull/1491), so to support older versions
-        // we copy the fields by hand, which does result in isDataPresent always being set (ie,
-        // "data": null being included in all results). The built-in TracingInstrumentation has
-        // the same issue. If we decide to only support v13 then this can just change to
-        // ExecutionResultImpl.newExecutionResult().from(executionResult).
-        return CompletableFuture.completedFuture(ExecutionResultImpl.newExecutionResult()
-                .data(executionResult.getData())
-                .errors(executionResult.getErrors())
-                .extensions(executionResult.getExtensions())
-                .addExtension(EXTENSION_KEY, Base64.getEncoder().encodeToString(trace.toByteArray()))
-                .build());
+        return CompletableFuture.completedFuture(
+                ExecutionResultImpl
+                        .newExecutionResult().from(executionResult)
+                        .addExtension(EXTENSION_KEY, Base64.getEncoder().encodeToString(trace.toByteArray()))
+                        .build());
     }
 
     @Override
