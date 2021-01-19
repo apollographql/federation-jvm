@@ -34,7 +34,6 @@ class FederationTest {
     private final String interfacesSDL = TestUtils.readResource("schemas/interfaces.graphql");
     private final String isolatedSDL = TestUtils.readResource("schemas/isolated.graphql");
     private final String productSDL = TestUtils.readResource("schemas/product.graphql");
-    private final String printerEmptySDL = TestUtils.readResource("schemas/printerEmpty.graphql");
     private final String printerEscapingSDL = TestUtils.readResource("schemas/printerEscaping.graphql");
     private final String printerEscapingExpectedSDL = TestUtils.readResource("schemas/printerEscapingExpected.graphql");
     private final String printerFilterSDL = TestUtils.readResource("schemas/printerFilter.graphql");
@@ -158,29 +157,6 @@ class FederationTest {
                 .collect(Collectors.toList());
 
         assertIterableEquals(Arrays.asList("Book", "Movie", "Page"), unionTypes);
-    }
-
-    @Test
-    void testPrinterEmpty() {
-        TypeDefinitionRegistry typeDefinitionRegistry = new SchemaParser().parse(printerEmptySDL);
-        RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring()
-                .type("Interface1", typeWiring -> typeWiring
-                        .typeResolver(env -> null)
-                )
-                .type("Interface2", typeWiring -> typeWiring
-                        .typeResolver(env -> null)
-                )
-                .build();
-        GraphQLSchema graphQLSchema = new SchemaGenerator().makeExecutableSchema(
-                typeDefinitionRegistry,
-                runtimeWiring
-        );
-        Assertions.assertEquals(
-                printerEmptySDL.trim(),
-                new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
-                        .includeDirectiveDefinitions(def -> !standardDirectives.contains(def.getName()))
-                ).print(graphQLSchema).trim()
-        );
     }
 
     @Test
