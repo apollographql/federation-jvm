@@ -4,6 +4,7 @@ import graphql.ExecutionResult;
 import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLNamedType;
+import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
@@ -42,7 +43,7 @@ class FederationTest {
             new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
 
     @Test
-    void testEmpty() {
+    void testEmptySDL() {
         final GraphQLSchema federated = Federation.transform(emptySDL)
                 .build();
         Assertions.assertEquals("directive @extends on OBJECT | INTERFACE\n" +
@@ -64,6 +65,41 @@ class FederationTest {
                 "}\n" +
                 "\n" +
                 "scalar _FieldSet\n",
+                new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
+                        .includeScalarTypes(true)
+                        .includeDirectiveDefinitions(def -> !standardDirectives.contains(def.getName()))
+                ).print(federated)
+        );
+
+        final GraphQLType _Service = federated.getType("_Service");
+        assertNotNull(_Service, "_Service type present");
+        final GraphQLFieldDefinition _service = federated.getQueryType().getFieldDefinition("_service");
+        assertNotNull(_service, "_service field present");
+        assertEquals(_Service, _service.getType(), "_service returns _Service");
+
+        SchemaUtils.assertSDL(federated, emptySDL);
+    }
+
+    @Test
+    void testEmptySchema() {
+        final GraphQLSchema federated = Federation.transform(GraphQLSchema.newSchema()
+                .query(GraphQLObjectType.newObject()
+                        .name("Query")
+                        .field(GraphQLFieldDefinition.newFieldDefinition()
+                                .name("dummy")
+                                .type(Scalars.GraphQLString)
+                                .build())
+                        .build())
+                .build(),
+                true
+        ).build();
+        Assertions.assertEquals("type Query {\n" +
+                "  _service: _Service\n" +
+                "}\n" +
+                "\n" +
+                "type _Service {\n" +
+                "  sdl: String!\n" +
+                "}\n",
                 new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
                         .includeScalarTypes(true)
                         .includeDirectiveDefinitions(def -> !standardDirectives.contains(def.getName()))
