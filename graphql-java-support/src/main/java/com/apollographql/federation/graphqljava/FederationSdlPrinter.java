@@ -1,6 +1,7 @@
 package com.apollographql.federation.graphqljava;
 
 import graphql.Assert;
+import graphql.PublicApi;
 import graphql.language.AstPrinter;
 import graphql.language.AstValueHelper;
 import graphql.language.Description;
@@ -67,6 +68,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * This can print an in memory GraphQL schema back to a logical schema definition
  */
+@PublicApi
 public class FederationSdlPrinter {
     //
     // we use this so that we get the simple "@deprecated" as text and not a full exploded
@@ -100,6 +102,8 @@ public class FederationSdlPrinter {
 
         private final Predicate<GraphQLNamedType> includeTypeDefinition;
 
+        private final Predicate<GraphQLSchemaElement> includeSchemaElement;
+
         private final GraphqlTypeComparatorRegistry comparatorRegistry;
 
         private Options(boolean includeIntrospectionTypes,
@@ -111,6 +115,7 @@ public class FederationSdlPrinter {
                         Predicate<GraphQLDirective> includeDirective,
                         Predicate<GraphQLDirective> includeDirectiveDefinition,
                         Predicate<GraphQLNamedType> includeTypeDefinition,
+                        Predicate<GraphQLSchemaElement> includeSchemaElement,
                         GraphqlTypeComparatorRegistry comparatorRegistry) {
             this.includeIntrospectionTypes = includeIntrospectionTypes;
             this.includeScalars = includeScalars;
@@ -122,6 +127,7 @@ public class FederationSdlPrinter {
             this.useAstDefinitions = useAstDefinitions;
             this.descriptionsAsHashComments = descriptionsAsHashComments;
             this.comparatorRegistry = comparatorRegistry;
+            this.includeSchemaElement = includeSchemaElement;
         }
 
         public boolean isIncludeIntrospectionTypes() {
@@ -152,6 +158,10 @@ public class FederationSdlPrinter {
             return includeTypeDefinition;
         }
 
+        public Predicate<GraphQLSchemaElement> getIncludeSchemaElement() {
+            return includeSchemaElement;
+        }
+
         public boolean isDescriptionsAsHashComments() {
             return descriptionsAsHashComments;
         }
@@ -168,7 +178,7 @@ public class FederationSdlPrinter {
             return new Options(false, true,
                     false, true, false, false,
                     directive -> true, directiveDefinition -> true, typeDefinition -> true,
-                    DefaultGraphqlTypeComparatorRegistry.defaultComparators());
+                    element -> true, DefaultGraphqlTypeComparatorRegistry.defaultComparators());
         }
 
         /**
@@ -178,7 +188,7 @@ public class FederationSdlPrinter {
          * @return options
          */
         public Options includeIntrospectionTypes(boolean flag) {
-            return new Options(flag, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.comparatorRegistry);
+            return new Options(flag, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.includeSchemaElement, this.comparatorRegistry);
         }
 
         /**
@@ -188,7 +198,7 @@ public class FederationSdlPrinter {
          * @return options
          */
         public Options includeScalarTypes(boolean flag) {
-            return new Options(this.includeIntrospectionTypes, flag, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.comparatorRegistry);
+            return new Options(this.includeIntrospectionTypes, flag, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.includeSchemaElement, this.comparatorRegistry);
         }
 
         /**
@@ -201,14 +211,14 @@ public class FederationSdlPrinter {
          * @return options
          */
         public Options includeSchemaDefinition(boolean flag) {
-            return new Options(this.includeIntrospectionTypes, this.includeScalars, flag, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.comparatorRegistry);
+            return new Options(this.includeIntrospectionTypes, this.includeScalars, flag, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.includeSchemaElement, this.comparatorRegistry);
         }
 
         /**
          * This flag controls whether schema printer will include directive definitions at the top of the schema, but does not remove them from the field or type usage.
          * <p>
-         * In some scema defintions, like Apollo Federation, the schema should be printed without the directive defintions.
-         * This simplified schema is retured by a GraphQL query to other services, in a format that is different that the introspection query.
+         * In some schema defintions, like Apollo Federation, the schema should be printed without the directive definitions.
+         * This simplified schema is returned by a GraphQL query to other services, in a format that is different that the introspection query.
          * <p>
          * On by default.
          *
@@ -216,7 +226,7 @@ public class FederationSdlPrinter {
          * @return new instance of options
          */
         public Options includeDirectiveDefinitions(boolean flag) {
-            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, flag, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.comparatorRegistry);
+            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, flag, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.includeSchemaElement, this.comparatorRegistry);
         }
 
         /**
@@ -227,37 +237,56 @@ public class FederationSdlPrinter {
          * @return new instance of options
          */
         public Options includeDirectives(boolean flag) {
-            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, directive -> flag, this.includeDirectiveDefinition, this.includeTypeDefinition, this.comparatorRegistry);
+            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, directive -> flag, this.includeDirectiveDefinition, this.includeTypeDefinition, this.includeSchemaElement, this.comparatorRegistry);
         }
 
+        /**
+         * This is a Predicate that decides whether a directive element is printed.
+         *
+         * @param includeDirective the predicate to decide of a directive is printed
+         * @return new instance of options
+         */
         public Options includeDirectives(Predicate<GraphQLDirective> includeDirective) {
-            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.comparatorRegistry);
+            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.includeSchemaElement, this.comparatorRegistry);
         }
 
         /**
          * Filter printing of directive definitions. In Apollo Federation, some directive
          * definitions need to be hidden, and this predicate allows filtering out such definitions.
          * Prints all definitions by default. Note that this predicate, the predicate in {@link
-         * #includeDirectives(Predicate)}, and the boolean in {@link
+         * #includeDirectives(Predicate)}, the predicate in {@link
+         * #includeSchemaElement(Predicate)}, and the boolean in {@link
          * #includeDirectiveDefinitions(boolean)} must be true for a definition to be printed.
          *
          * @param includeDirectiveDefinition returns true if the definition should be printed
          * @return new instance of options
          */
         public Options includeDirectiveDefinitions(Predicate<GraphQLDirective> includeDirectiveDefinition) {
-            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, includeDirectiveDefinition, this.includeTypeDefinition, this.comparatorRegistry);
+            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, includeDirectiveDefinition, this.includeTypeDefinition, this.includeSchemaElement, this.comparatorRegistry);
         }
 
         /**
          * Filter printing of type definitions. In Apollo Federation, some type definitions need to
          * be hidden, and this predicate allows filtering out such definitions. Prints all
-         * definitions by default.
+         * definitions by default. Note that this predicate and the predicate in {@link
+         * #includeSchemaElement(Predicate)} must be true for a definition to be printed.
          *
          * @param includeTypeDefinition returns true if the definition should be printed
          * @return new instance of options
          */
         public Options includeTypeDefinitions(Predicate<GraphQLNamedType> includeTypeDefinition) {
-            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, includeTypeDefinition, this.comparatorRegistry);
+            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, includeTypeDefinition, this.includeSchemaElement, this.comparatorRegistry);
+        }
+
+        /**
+         * This is a general purpose Predicate that decides whether a schema element is printed ever.
+         *
+         * @param includeSchemaElement the predicate to decide of a schema is printed
+         * @return new instance of options
+         */
+        public Options includeSchemaElement(Predicate<GraphQLSchemaElement> includeSchemaElement) {
+            Assert.assertNotNull(includeSchemaElement);
+            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, includeSchemaElement, this.comparatorRegistry);
         }
 
         /**
@@ -268,7 +297,7 @@ public class FederationSdlPrinter {
          * @return new instance of options
          */
         public Options useAstDefinitions(boolean flag) {
-            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, flag, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.comparatorRegistry);
+            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, flag, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.includeSchemaElement, this.comparatorRegistry);
         }
 
         /**
@@ -281,7 +310,7 @@ public class FederationSdlPrinter {
          * @return new instance of options
          */
         public Options descriptionsAsHashComments(boolean flag) {
-            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, flag, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.comparatorRegistry);
+            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, flag, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.includeSchemaElement, this.comparatorRegistry);
         }
 
         /**
@@ -293,11 +322,11 @@ public class FederationSdlPrinter {
          * @return options
          */
         public Options setComparators(GraphqlTypeComparatorRegistry comparatorRegistry) {
-            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, comparatorRegistry);
+            return new Options(this.includeIntrospectionTypes, this.includeScalars, this.includeSchemaDefinition, this.includeDirectiveDefinitions, this.useAstDefinitions, this.descriptionsAsHashComments, this.includeDirective, this.includeDirectiveDefinition, this.includeTypeDefinition, this.includeSchemaElement, comparatorRegistry);
         }
     }
 
-    private final Map<Class, TypePrinter<?>> printers = new LinkedHashMap<>();
+    private final Map<Class<?>, TypePrinter<?>> printers = new LinkedHashMap<>();
 
     private final Options options;
 
@@ -447,6 +476,7 @@ public class FederationSdlPrinter {
         out.format(" {\n");
         fieldDefinitions
                 .stream()
+                .filter(options.getIncludeSchemaElement())
                 .sorted(comparator)
                 .forEach(fd -> {
                     printComments(out, fd, "  ");
@@ -598,20 +628,21 @@ public class FederationSdlPrinter {
                 if (inputObjectFields.size() > 0) {
                     out.format(" {\n");
                     inputObjectFields
-                        .stream()
-                        .sorted(comparator)
-                        .forEach(fd -> {
-                            printComments(out, fd, "  ");
-                            out.format("  %s: %s",
-                                fd.getName(), typeString(fd.getType()));
-                            Object defaultValue = fd.getDefaultValue();
-                            if (defaultValue != null) {
-                                String astValue = printAst(defaultValue, fd.getType());
-                                out.format(" = %s", astValue);
-                            }
-                            out.format(directivesString(GraphQLInputObjectField.class, fd.getDirectives()));
-                            out.format("\n");
-                        });
+                            .stream()
+                            .filter(options.getIncludeSchemaElement())
+                            .sorted(comparator)
+                            .forEach(fd -> {
+                                printComments(out, fd, "  ");
+                                out.format("  %s: %s",
+                                        fd.getName(), typeString(fd.getType()));
+                                Object defaultValue = fd.getDefaultValue();
+                                if (defaultValue != null) {
+                                    String astValue = printAst(defaultValue, fd.getType());
+                                    out.format(" = %s", astValue);
+                                }
+                                out.format(directivesString(GraphQLInputObjectField.class, fd.getDirectives()));
+                                out.format("\n");
+                            });
                     out.format("}");
                 }
                 out.format("\n\n");
@@ -625,7 +656,7 @@ public class FederationSdlPrinter {
      * @param definition the AST type definition
      * @return true if we should print using AST nodes
      */
-    private boolean shouldPrintAsAst(TypeDefinition definition) {
+    private boolean shouldPrintAsAst(TypeDefinition<?> definition) {
         return options.isUseAstDefinitions() && definition != null;
     }
 
@@ -637,11 +668,11 @@ public class FederationSdlPrinter {
      * @param definition the AST type definition
      * @param extensions a list of type definition extensions
      */
-    private void printAsAst(PrintWriter out, TypeDefinition definition, List<? extends
-            TypeDefinition> extensions) {
+    private void printAsAst(PrintWriter out, TypeDefinition<?> definition, List<? extends
+            TypeDefinition<?>> extensions) {
         out.printf("%s\n", AstPrinter.printAst(definition));
         if (extensions != null) {
-            for (TypeDefinition extension : extensions) {
+            for (TypeDefinition<?> extension : extensions) {
                 out.printf("\n%s\n", AstPrinter.printAst(extension));
             }
         }
@@ -700,6 +731,7 @@ public class FederationSdlPrinter {
     private List<GraphQLDirective> getSchemaDirectives(GraphQLSchema schema) {
         return schema.getDirectives().stream()
                 .filter(options.getIncludeDirective())
+                .filter(options.getIncludeSchemaElement())
                 .filter(options.getIncludeDirectiveDefinition())
                 .collect(toList());
     }
@@ -728,6 +760,7 @@ public class FederationSdlPrinter {
         arguments = arguments
                 .stream()
                 .sorted(comparator)
+                .filter(options.getIncludeSchemaElement())
                 .collect(toList());
         for (GraphQLArgument argument : arguments) {
             if (count == 0) {
@@ -748,6 +781,7 @@ public class FederationSdlPrinter {
             }
 
             argument.getDirectives().stream()
+                    .filter(options.getIncludeSchemaElement())
                     .map(this::directiveString)
                     .filter(it -> !it.isEmpty())
                     .forEach(directiveString -> sb.append(" ").append(directiveString));
@@ -767,15 +801,14 @@ public class FederationSdlPrinter {
         directives = directives.stream()
                 // @deprecated is special - we always print it if something is deprecated
                 .filter(directive -> options.getIncludeDirective().test(directive) || isDeprecatedDirective(directive))
+                .filter(options.getIncludeSchemaElement())
                 .collect(toList());
 
         if (directives.isEmpty()) {
             return "";
         }
         StringBuilder sb = new StringBuilder();
-        if (!directives.isEmpty()) {
-            sb.append(" ");
-        }
+        sb.append(" ");
 
         GraphqlTypeComparatorEnvironment environment = GraphqlTypeComparatorEnvironment.newEnvironment()
                 .parentType(parent)
@@ -798,6 +831,9 @@ public class FederationSdlPrinter {
     }
 
     private String directiveString(GraphQLDirective directive) {
+        if (!options.getIncludeSchemaElement().test(directive)) {
+            return "";
+        }
         if (!options.getIncludeDirective().test(directive)) {
             // @deprecated is special - we always print it if something is deprecated
             if (!isDeprecatedDirective(directive)) {
@@ -863,10 +899,10 @@ public class FederationSdlPrinter {
 
     private String directiveDefinitions(List<GraphQLDirective> directives) {
         StringBuilder sb = new StringBuilder();
-        for (GraphQLDirective directive : directives) {
+        directives.stream().filter(options.getIncludeSchemaElement()).forEach(directive -> {
             sb.append(directiveDefinition(directive));
             sb.append("\n\n");
-        }
+        });
         return sb.toString();
     }
 
@@ -889,10 +925,15 @@ public class FederationSdlPrinter {
         List<GraphQLArgument> args = directive.getArguments();
         args = args
                 .stream()
+                .filter(options.getIncludeSchemaElement())
                 .sorted(comparator)
                 .collect(toList());
 
         sb.append(argsString(GraphQLDirective.class, args));
+
+        if (directive.isRepeatable()) {
+            sb.append(" repeatable");
+        }
 
         sb.append(" on ");
 
@@ -905,7 +946,7 @@ public class FederationSdlPrinter {
 
     @SuppressWarnings("unchecked")
     private <T> TypePrinter<T> printer(Class<?> clazz) {
-        TypePrinter typePrinter = printers.get(clazz);
+        TypePrinter<?> typePrinter = printers.get(clazz);
         if (typePrinter == null) {
             Class<?> superClazz = clazz.getSuperclass();
             if (superClazz != Object.class) {
@@ -928,11 +969,11 @@ public class FederationSdlPrinter {
         return sw.toString();
     }
 
-    @SuppressWarnings("unchecked")
-    private void printType(PrintWriter out, List<GraphQLType> typesAsList, Class
+    private void printType(PrintWriter out, List<GraphQLType> typesAsList, Class<?>
             typeClazz, GraphqlFieldVisibility visibility) {
         typesAsList.stream()
                 .filter(type -> typeClazz.isAssignableFrom(type.getClass()))
+                .filter(type -> options.getIncludeSchemaElement().test(type))
                 .forEach(type -> printType(out, type, visibility));
     }
 
@@ -959,7 +1000,7 @@ public class FederationSdlPrinter {
             List<String> lines = Arrays.asList(descriptionText.split("\n"));
             if (options.isDescriptionsAsHashComments()) {
                 printMultiLineHashDescription(out, prefix, lines);
-            } else {
+            } else if (!lines.isEmpty()) {
                 if (lines.size() > 1) {
                     printMultiLineDescription(out, prefix, lines);
                 } else {

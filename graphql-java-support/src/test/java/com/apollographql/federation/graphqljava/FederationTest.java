@@ -4,6 +4,7 @@ import graphql.ExecutionResult;
 import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLNamedType;
+import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
@@ -34,7 +35,6 @@ class FederationTest {
     private final String interfacesSDL = TestUtils.readResource("schemas/interfaces.graphql");
     private final String isolatedSDL = TestUtils.readResource("schemas/isolated.graphql");
     private final String productSDL = TestUtils.readResource("schemas/product.graphql");
-    private final String printerEmptySDL = TestUtils.readResource("schemas/printerEmpty.graphql");
     private final String printerEscapingSDL = TestUtils.readResource("schemas/printerEscaping.graphql");
     private final String printerEscapingExpectedSDL = TestUtils.readResource("schemas/printerEscapingExpected.graphql");
     private final String printerFilterSDL = TestUtils.readResource("schemas/printerFilter.graphql");
@@ -43,7 +43,7 @@ class FederationTest {
             new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
 
     @Test
-    void testEmpty() {
+    void testEmptySDL() {
         final GraphQLSchema federated = Federation.transform(emptySDL)
                 .build();
         Assertions.assertEquals("directive @extends on OBJECT | INTERFACE\n" +
@@ -65,6 +65,41 @@ class FederationTest {
                 "}\n" +
                 "\n" +
                 "scalar _FieldSet\n",
+                new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
+                        .includeScalarTypes(true)
+                        .includeDirectiveDefinitions(def -> !standardDirectives.contains(def.getName()))
+                ).print(federated)
+        );
+
+        final GraphQLType _Service = federated.getType("_Service");
+        assertNotNull(_Service, "_Service type present");
+        final GraphQLFieldDefinition _service = federated.getQueryType().getFieldDefinition("_service");
+        assertNotNull(_service, "_service field present");
+        assertEquals(_Service, _service.getType(), "_service returns _Service");
+
+        SchemaUtils.assertSDL(federated, emptySDL);
+    }
+
+    @Test
+    void testEmptySchema() {
+        final GraphQLSchema federated = Federation.transform(GraphQLSchema.newSchema()
+                .query(GraphQLObjectType.newObject()
+                        .name("Query")
+                        .field(GraphQLFieldDefinition.newFieldDefinition()
+                                .name("dummy")
+                                .type(Scalars.GraphQLString)
+                                .build())
+                        .build())
+                .build(),
+                true
+        ).build();
+        Assertions.assertEquals("type Query {\n" +
+                "  _service: _Service\n" +
+                "}\n" +
+                "\n" +
+                "type _Service {\n" +
+                "  sdl: String!\n" +
+                "}\n",
                 new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
                         .includeScalarTypes(true)
                         .includeDirectiveDefinitions(def -> !standardDirectives.contains(def.getName()))
@@ -158,29 +193,6 @@ class FederationTest {
                 .collect(Collectors.toList());
 
         assertIterableEquals(Arrays.asList("Book", "Movie", "Page"), unionTypes);
-    }
-
-    @Test
-    void testPrinterEmpty() {
-        TypeDefinitionRegistry typeDefinitionRegistry = new SchemaParser().parse(printerEmptySDL);
-        RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring()
-                .type("Interface1", typeWiring -> typeWiring
-                        .typeResolver(env -> null)
-                )
-                .type("Interface2", typeWiring -> typeWiring
-                        .typeResolver(env -> null)
-                )
-                .build();
-        GraphQLSchema graphQLSchema = new SchemaGenerator().makeExecutableSchema(
-                typeDefinitionRegistry,
-                runtimeWiring
-        );
-        Assertions.assertEquals(
-                printerEmptySDL.trim(),
-                new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
-                        .includeDirectiveDefinitions(def -> !standardDirectives.contains(def.getName()))
-                ).print(graphQLSchema).trim()
-        );
     }
 
     @Test

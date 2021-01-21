@@ -7,16 +7,20 @@ import graphql.schema.DataFetcherFactory;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLDirectiveContainer;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.TypeResolver;
 import graphql.schema.idl.errors.SchemaProblem;
+import graphql.schema.visibility.GraphqlFieldVisibility;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,13 +32,15 @@ public final class SchemaTransformer {
     private static final Set<String> STANDARD_DIRECTIVES =
             new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
     private final GraphQLSchema originalSchema;
+    private final boolean queryTypeShouldBeEmpty;
     private TypeResolver entityTypeResolver = null;
     private DataFetcher entitiesDataFetcher = null;
     private DataFetcherFactory entitiesDataFetcherFactory = null;
     private Coercing coercingForAny = _Any.defaultCoercing;
 
-    SchemaTransformer(GraphQLSchema originalSchema) {
+    SchemaTransformer(GraphQLSchema originalSchema, boolean queryTypeShouldBeEmpty) {
         this.originalSchema = originalSchema;
+        this.queryTypeShouldBeEmpty = queryTypeShouldBeEmpty;
     }
 
     @NotNull
@@ -75,9 +81,10 @@ public final class SchemaTransformer {
                 GraphQLCodeRegistry.newCodeRegistry(originalSchema.getCodeRegistry());
 
         // Print the original schema as sdl and expose it as query { _service { sdl } }
-        final String sdl = sdl(originalSchema);
-        final GraphQLObjectType.Builder newQueryType = GraphQLObjectType.newObject(originalQueryType)
-                .field(_Service.field);
+        final String sdl = sdl(originalSchema, queryTypeShouldBeEmpty);
+        final GraphQLObjectType.Builder newQueryType = GraphQLObjectType.newObject(originalQueryType);
+        if (queryTypeShouldBeEmpty) newQueryType.clearFields();
+        newQueryType.field(_Service.field);
         newCodeRegistry.dataFetcher(FieldCoordinates.coordinates(
                 originalQueryType.getName(),
                 _Service.fieldName
@@ -144,6 +151,10 @@ public final class SchemaTransformer {
     }
 
     public static String sdl(GraphQLSchema schema) {
+        return sdl(schema, false);
+    }
+
+    public static String sdl(GraphQLSchema schema, boolean queryTypeShouldBeEmpty) {
         // Gather directive definitions to hide.
         final Set<String> hiddenDirectiveDefinitions = new HashSet<>();
         hiddenDirectiveDefinitions.addAll(STANDARD_DIRECTIVES);
@@ -155,6 +166,30 @@ public final class SchemaTransformer {
         hiddenTypeDefinitions.add(_Entity.typeName);
         hiddenTypeDefinitions.add(_FieldSet.typeName);
         hiddenTypeDefinitions.add(_Service.typeName);
+
+        // Change field visibility for the query type if needed.
+        if (queryTypeShouldBeEmpty) {
+            final String queryTypeName = schema.getQueryType().getName();
+            final GraphqlFieldVisibility oldFieldVisibility = schema.getCodeRegistry().getFieldVisibility();
+            final GraphqlFieldVisibility newFieldVisibility = new GraphqlFieldVisibility() {
+                @Override
+                public List<GraphQLFieldDefinition> getFieldDefinitions(GraphQLFieldsContainer fieldsContainer) {
+                    return fieldsContainer.getName().equals(queryTypeName)
+                            ? Collections.emptyList()
+                            : oldFieldVisibility.getFieldDefinitions(fieldsContainer);
+                }
+
+                @Override
+                public GraphQLFieldDefinition getFieldDefinition(GraphQLFieldsContainer fieldsContainer, String fieldName) {
+                    return fieldsContainer.getName().equals(queryTypeName)
+                            ? null
+                            : oldFieldVisibility.getFieldDefinition(fieldsContainer, fieldName);
+                }
+            };
+            final GraphQLCodeRegistry newCodeRegistry = schema.getCodeRegistry()
+                    .transform(codeRegistryBuilder -> codeRegistryBuilder.fieldVisibility(newFieldVisibility));
+            schema = schema.transform(schemaBuilder -> schemaBuilder.codeRegistry(newCodeRegistry));
+        }
 
         // Note that FederationSdlPrinter is a copy of graphql-java's SchemaPrinter that adds the
         // ability to filter out directive and type definitions, which is required by federation

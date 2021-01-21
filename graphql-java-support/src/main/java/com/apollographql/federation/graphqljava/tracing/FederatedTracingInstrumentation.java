@@ -6,8 +6,8 @@ import graphql.ExecutionResultImpl;
 import graphql.GraphQLError;
 import graphql.GraphqlErrorBuilder;
 import graphql.execution.DataFetcherResult;
-import graphql.execution.ExecutionPath;
 import graphql.execution.ExecutionStepInfo;
+import graphql.execution.ResultPath;
 import graphql.execution.instrumentation.InstrumentationContext;
 import graphql.execution.instrumentation.InstrumentationState;
 import graphql.execution.instrumentation.SimpleInstrumentation;
@@ -88,18 +88,8 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             logger.debug(trace.toString());
         }
 
-        // Elaborately copy the result into a builder.
-        // Annoyingly, ExecutionResultImpl.Builder.from takes ExecutionResultImpl rather than
-        // ExecutionResult in versions of GraphQL-Java older than v13
-        // (see https://github.com/graphql-java/graphql-java/pull/1491), so to support older versions
-        // we copy the fields by hand, which does result in isDataPresent always being set (ie,
-        // "data": null being included in all results). The built-in TracingInstrumentation has
-        // the same issue. If we decide to only support v13 then this can just change to
-        // ExecutionResultImpl.newExecutionResult().from(executionResult).
         return CompletableFuture.completedFuture(ExecutionResultImpl.newExecutionResult()
-                .data(executionResult.getData())
-                .errors(executionResult.getErrors())
-                .extensions(executionResult.getExtensions())
+                .from(executionResult)
                 .addExtension(EXTENSION_KEY, Base64.getEncoder().encodeToString(trace.toByteArray()))
                 .build());
     }
@@ -227,7 +217,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
          * Adds stats data collected from a field fetch.
          */
         void addFieldFetchData(ExecutionStepInfo stepInfo, long startFieldNanos, long endFieldNanos, List<GraphQLError> errors, SourceLocation fieldLocation) {
-            ExecutionPath path = stepInfo.getPath();
+            ResultPath path = stepInfo.getPath();
             protoBuilderTree.editBuilder(path, (builder) -> {
                 builder.setStartTime(startFieldNanos)
                         .setEndTime(endFieldNanos)
@@ -259,7 +249,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
         }
 
         void addRootError(GraphQLError error) {
-            protoBuilderTree.editBuilder(ExecutionPath.rootPath(), (builder) -> {
+            protoBuilderTree.editBuilder(ResultPath.rootPath(), (builder) -> {
                 Reports.Trace.Error.Builder errorBuilder = builder.addErrorBuilder()
                         .setMessage(error.getMessage());
 
@@ -301,7 +291,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
          */
         private static class ProtoBuilderTree {
             private final Node root;
-            private final ConcurrentMap<ExecutionPath, Node> nodesByPath;
+            private final ConcurrentMap<ResultPath, Node> nodesByPath;
             // We use a whole-tree read-write lock to prevent the protobuf conversion step from
             // having to acquire each node's lock.
             private final ReadWriteLock treeLock;
@@ -313,14 +303,14 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             public ProtoBuilderTree() {
                 root = new Node(Reports.Trace.Node.newBuilder());
                 nodesByPath = new ConcurrentHashMap<>();
-                nodesByPath.put(ExecutionPath.rootPath(), root);
+                nodesByPath.put(ResultPath.rootPath(), root);
                 treeLock = new ReentrantReadWriteLock();
             }
 
             /**
              * Edit builder for the node at the given path (creating it and its parents if needed).
              */
-            public void editBuilder(ExecutionPath path, Consumer<Reports.Trace.Node.Builder> builderConsumer) {
+            public void editBuilder(ResultPath path, Consumer<Reports.Trace.Node.Builder> builderConsumer) {
                 Lock l = treeLock.readLock();
                 l.lock();
                 try {
@@ -342,7 +332,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
              * Note that {@link #treeLock}'s read lock must be held when calling this method.
              */
             @NotNull
-            private Node getOrCreateNode(ExecutionPath path) {
+            private Node getOrCreateNode(ResultPath path) {
                 // Fast path for when the node already exists.
                 Node current = nodesByPath.get(path);
                 if (current != null) return current;
@@ -357,7 +347,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                         throw new RuntimeException("root path missing from nodesByPath?");
                     }
                     currentSegmentIndex--;
-                    ExecutionPath currentPath = ExecutionPath.fromList(pathSegments.subList(0, currentSegmentIndex));
+                    ResultPath currentPath = ResultPath.fromList(pathSegments.subList(0, currentSegmentIndex));
                     current = nodesByPath.get(currentPath);
                 }
 
@@ -365,7 +355,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                 // needed.
                 for (; currentSegmentIndex < pathSegments.size(); currentSegmentIndex++) {
                     Node parent = current;
-                    ExecutionPath childPath = ExecutionPath.fromList(pathSegments.subList(0, currentSegmentIndex + 1));
+                    ResultPath childPath = ResultPath.fromList(pathSegments.subList(0, currentSegmentIndex + 1));
                     Object childSegment = pathSegments.get(currentSegmentIndex);
 
                     Reports.Trace.Node.Builder childBuilder = Reports.Trace.Node.newBuilder();
