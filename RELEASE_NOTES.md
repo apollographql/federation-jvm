@@ -1,5 +1,14 @@
 # Release notes
 
+## v0.6.0
+
+This is an upgrade release for graphql-java v16. This release is incompatible with earlier graphql-java versions due to backwards-incompatible changes in their API.
+
+Note that if your schema has an empty query type/no query type and you pass a `GraphQLSchema` object to this library, your `GraphQLSchema` will no longer build in graphql-java v16 due to a new validation. To work around this, you can add a dummy field to your `GraphQLSchema`'s query type, and then pass `queryTypeShouldBeEmpty` as `true` to `Federation.transform()`. The output schema won't contain the dummy field, nor will it be visible to the gateway. If you instead pass a different representation of a schema to `Federation.transform()` (e.g. a string), you don't have to do anything; this library will handle the issue internally.
+
+*Upgrades:*
+- graphql-java to `16.1`.
+
 ## v0.5.0
 
 This is an upgrade release for graphql-java v15. This release is incompatible with earlier graphql-java versions due to backwards-incompatible changes in their `SchemaPrinter`.
