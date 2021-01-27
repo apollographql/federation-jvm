@@ -7,7 +7,6 @@ import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
-import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
@@ -19,19 +18,19 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.apollographql.federation.graphqljava.SchemaUtils.standardDirectives;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FederationTest {
     private final String emptySDL = TestUtils.readResource("schemas/empty.graphql");
+    private final String emptyFederatedSDL = TestUtils.readResource("schemas/emptyFederated.graphql");
+    private final String emptySchemaFederatedSDL = TestUtils.readResource("schemas/emptySchemaFederated.graphql");
     private final String interfacesSDL = TestUtils.readResource("schemas/interfaces.graphql");
     private final String isolatedSDL = TestUtils.readResource("schemas/isolated.graphql");
     private final String productSDL = TestUtils.readResource("schemas/product.graphql");
@@ -39,50 +38,16 @@ class FederationTest {
     private final String printerEscapingExpectedSDL = TestUtils.readResource("schemas/printerEscapingExpected.graphql");
     private final String printerFilterSDL = TestUtils.readResource("schemas/printerFilter.graphql");
     private final String printerFilterExpectedSDL = TestUtils.readResource("schemas/printerFilterExpected.graphql");
-    private final Set<String> standardDirectives =
-            new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
 
     @Test
     void testEmptySDL() {
-        final GraphQLSchema federated = Federation.transform(emptySDL)
-                .build();
-        Assertions.assertEquals("directive @extends on OBJECT | INTERFACE\n" +
-                "\n" +
-                "directive @external on FIELD_DEFINITION\n" +
-                "\n" +
-                "directive @key(fields: _FieldSet!) on OBJECT | INTERFACE\n" +
-                "\n" +
-                "directive @provides(fields: _FieldSet!) on FIELD_DEFINITION\n" +
-                "\n" +
-                "directive @requires(fields: _FieldSet!) on FIELD_DEFINITION\n" +
-                "\n" +
-                "type Query {\n" +
-                "  _service: _Service\n" +
-                "}\n" +
-                "\n" +
-                "type _Service {\n" +
-                "  sdl: String!\n" +
-                "}\n" +
-                "\n" +
-                "scalar _FieldSet\n",
-                new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
-                        .includeScalarTypes(true)
-                        .includeDirectiveDefinitions(def -> !standardDirectives.contains(def.getName()))
-                ).print(federated)
-        );
-
-        final GraphQLType _Service = federated.getType("_Service");
-        assertNotNull(_Service, "_Service type present");
-        final GraphQLFieldDefinition _service = federated.getQueryType().getFieldDefinition("_service");
-        assertNotNull(_service, "_service field present");
-        assertEquals(_Service, _service.getType(), "_service returns _Service");
-
-        SchemaUtils.assertSDL(federated, emptySDL);
+        final GraphQLSchema federatedSchema = Federation.transform(emptySDL).build();
+        SchemaUtils.assertSDL(federatedSchema, emptyFederatedSDL, emptySDL);
     }
 
     @Test
     void testEmptySchema() {
-        final GraphQLSchema federated = Federation.transform(GraphQLSchema.newSchema()
+        final GraphQLSchema federatedSchema = Federation.transform(GraphQLSchema.newSchema()
                 .query(GraphQLObjectType.newObject()
                         .name("Query")
                         .field(GraphQLFieldDefinition.newFieldDefinition()
@@ -93,26 +58,7 @@ class FederationTest {
                 .build(),
                 true
         ).build();
-        Assertions.assertEquals("type Query {\n" +
-                "  _service: _Service\n" +
-                "}\n" +
-                "\n" +
-                "type _Service {\n" +
-                "  sdl: String!\n" +
-                "}\n",
-                new FederationSdlPrinter(FederationSdlPrinter.Options.defaultOptions()
-                        .includeScalarTypes(true)
-                        .includeDirectiveDefinitions(def -> !standardDirectives.contains(def.getName()))
-                ).print(federated)
-        );
-
-        final GraphQLType _Service = federated.getType("_Service");
-        assertNotNull(_Service, "_Service type present");
-        final GraphQLFieldDefinition _service = federated.getQueryType().getFieldDefinition("_service");
-        assertNotNull(_service, "_service field present");
-        assertEquals(_Service, _service.getType(), "_service returns _Service");
-
-        SchemaUtils.assertSDL(federated, emptySDL);
+        SchemaUtils.assertSDL(federatedSchema, emptySchemaFederatedSDL, emptySDL);
     }
 
     @Test
@@ -141,7 +87,7 @@ class FederationTest {
                 .resolveEntityType(env -> env.getSchema().getObjectType("Product"))
                 .build();
 
-        SchemaUtils.assertSDL(federated, productSDL);
+        SchemaUtils.assertSDL(federated, null, productSDL);
 
         final ExecutionResult result = SchemaUtils.execute(federated, "{\n" +
                 "  _entities(representations: [{__typename:\"Product\"}]) {\n" +
