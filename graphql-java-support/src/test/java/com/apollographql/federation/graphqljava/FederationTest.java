@@ -31,6 +31,11 @@ class FederationTest {
     private final String emptySDL = TestUtils.readResource("schemas/empty.graphql");
     private final String emptyFederatedSDL = TestUtils.readResource("schemas/emptyFederated.graphql");
     private final String emptySchemaFederatedSDL = TestUtils.readResource("schemas/emptySchemaFederated.graphql");
+    private final String emptyWithExtendQuerySDL = TestUtils.readResource("schemas/emptyWithExtendQuery.graphql");
+    private final String emptyWithExtendQueryFederatedSDL =
+            TestUtils.readResource("schemas/emptyWithExtendQueryFederated.graphql");
+    private final String emptyWithExtendQueryServiceSDL =
+            TestUtils.readResource("schemas/emptyWithExtendQueryService.graphql");
     private final String interfacesSDL = TestUtils.readResource("schemas/interfaces.graphql");
     private final String isolatedSDL = TestUtils.readResource("schemas/isolated.graphql");
     private final String productSDL = TestUtils.readResource("schemas/product.graphql");
@@ -43,6 +48,12 @@ class FederationTest {
     void testEmptySDL() {
         final GraphQLSchema federatedSchema = Federation.transform(emptySDL).build();
         SchemaUtils.assertSDL(federatedSchema, emptyFederatedSDL, emptySDL);
+    }
+
+    @Test
+    void testEmptyWithExtendQuerySDL() {
+        final GraphQLSchema federatedSchema = Federation.transform(emptyWithExtendQuerySDL).build();
+        SchemaUtils.assertSDL(federatedSchema, emptyWithExtendQueryFederatedSDL, emptyWithExtendQueryServiceSDL);
     }
 
     @Test
