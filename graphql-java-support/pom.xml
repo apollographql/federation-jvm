@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.apollographql.federation</groupId>
         <artifactId>federation-parent</artifactId>
-        <version>0.6.1-SNAPSHOT</version>
+        <version>0.6.1</version>
     </parent>
 
     <artifactId>federation-graphql-java-support</artifactId>
