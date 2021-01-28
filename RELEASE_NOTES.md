@@ -1,5 +1,10 @@
 # Release notes
 
+## v0.6.1
+
+*Bugfixes:*
+- Fix bug where `Federation.transform()` would remove all query type fields from a schema with query type extensions but an empty query type.
+
 ## v0.6.0
 
 This is an upgrade release for graphql-java v16. This release is incompatible with earlier graphql-java versions due to backwards-incompatible changes in their API.
