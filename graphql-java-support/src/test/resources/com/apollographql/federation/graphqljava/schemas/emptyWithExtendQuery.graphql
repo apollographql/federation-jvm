@@ -1,0 +1,9 @@
+schema {
+  query: Query
+}
+
+type Query
+
+extend type Query {
+  field1: String
+}

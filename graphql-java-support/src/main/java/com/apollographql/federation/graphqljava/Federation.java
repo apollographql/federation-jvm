@@ -14,6 +14,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.Reader;
+import java.util.List;
+import java.util.Optional;
 
 public final class Federation {
     private static final SchemaGenerator.Options generatorOptions = SchemaGenerator.Options.defaultOptions();
@@ -92,7 +94,11 @@ public final class Federation {
                 .getType(queryName)
                 .orElse(ObjectTypeDefinition.newObjectTypeDefinition().name(queryName).build());
         final boolean addDummyField = newQueryType instanceof ObjectTypeDefinition
-                && ((ObjectTypeDefinition) newQueryType).getFieldDefinitions().isEmpty();
+                && ((ObjectTypeDefinition) newQueryType).getFieldDefinitions().isEmpty()
+                && Optional.ofNullable(typeRegistry.objectTypeExtensions().get(queryName))
+                    // Note that an object type extension must have at least one field
+                    .map(List::isEmpty)
+                    .orElse(true);
         if (addDummyField) {
             newQueryType = ((ObjectTypeDefinition) newQueryType).transform(objectTypeDefinitionBuilder ->
                     objectTypeDefinitionBuilder.fieldDefinition(FieldDefinition.newFieldDefinition()
