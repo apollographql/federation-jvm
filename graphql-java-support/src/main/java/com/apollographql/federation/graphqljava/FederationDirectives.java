@@ -69,11 +69,13 @@ public final class FederationDirectives {
             .name(keyName)
             .validLocations(OBJECT, INTERFACE)
             .argument(fieldsArgument)
+            .repeatable(true)
             .build();
 
     public static GraphQLDirective key(String fields) {
         return newDirective(key)
                 .argument(fieldsArgument(fields))
+                .repeatable(true)
                 .build();
     }
 
@@ -81,6 +83,7 @@ public final class FederationDirectives {
             .name(keyName)
             .directiveLocations(Arrays.asList(DL_OBJECT, DL_INTERFACE))
             .inputValueDefinition(fieldsDefinition)
+            .repeatable(true)
             .build();
 
     /* directive @external on FIELD_DEFINITION */
