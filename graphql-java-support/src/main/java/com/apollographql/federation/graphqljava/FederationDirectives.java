@@ -61,7 +61,7 @@ public final class FederationDirectives {
             .type(new NonNullType(new TypeName(_FieldSet.typeName)))
             .build();
 
-    /* directive @key(fields: _FieldSet!) on OBJECT | INTERFACE */
+    /* directive @key(fields: _FieldSet!) repeatable on OBJECT | INTERFACE */
 
     public static final String keyName = "key";
 
@@ -75,7 +75,6 @@ public final class FederationDirectives {
     public static GraphQLDirective key(String fields) {
         return newDirective(key)
                 .argument(fieldsArgument(fields))
-                .repeatable(true)
                 .build();
     }
 
