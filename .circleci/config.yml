@@ -20,7 +20,7 @@ jobs:
           key: cache-{{ checksum "allpoms.xml" }}
       - run:
           name: Build, install, test
-          command: ./mvnw --settings settings.xml --batch-mode install test
+          command: ./mvnw --settings settings.xml --batch-mode install test -Dgpg.skip
       - run:
           name: Save test results
           command: |
