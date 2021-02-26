@@ -1,5 +1,10 @@
 # Release notes
 
+## v0.6.2
+
+*Bugfixes:*
+- Fix bug where the `@key` directive is not marked repeatable, which results in API call failures due to new assertions introduced in graphql-java v16.
+
 ## v0.6.1
 
 *Bugfixes:*
