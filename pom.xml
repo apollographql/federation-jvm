@@ -47,11 +47,11 @@
         <url>https://github.com/apollographql/federation-jvm</url>
     </scm>
     <distributionManagement>
-        <repository>
-            <id>bintray-apollographql-maven</id>
-            <name>apollographql-maven</name>
-            <url>https://api.bintray.com/maven/apollographql/maven/federation-jvm/;publish=1</url>
-        </repository>
+        <snapshotRepository>
+            <id>sonatype-ossrh</id>
+            <name>Sonatype OSS Repository Hosting Service</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
     </distributionManagement>
 
     <properties>
@@ -65,12 +65,12 @@
         <java.version>1.8</java.version>
         <jetbrains-annotations.version>17.0.0</jetbrains-annotations.version>
         <junit.version>5.4.2</junit.version>
-        <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-jar-plugin.version>3.1.2</maven-jar-plugin.version>
         <maven-javadoc-plugin.version>3.1.1</maven-javadoc-plugin.version>
         <maven-source-plugin.version>3.1.0</maven-source-plugin.version>
         <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
+        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <slf4j.version>1.7.30</slf4j.version>
         <spring-boot.version>2.1.6.RELEASE</spring-boot.version>
     </properties>
@@ -202,9 +202,15 @@
                     </executions>
                 </plugin>
                 <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-deploy-plugin</artifactId>
-                    <version>${maven-deploy-plugin.version}</version>
+                    <groupId>org.sonatype.plugins</groupId>
+                    <artifactId>nexus-staging-maven-plugin</artifactId>
+                    <version>${nexus-staging-maven-plugin.version}</version>
+                    <extensions>true</extensions>
+                    <configuration>
+                        <serverId>sonatype-ossrh</serverId>
+                        <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                        <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
