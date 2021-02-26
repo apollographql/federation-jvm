@@ -6,17 +6,17 @@
 
     <groupId>com.apollographql.federation</groupId>
     <artifactId>federation-parent</artifactId>
-    <name>federation-parent</name>
     <version>0.6.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <name>federation-parent</name>
+    <description>The parent POM for all federation-jvm projects</description>
     <url>https://github.com/apollographql/federation-jvm</url>
-
+    <inceptionYear>2019</inceptionYear>
     <organization>
-        <name>Meteor Development Group</name>
+        <name>Apollo Graph Inc.</name>
         <url>https://www.apollographql.com/about-us</url>
     </organization>
-
     <licenses>
         <license>
             <name>MIT License</name>
@@ -25,24 +25,34 @@
         </license>
     </licenses>
 
-    <inceptionYear>2019</inceptionYear>
-
     <developers>
         <developer>
             <id>apollographql.com</id>
             <name>The Apollo Contributors</name>
             <url>https://www.apollographql.com/careers/team</url>
-            <organization>Meteor Development Group</organization>
+            <organization>Apollo Graph Inc.</organization>
             <organizationUrl>https://www.apollographql.com/about-us</organizationUrl>
         </developer>
     </developers>
 
+    <modules>
+        <module>graphql-java-support</module>
+        <module>spring-example</module>
+    </modules>
+
     <scm>
-        <url>https://github.com/apollographql/federation-jvm</url>
         <connection>scm:git:git://github.com/apollographql/federation-jvm.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/apollographql/federation-jvm.git</developerConnection>
         <tag>HEAD</tag>
+        <url>https://github.com/apollographql/federation-jvm</url>
     </scm>
+    <distributionManagement>
+        <repository>
+            <id>bintray-apollographql-maven</id>
+            <name>apollographql-maven</name>
+            <url>https://api.bintray.com/maven/apollographql/maven/federation-jvm/;publish=1</url>
+        </repository>
+    </distributionManagement>
 
     <properties>
         <release>0.6.3-SNAPSHOT</release>
@@ -63,19 +73,6 @@
         <slf4j.version>1.7.30</slf4j.version>
         <spring-boot.version>2.1.6.RELEASE</spring-boot.version>
     </properties>
-
-    <modules>
-        <module>graphql-java-support</module>
-        <module>spring-example</module>
-    </modules>
-
-    <distributionManagement>
-        <repository>
-            <id>bintray-apollographql-maven</id>
-            <name>apollographql-maven</name>
-            <url>https://api.bintray.com/maven/apollographql/maven/federation-jvm/;publish=1</url>
-        </repository>
-    </distributionManagement>
 
     <dependencyManagement>
         <dependencies>
@@ -142,31 +139,17 @@
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-deploy-plugin</artifactId>
-                    <version>${maven-deploy-plugin.version}</version>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
+                    <configuration>
+                        <!-- Workaround from https://stackoverflow.com/questions/50661648/spring-boot-fails-to-run-maven-surefire-plugin-classnotfoundexception-org-apache/50661649#50661649 -->
+                        <useSystemClassLoader>false</useSystemClassLoader>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>${maven-jar-plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>${maven-javadoc-plugin.version}</version>
-                    <configuration>
-                        <notimestamp>true</notimestamp>
-                        <!-- protobuf generated java classes are missing various tags, so disable 'missing' -->
-                        <doclint>all,-missing</doclint>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>attach-javadocs</id>
-                            <goals>
-                                <goal>jar</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -183,17 +166,31 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${maven-surefire-plugin.version}</version>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${maven-javadoc-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                     <configuration>
-                        <!-- Workaround from https://stackoverflow.com/questions/50661648/spring-boot-fails-to-run-maven-surefire-plugin-classnotfoundexception-org-apache/50661649#50661649 -->
-                        <useSystemClassLoader>false</useSystemClassLoader>
+                        <notimestamp>true</notimestamp>
+                        <!-- protobuf generated java classes are missing various tags, so disable 'missing' -->
+                        <doclint>all,-missing</doclint>
                     </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>cobertura-maven-plugin</artifactId>
                     <version>${cobertura-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>${maven-deploy-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
