@@ -2,7 +2,7 @@ directive @extends on OBJECT | INTERFACE
 
 directive @external on FIELD_DEFINITION
 
-directive @key(fields: _FieldSet!) on OBJECT | INTERFACE
+directive @key(fields: _FieldSet!) repeatable on OBJECT | INTERFACE
 
 directive @provides(fields: _FieldSet!) on FIELD_DEFINITION
 

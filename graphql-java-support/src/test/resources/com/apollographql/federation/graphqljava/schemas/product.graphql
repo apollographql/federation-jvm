@@ -7,7 +7,7 @@ type Money {
   currencyCode: String! @deprecated(reason : "dummy")
 }
 
-type Product @key(fields : "upc") {
+type Product @key(fields : "upc") @key(fields : "sku") {
   name: String
   price: Int
   sku: String!

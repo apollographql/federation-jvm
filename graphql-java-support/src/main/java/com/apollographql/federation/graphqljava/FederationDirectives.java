@@ -61,7 +61,7 @@ public final class FederationDirectives {
             .type(new NonNullType(new TypeName(_FieldSet.typeName)))
             .build();
 
-    /* directive @key(fields: _FieldSet!) on OBJECT | INTERFACE */
+    /* directive @key(fields: _FieldSet!) repeatable on OBJECT | INTERFACE */
 
     public static final String keyName = "key";
 
@@ -69,6 +69,7 @@ public final class FederationDirectives {
             .name(keyName)
             .validLocations(OBJECT, INTERFACE)
             .argument(fieldsArgument)
+            .repeatable(true)
             .build();
 
     public static GraphQLDirective key(String fields) {
@@ -81,6 +82,7 @@ public final class FederationDirectives {
             .name(keyName)
             .directiveLocations(Arrays.asList(DL_OBJECT, DL_INTERFACE))
             .inputValueDefinition(fieldsDefinition)
+            .repeatable(true)
             .build();
 
     /* directive @external on FIELD_DEFINITION */

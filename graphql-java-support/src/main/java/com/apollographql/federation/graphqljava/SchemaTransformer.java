@@ -99,7 +99,7 @@ public final class SchemaTransformer {
         // Collecting all entity types: Types with @key directive and all types that implement them
         final Set<String> entityTypeNames = originalSchema.getAllTypesAsList().stream()
                 .filter(t -> t instanceof GraphQLDirectiveContainer &&
-                        ((GraphQLDirectiveContainer) t).getDirective(FederationDirectives.keyName) != null)
+                        !((GraphQLDirectiveContainer) t).getDirectives(FederationDirectives.keyName).isEmpty())
                 .map(GraphQLNamedType::getName)
                 .collect(Collectors.toSet());
 
