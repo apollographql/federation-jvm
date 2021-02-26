@@ -11,7 +11,9 @@
     </parent>
 
     <artifactId>federation-spring-example</artifactId>
+
     <name>federation-spring-example</name>
+    <description>Spring Boot example of federation-graphql-java-support usage</description>
 
     <dependencies>
         <dependency>
@@ -61,7 +63,7 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
+                <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
