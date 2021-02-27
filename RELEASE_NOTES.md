@@ -1,5 +1,9 @@
 # Release notes
 
+## v0.6.3
+
+This release marks the switch of our package hosting from JCenter to Maven Central, as JCenter will be shutting down over the course of the next year. This release contains no code changes, and is primarily to support users who wish to remove any dependencies on JCenter.
+
 ## v0.6.2
 
 *Bugfixes:*
