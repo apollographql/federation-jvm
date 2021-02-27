@@ -4,9 +4,7 @@
 
 # Apollo Federation on the JVM
 
-Packages published to [our bintray repository](https://bintray.com/apollographql/maven/federation-jvm)
-and available [in jcenter](https://jcenter.bintray.com/com/apollographql/federation/);
-release notes in [RELEASE_NOTES.md](RELEASE_NOTES.md).
+Packages published to Maven Central; release notes in [RELEASE_NOTES.md](RELEASE_NOTES.md). Note that older versions of this package may only be available in JCenter, but we are planning to republish these versions to Maven Central.
 
 An example of [graphql-spring-boot](https://www.graphql-java-kickstart.com/spring-boot/) microservice is available in [spring-example](spring-example).
 
@@ -14,11 +12,11 @@ An example of [graphql-spring-boot](https://www.graphql-java-kickstart.com/sprin
 
 ### Dependency management with Gradle
 
-Make sure JCenter is among your repositories:
+Make sure Maven Central is among your repositories:
 
 ```groovy
 repositories {
-    jcenter()
+    mavenCentral()
 }
 ```
 
@@ -78,12 +76,11 @@ HTTP request's headers, by making the `context` part of your `ExecutionInput`
 implement the `HTTPRequestHeaders` interface.  For example:
 
 ```java
-    HTTPRequestHeaders context = new HTTPRequestHeaders() {
-        @Override
-        public @Nullable String getHTTPRequestHeader(String caseInsensitiveHeaderName) {
-            return myIncomingHTTPRequest.getHeader(caseInsensitiveHeaderName);
-        }
+HTTPRequestHeaders context = new HTTPRequestHeaders() {
+    @Override
+    public @Nullable String getHTTPRequestHeader(String caseInsensitiveHeaderName) {
+        return myIncomingHTTPRequest.getHeader(caseInsensitiveHeaderName);
     }
-    graphql.execute(ExecutionInput.newExecutionInput(queryString).context(context));
-
+};
+graphql.execute(ExecutionInput.newExecutionInput(queryString).context(context));
 ```
