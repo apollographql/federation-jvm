@@ -61,7 +61,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
         <graphql-java.version>16.1</graphql-java.version>
-        <graphql-spring-boot.version>5.10.0</graphql-spring-boot.version>
+        <graphql-spring-boot.version>11.0.0</graphql-spring-boot.version>
         <java.version>1.8</java.version>
         <jetbrains-annotations.version>17.0.0</jetbrains-annotations.version>
         <junit.version>5.4.2</junit.version>
@@ -72,7 +72,7 @@
         <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <spring-boot.version>2.1.6.RELEASE</spring-boot.version>
+        <spring-boot.version>2.3.6.RELEASE</spring-boot.version>
     </properties>
 
     <dependencyManagement>
@@ -86,6 +86,7 @@
                 <groupId>com.graphql-java-kickstart</groupId>
                 <artifactId>graphiql-spring-boot-starter</artifactId>
                 <version>${graphql-spring-boot.version}</version>
+                <scope>runtime</scope>
             </dependency>
             <dependency>
                 <groupId>com.graphql-java-kickstart</groupId>
