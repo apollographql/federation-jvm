@@ -30,10 +30,11 @@ public final class Federation {
 
     // Note that GraphQLSchema does not support empty object types as of graphql-java v16. If you
     // would like the query type to be empty, then add a dummy field to the query type in the given
-    // GraphQLSchema and pass queryTypeShouldBeEmpty as true. You can also use a transform()
-    // overload that accepts something other than a GraphQLSchema, as those overloads will
-    // automatically handle this for you. The output schema won't contain the dummy field, nor will
-    // it be visible to the gateway.
+    // GraphQLSchema and pass queryTypeShouldBeEmpty as true. The output schema won't contain the
+    // dummy field, nor will it be visible to the gateway.
+    //
+    // You can also use a transform() overload that accepts something other than a GraphQLSchema,
+    // as those overloads do allow their inputs to specify an empty query type.
     @NotNull
     public static SchemaTransformer transform(final GraphQLSchema schema, final boolean queryTypeShouldBeEmpty) {
         return new SchemaTransformer(schema, queryTypeShouldBeEmpty);
