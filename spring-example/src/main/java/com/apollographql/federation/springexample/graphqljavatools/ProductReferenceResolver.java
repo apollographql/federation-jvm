@@ -1,4 +1,4 @@
-package com.apollographql.federation.springexample;
+package com.apollographql.federation.springexample.graphqljavatools;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -7,27 +7,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
-public class Product {
-    private final String upc;
-    private final int quantity;
-
-    public Product(String upc, int quantity) {
-        this.upc = upc;
-        this.quantity = quantity;
-    }
-
-    public String getUpc() {
-        return upc;
-    }
-
-    public int getQuantity() {
-        return quantity;
-    }
-
-    public boolean isInStock() {
-        return this.quantity > 0;
-    }
-
+public class ProductReferenceResolver {
     public static Product resolveReference(@NotNull Map<String, Object> reference) {
         if (!(reference.get("upc") instanceof String)) {
             return null;
