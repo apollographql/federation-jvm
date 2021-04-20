@@ -1,5 +1,14 @@
 # Release notes
 
+## v0.6.4
+
+*Upgrades:*
+- Spring Boot libraries to `2.3.6.RELEASE`.
+- GraphQL Java Kickstart libraries to `11.0.0`.
+
+*Enhancements:*
+- Add a GraphQL Java Tools microservice example.
+
 ## v0.6.3
 
 This release marks the switch of our package hosting from JCenter to Maven Central, as JCenter will be shutting down over the course of the next year. This release contains no code changes, and is primarily to support users who wish to remove any dependencies on JCenter.
