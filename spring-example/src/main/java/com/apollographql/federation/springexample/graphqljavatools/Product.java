@@ -1,4 +1,4 @@
-package com.apollographql.federation.springexample;
+package com.apollographql.federation.springexample.graphqljavatools;
 
 public class Product {
     private final String upc;
@@ -15,9 +15,5 @@ public class Product {
 
     public int getQuantity() {
         return quantity;
-    }
-
-    public boolean isInStock() {
-        return this.quantity > 0;
     }
 }

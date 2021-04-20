@@ -1,5 +1,7 @@
 spring:
   application:
     name: federation-jvm-spring-example
+  profiles:
+    default: graphql-java
 server:
   port: 9000

@@ -61,10 +61,10 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
         <graphql-java.version>16.1</graphql-java.version>
-        <graphql-spring-boot.version>5.10.0</graphql-spring-boot.version>
+        <graphql-java-kickstart.version>11.0.0</graphql-java-kickstart.version>
         <java.version>1.8</java.version>
         <jetbrains-annotations.version>17.0.0</jetbrains-annotations.version>
-        <junit.version>5.4.2</junit.version>
+        <junit.version>5.7.1</junit.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-jar-plugin.version>3.1.2</maven-jar-plugin.version>
         <maven-javadoc-plugin.version>3.1.1</maven-javadoc-plugin.version>
@@ -72,7 +72,7 @@
         <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <spring-boot.version>2.1.6.RELEASE</spring-boot.version>
+        <spring-boot.version>2.3.6.RELEASE</spring-boot.version>
     </properties>
 
     <dependencyManagement>
@@ -80,18 +80,24 @@
             <dependency>
                 <groupId>com.graphql-java-kickstart</groupId>
                 <artifactId>graphql-spring-boot-starter</artifactId>
-                <version>${graphql-spring-boot.version}</version>
+                <version>${graphql-java-kickstart.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.graphql-java-kickstart</groupId>
                 <artifactId>graphiql-spring-boot-starter</artifactId>
-                <version>${graphql-spring-boot.version}</version>
+                <version>${graphql-java-kickstart.version}</version>
+                <scope>runtime</scope>
             </dependency>
             <dependency>
                 <groupId>com.graphql-java-kickstart</groupId>
                 <artifactId>graphql-spring-boot-starter-test</artifactId>
-                <version>${graphql-spring-boot.version}</version>
+                <version>${graphql-java-kickstart.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.graphql-java-kickstart</groupId>
+                <artifactId>graphql-java-tools</artifactId>
+                <version>${graphql-java-kickstart.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.graphql-java</groupId>
@@ -106,13 +112,7 @@
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-api</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-engine</artifactId>
+                <artifactId>junit-jupiter</artifactId>
                 <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
