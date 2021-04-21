@@ -1,5 +1,5 @@
 [![MIT License](https://img.shields.io/github/license/apollographql/federation-jvm.svg)](LICENSE)
-[![Download](https://api.bintray.com/packages/apollographql/maven/federation-jvm/images/download.svg)](https://bintray.com/apollographql/maven/federation-jvm/_latestVersion)
+[![Maven Central](https://img.shields.io/maven-central/v/com.apollographql.federation/federation-graphql-java-support.svg)](https://maven-badges.herokuapp.com/maven-central/com.apollographql.federation/federation-graphql-java-support)
 [![CircleCI](https://circleci.com/gh/apollographql/federation-jvm.svg?style=svg)](https://circleci.com/gh/apollographql/federation-jvm)
 
 # Apollo Federation on the JVM
