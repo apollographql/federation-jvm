@@ -53,7 +53,7 @@ you will also need to provide:
   using `SchemaTransformer#fetchEntities(DataFetcher|DataFetcherFactory)`.
 
 A minimal but complete example is available in
-[InventorySchemaProvider](spring-example/src/main/java/com/apollographql/federation/springexample/InventorySchemaProvider.java).
+[AppConfiguration](spring-example/src/main/java/com/apollographql/federation/springexample/graphqljava/AppConfiguration.java).
 
 ### Federated tracing
 
