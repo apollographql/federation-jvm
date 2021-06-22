@@ -2,8 +2,8 @@ package com.apollographql.federation.graphqljava;
 
 import graphql.Assert;
 import graphql.PublicApi;
+import graphql.execution.ValuesResolver;
 import graphql.language.AstPrinter;
-import graphql.language.AstValueHelper;
 import graphql.language.Description;
 import graphql.language.Document;
 import graphql.language.EnumTypeDefinition;
@@ -38,11 +38,13 @@ import graphql.schema.GraphQLTypeUtil;
 import graphql.schema.GraphQLUnionType;
 import graphql.schema.GraphqlTypeComparatorEnvironment;
 import graphql.schema.GraphqlTypeComparatorRegistry;
+import graphql.schema.InputValueWithState;
 import graphql.schema.idl.ScalarInfo;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.UnExecutableSchemaGenerator;
 import graphql.schema.visibility.GraphqlFieldVisibility;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -635,8 +637,8 @@ public class FederationSdlPrinter {
                                 printComments(out, fd, "  ");
                                 out.format("  %s: %s",
                                         fd.getName(), typeString(fd.getType()));
-                                Object defaultValue = fd.getDefaultValue();
-                                if (defaultValue != null) {
+                                InputValueWithState defaultValue = fd.getInputFieldDefaultValue();
+                                if (defaultValue.isSet()) {
                                     String astValue = printAst(defaultValue, fd.getType());
                                     out.format(" = %s", astValue);
                                 }
@@ -679,8 +681,8 @@ public class FederationSdlPrinter {
         out.println();
     }
 
-    private static String printAst(Object value, GraphQLInputType type) {
-        return AstPrinter.printAst(AstValueHelper.astFromValue(value, type));
+    private static String printAst(InputValueWithState value, GraphQLInputType type) {
+        return AstPrinter.printAst(ValuesResolver.valueToLiteral(DEFAULT_FIELD_VISIBILITY, value, type));
     }
 
     private TypePrinter<GraphQLSchema> schemaPrinter() {
@@ -774,8 +776,8 @@ public class FederationSdlPrinter {
             sb.append(printComments(argument, prefix));
 
             sb.append(prefix).append(argument.getName()).append(": ").append(typeString(argument.getType()));
-            Object defaultValue = argument.getDefaultValue();
-            if (defaultValue != null) {
+            InputValueWithState defaultValue = argument.getArgumentDefaultValue();
+            if (defaultValue.isSet()) {
                 sb.append(" = ");
                 sb.append(printAst(defaultValue, argument.getType()));
             }
@@ -860,10 +862,10 @@ public class FederationSdlPrinter {
             for (int i = 0; i < args.size(); i++) {
                 GraphQLArgument arg = args.get(i);
                 String argValue = null;
-                if (arg.getValue() != null) {
-                    argValue = printAst(arg.getValue(), arg.getType());
-                } else if (arg.getDefaultValue() != null) {
-                    argValue = printAst(arg.getDefaultValue(), arg.getType());
+                if (arg.getArgumentValue().isSet()) {
+                    argValue = printAst(arg.getArgumentValue(), arg.getType());
+                } else if (arg.getArgumentDefaultValue().isSet()) {
+                    argValue = printAst(arg.getArgumentDefaultValue(), arg.getType());
                 }
                 if (!isNullOrEmpty(argValue)) {
                     sb.append(arg.getName());
