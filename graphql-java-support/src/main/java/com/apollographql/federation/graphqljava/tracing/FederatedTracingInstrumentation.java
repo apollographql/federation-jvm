@@ -37,6 +37,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static graphql.execution.instrumentation.SimpleInstrumentationContext.whenCompleted;
 import static graphql.schema.GraphQLTypeUtil.simplePrint;
@@ -60,24 +61,16 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
     @Override
     public InstrumentationState createState(InstrumentationCreateStateParameters parameters) {
-        // If we've been configured with a way of reading HTTP headers, we should only be active
-        // if the special HTTP header has the special value. If the header isn't provided or has
-        // a different value, return null for our state, which we'll interpret in the rest of this
-        // file as meaning "don't instrument".  (If we haven't been given access to HTTP headers,
-        // always instrument.)
         Object context = parameters.getExecutionInput().getContext();
-        if (context instanceof HTTPRequestHeaders) {
-            @Nullable String headerValue = ((HTTPRequestHeaders) context).getHTTPRequestHeader(HEADER_NAME);
-            if (headerValue == null || !headerValue.equals(HEADER_VALUE)) {
-                return null;
-            }
+        if (options.contextIndicatesWeShouldTrace(context)) {
+            return new FederatedTracingState();
         }
-        return new FederatedTracingState();
+        return null;
     }
 
     @Override
     public CompletableFuture<ExecutionResult> instrumentExecutionResult(ExecutionResult executionResult, InstrumentationExecutionParameters parameters) {
-        final @Nullable FederatedTracingState state = parameters.<FederatedTracingState>getInstrumentationState();
+        final @Nullable FederatedTracingState state = parameters.getInstrumentationState();
         if (state == null) {
             return super.instrumentExecutionResult(executionResult, parameters);
         }
@@ -178,7 +171,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
         }
 
         if (result instanceof DataFetcherResult<?>) {
-            DataFetcherResult<?> theResult = (DataFetcherResult) result;
+            DataFetcherResult<?> theResult = (DataFetcherResult<?>) result;
             if (theResult.hasErrors()) {
                 graphQLErrors.addAll(theResult.getErrors());
             }
@@ -335,7 +328,9 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             private Node getOrCreateNode(ResultPath path) {
                 // Fast path for when the node already exists.
                 Node current = nodesByPath.get(path);
-                if (current != null) return current;
+                if (current != null) {
+                    return current;
+                }
 
                 // Find the latest ancestor that exists in the map.
                 List<Object> pathSegments = path.toList();
@@ -433,17 +428,40 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
     public static class Options {
         private final boolean debuggingEnabled;
+        private final Function<Object,Boolean> evaluateContextFunction;
+
+        public Options(boolean debuggingEnabled, Function<Object, Boolean> evaluateContextFunction) {
+            this.debuggingEnabled = debuggingEnabled;
+            this.evaluateContextFunction = evaluateContextFunction;
+        }
 
         public Options(boolean debuggingEnabled) {
-            this.debuggingEnabled = debuggingEnabled;
+            this(debuggingEnabled,
+                // Default implementation:
+                // If we've been configured with a way of reading HTTP headers, we should only be active
+                // if the special HTTP header has the special value. If the header isn't provided or has
+                // a different value, return null for our state, which we'll interpret in the rest of this
+                // file as meaning "don't instrument".  (If we haven't been given access to HTTP headers,
+                // always instrument.)
+                 (context) -> {
+                     if (context instanceof HTTPRequestHeaders) {
+                        String header = ((HTTPRequestHeaders) context).getHTTPRequestHeader(HEADER_NAME);
+                        return HEADER_VALUE.equals(header);
+                    }
+                    return true;
+            });
         }
 
         public static @NotNull Options newOptions() {
-            return new Options(false);
+            return new Options(false );
         }
 
         public boolean isDebuggingEnabled() {
             return debuggingEnabled;
+        }
+
+        public boolean contextIndicatesWeShouldTrace(Object object){
+            return evaluateContextFunction.apply(object);
         }
     }
 }
