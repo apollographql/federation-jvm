@@ -44,8 +44,8 @@ import static graphql.schema.GraphQLTypeUtil.simplePrint;
 
 public class FederatedTracingInstrumentation extends SimpleInstrumentation {
     private static final String EXTENSION_KEY = "ftv1";
-    private static final String HEADER_NAME = "apollo-federation-include-trace";
-    private static final String HEADER_VALUE = "ftv1";
+    public static final String HEADER_NAME = "apollo-federation-include-trace";
+    public static final String HEADER_VALUE = "ftv1";
 
     private final Options options;
 
