@@ -37,6 +37,7 @@
 
     <modules>
         <module>graphql-java-support</module>
+        <module>graphql-java-support-api</module>
         <module>spring-example</module>
     </modules>
 
