@@ -461,8 +461,8 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             return debuggingEnabled;
         }
 
-        public boolean contextIndicatesWeShouldTrace(Object object){
-            return evaluateContextFunction.apply(object);
+        public boolean contextIndicatesWeShouldTrace(Object context){
+            return evaluateContextFunction.apply(context);
         }
     }
 }
