@@ -13,7 +13,7 @@
     <artifactId>federation-graphql-java-support-api</artifactId>
 
     <name>federation-graphql-java-support-api</name>
-    <description>GraphQL Java server support for Apollo Federation API</description>
+    <description>Integration APIs for federation-graphql-java-support</description>
 
     <dependencies>
         <dependency>
@@ -23,13 +23,6 @@
     </dependencies>
 
     <build>
-        <extensions>
-            <extension>
-                <groupId>kr.motd.maven</groupId>
-                <artifactId>os-maven-plugin</artifactId>
-                <version>1.6.0</version>
-            </extension>
-        </extensions>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
