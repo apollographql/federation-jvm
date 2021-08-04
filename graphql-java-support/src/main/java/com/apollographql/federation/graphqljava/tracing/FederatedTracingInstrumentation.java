@@ -66,6 +66,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
         if (options.shouldTrace(parameters.getExecutionInput())) {
             return new FederatedTracingState();
         }
+        // Note that we interpret null state elsewhere to mean "do not instrument".
         return null;
     }
 
@@ -429,30 +430,27 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
     public static class Options {
         private final boolean debuggingEnabled;
-        private final Predicate<ExecutionInput> shouldTracePredicate;
+        private final @Nullable Predicate<ExecutionInput> shouldTracePredicate;
 
-        public Options(boolean debuggingEnabled, Predicate<ExecutionInput> shouldTracePredicate) {
+        /**
+         * Configuration options for federated tracing.
+         *
+         * @param debuggingEnabled Enables debug logging of the generated trace (default: false).
+         * @param shouldTracePredicate Predicate that controls whether to generate a trace for a given request (default:
+         *     null). Note that when Apollo Gateway provides an HTTP header with name "apollo-federation-include-trace"
+         *     and value "ftv1", you must enable tracing for the request, and it is your responsibility to augment your
+         *     {@link ExecutionInput} or its context to contain the information necessary for this predicate to have the
+         *     the above behavior. The default/null behavior is to enable trace generation unless the context both
+         *     implements {@link HTTPRequestHeaders} and calling {@link HTTPRequestHeaders#getHTTPRequestHeader(String)}
+         *     with "apollo-federation-include-trace" returns a value that is null or isn't "ftv1".
+         */
+        public Options(boolean debuggingEnabled, @Nullable Predicate<ExecutionInput> shouldTracePredicate) {
             this.debuggingEnabled = debuggingEnabled;
             this.shouldTracePredicate = shouldTracePredicate;
         }
 
         public Options(boolean debuggingEnabled) {
-            this(debuggingEnabled,
-                    // Default implementation:
-                    // If context implements our HTTPRequestHeaders interface, we should only be active
-                    // if the special HTTP header has the special value. If the header isn't provided or has
-                    // a different value, return false - which is interpreted as meaning "don't instrument".
-                    // (If context doesn't implement HTTPRequestHeaders, always instrument.)
-                    (executionInput) -> {
-                        if (executionInput != null && executionInput.getContext() != null) {
-                            Object context = executionInput.getContext();
-                            if (context instanceof HTTPRequestHeaders) {
-                                String header = ((HTTPRequestHeaders) context).getHTTPRequestHeader(FEDERATED_TRACING_HEADER_NAME);
-                                return FEDERATED_TRACING_HEADER_VALUE.equals(header);
-                            }
-                        }
-                        return true;
-                    });
+            this(debuggingEnabled, null);
         }
 
         public static @NotNull Options newOptions() {
@@ -464,7 +462,19 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
         }
 
         public boolean shouldTrace(ExecutionInput executionInput) {
-            return shouldTracePredicate.test(executionInput);
+            if (shouldTracePredicate != null) {
+                return shouldTracePredicate.test(executionInput);
+            }
+
+            // Default/null implementation as described in the javadoc for the Options constructor.
+            if (executionInput != null && executionInput.getContext() != null) {
+                Object context = executionInput.getContext();
+                if (context instanceof HTTPRequestHeaders) {
+                    String header = ((HTTPRequestHeaders) context).getHTTPRequestHeader(FEDERATED_TRACING_HEADER_NAME);
+                    return FEDERATED_TRACING_HEADER_VALUE.equals(header);
+                }
+            }
+            return true;
         }
     }
 }
