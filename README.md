@@ -84,3 +84,25 @@ HTTPRequestHeaders context = new HTTPRequestHeaders() {
 };
 graphql.execute(ExecutionInput.newExecutionInput(queryString).context(context));
 ```
+
+Alternatively, if you are using libraries or frameworks whose `context` part do not
+/ are not able to implement the `HTTPRequestHeaders` interface, you can construct
+the FederatedTracingInstrumentation using an Options object with a predicate that
+takes the `context` object and returns a boolean indicating whether a trace should be created for
+the request being processed.  For example:
+
+```java
+Options options = new Options(false, (Object context) -> {
+    if (context instanceof MySpecialExecutionInputContext) {
+        // interrogate your context object... test for the existance of the headers and its value
+        // if header apollo-federation-include-trace exists and is set to ftv1
+        return true;
+        }
+    return false;
+});
+
+GraphQL graphql = GraphQL
+                    .newGraphQL(graphQLSchema)
+                    .instrumentation(new FederatedTracingInstrumentation(options))
+                    .build();
+```
