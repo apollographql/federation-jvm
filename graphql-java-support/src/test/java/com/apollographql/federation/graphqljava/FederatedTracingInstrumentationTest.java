@@ -229,9 +229,9 @@ class FederatedTracingInstrumentationTest {
     void testBringYourOwnContextSignalsToTracePredicate() {
 
         // create instrumentation which has explicit custom evaluation predicate defined
-        Options options = new Options(false, (Object context) -> {
-            if (context instanceof Map) {
-                Map ctxMap = (Map) context;
+        Options options = new Options(false, (ExecutionInput executionInput) -> {
+            if (executionInput.getContext() instanceof Map) {
+                Map ctxMap = (Map) executionInput.getContext();
                 return ctxMap.getOrDefault(FEDERATED_TRACING_HEADER_NAME, "NOPE").equals(FEDERATED_TRACING_HEADER_VALUE);
             }
             return true;

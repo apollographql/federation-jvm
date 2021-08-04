@@ -1,6 +1,7 @@
 package com.apollographql.federation.graphqljava.tracing;
 
 import com.google.protobuf.Timestamp;
+import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.ExecutionResultImpl;
 import graphql.GraphQLError;
@@ -62,8 +63,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
     @Override
     public InstrumentationState createState(InstrumentationCreateStateParameters parameters) {
-        Object context = parameters.getExecutionInput().getContext();
-        if (options.contextIndicatesWeShouldTrace(context)) {
+        if (options.shouldTrace(parameters.getExecutionInput())) {
             return new FederatedTracingState();
         }
         return null;
@@ -429,11 +429,11 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
     public static class Options {
         private final boolean debuggingEnabled;
-        private final Predicate<Object> contextSignalsToTrace;
+        private final Predicate<ExecutionInput> shouldTracePredicate;
 
-        public Options(boolean debuggingEnabled, Predicate<Object> contextSignalsToTrace) {
+        public Options(boolean debuggingEnabled, Predicate<ExecutionInput> shouldTracePredicate) {
             this.debuggingEnabled = debuggingEnabled;
-            this.contextSignalsToTrace = contextSignalsToTrace;
+            this.shouldTracePredicate = shouldTracePredicate;
         }
 
         public Options(boolean debuggingEnabled) {
@@ -443,11 +443,14 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                 // if the special HTTP header has the special value. If the header isn't provided or has
                 // a different value, return false - which is interpreted as meaning "don't instrument".
                 // (If context doesn't implement HTTPRequestHeaders, always instrument.)
-                 (context) -> {
-                     if (context instanceof HTTPRequestHeaders) {
-                        String header = ((HTTPRequestHeaders) context).getHTTPRequestHeader(FEDERATED_TRACING_HEADER_NAME);
-                        return FEDERATED_TRACING_HEADER_VALUE.equals(header);
-                    }
+                 (executionInput) -> {
+                     if (executionInput != null && executionInput.getContext() != null) {
+                         Object context =  executionInput.getContext();
+                         if (context instanceof HTTPRequestHeaders) {
+                             String header = ((HTTPRequestHeaders) context).getHTTPRequestHeader(FEDERATED_TRACING_HEADER_NAME);
+                             return FEDERATED_TRACING_HEADER_VALUE.equals(header);
+                         }
+                     }
                     return true;
             });
         }
@@ -460,8 +463,8 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             return debuggingEnabled;
         }
 
-        public boolean contextIndicatesWeShouldTrace(Object context){
-            return contextSignalsToTrace.test(context);
+        public boolean shouldTrace(ExecutionInput executionInput){
+            return shouldTracePredicate.test(executionInput);
         }
     }
 }
