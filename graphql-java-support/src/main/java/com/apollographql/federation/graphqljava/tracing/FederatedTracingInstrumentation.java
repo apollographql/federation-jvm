@@ -43,8 +43,8 @@ import static graphql.execution.instrumentation.SimpleInstrumentationContext.whe
 import static graphql.schema.GraphQLTypeUtil.simplePrint;
 
 public class FederatedTracingInstrumentation extends SimpleInstrumentation {
-    public static final String HEADER_NAME = "apollo-federation-include-trace";
-    public static final String HEADER_VALUE = "ftv1";
+    public static final String FEDERATED_TRACING_HEADER_NAME = "apollo-federation-include-trace";
+    public static final String FEDERATED_TRACING_HEADER_VALUE = "ftv1";
 
     private static final String EXTENSION_KEY = "ftv1";
 
@@ -445,8 +445,8 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                 // (If context doesn't implement HTTPRequestHeaders, always instrument.)
                  (context) -> {
                      if (context instanceof HTTPRequestHeaders) {
-                        String header = ((HTTPRequestHeaders) context).getHTTPRequestHeader(HEADER_NAME);
-                        return HEADER_VALUE.equals(header);
+                        String header = ((HTTPRequestHeaders) context).getHTTPRequestHeader(FEDERATED_TRACING_HEADER_NAME);
+                        return FEDERATED_TRACING_HEADER_VALUE.equals(header);
                     }
                     return true;
             });

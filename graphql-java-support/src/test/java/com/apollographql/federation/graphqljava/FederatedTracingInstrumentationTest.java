@@ -21,8 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import static com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.HEADER_NAME;
-import static com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.HEADER_VALUE;
+import static com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.FEDERATED_TRACING_HEADER_NAME;
+import static com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.FEDERATED_TRACING_HEADER_VALUE;
 import static com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.Options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -232,7 +232,7 @@ class FederatedTracingInstrumentationTest {
         Options options = new Options(false, (Object context) -> {
             if (context instanceof Map) {
                 Map ctxMap = (Map) context;
-                return ctxMap.getOrDefault(HEADER_NAME, "NOPE").equals(HEADER_VALUE);
+                return ctxMap.getOrDefault(FEDERATED_TRACING_HEADER_NAME, "NOPE").equals(FEDERATED_TRACING_HEADER_VALUE);
             }
             return true;
         });
