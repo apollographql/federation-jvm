@@ -439,7 +439,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
         public Options(boolean debuggingEnabled) {
             this(debuggingEnabled,
                 // Default implementation:
-                // If we've been configured with a way of reading HTTP headers, we should only be active
+                // If context implements our HTTPRequestHeaders interface, we should only be active
                 // if the special HTTP header has the special value. If the header isn't provided or has
                 // a different value, return false - which is interpreted as meaning "don't instrument".
                 // (If context doesn't implement HTTPRequestHeaders, always instrument.)
