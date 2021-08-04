@@ -453,7 +453,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
         }
 
         public static @NotNull Options newOptions() {
-            return new Options(false );
+            return new Options(false);
         }
 
         public boolean isDebuggingEnabled() {
