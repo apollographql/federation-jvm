@@ -226,7 +226,7 @@ class FederatedTracingInstrumentationTest {
     }
 
     @Test
-    void testBringYourOwnEvaluateContextFunction() {
+    void testBringYourOwnContextSignalsToTracePredicate() {
 
         // create instrumentation which has explicit custom evaluation predicate defined
         Options options = new Options(false, (Object context) -> {
