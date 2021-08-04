@@ -441,9 +441,8 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
                 // Default implementation:
                 // If we've been configured with a way of reading HTTP headers, we should only be active
                 // if the special HTTP header has the special value. If the header isn't provided or has
-                // a different value, return null for our state, which we'll interpret in the rest of this
-                // file as meaning "don't instrument".  (If we haven't been given access to HTTP headers,
-                // always instrument.)
+                // a different value, return false - which is interpreted as meaning "don't instrument".
+                // (If context doesn't implement HTTPRequestHeaders, always instrument.)
                  (context) -> {
                      if (context instanceof HTTPRequestHeaders) {
                         String header = ((HTTPRequestHeaders) context).getHTTPRequestHeader(HEADER_NAME);
