@@ -97,7 +97,7 @@ Options options = new Options(false, (Object context) -> {
         // interrogate your context object... test for the existance of the headers and its value
         // if header apollo-federation-include-trace exists and is set to ftv1
         return true;
-        }
+    }
     return false;
 });
 
