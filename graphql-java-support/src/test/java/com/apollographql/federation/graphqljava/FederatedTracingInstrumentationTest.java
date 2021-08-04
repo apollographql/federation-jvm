@@ -21,9 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import static com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.Options;
 import static com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.HEADER_NAME;
 import static com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.HEADER_VALUE;
+import static com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.Options;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -228,16 +228,16 @@ class FederatedTracingInstrumentationTest {
     @Test
     void testBringYourOwnEvaluateContextFunction() {
 
-        // create instrumentation which has explicit custom evaluation function defined
+        // create instrumentation which has explicit custom evaluation predicate defined
         Options options = new Options(false, (Object context) -> {
             if (context instanceof Map) {
-                Map ctxMap = (Map)context;
-                return ctxMap.getOrDefault(HEADER_NAME,"NOPE").equals(HEADER_VALUE);
+                Map ctxMap = (Map) context;
+                return ctxMap.getOrDefault(HEADER_NAME, "NOPE").equals(HEADER_VALUE);
             }
             return true;
         });
 
-        // Use an alternative GraphQL that uses our different instrumentation via options
+        // Use an alternative GraphQL that uses our instrumentation enablement determination via predicate provided in options
         GraphQL customContextGraphql = graphql.transform(new Consumer<GraphQL.Builder>() {
             @Override
             public void accept(GraphQL.Builder builder) {
@@ -252,7 +252,7 @@ class FederatedTracingInstrumentationTest {
                 .build();
 
         // Our new context object used here is just simply a map, it does NOT implement HttpRequestHeaders
-        assertFalse( input.getContext() instanceof HTTPRequestHeaders);
+        assertFalse(input.getContext() instanceof HTTPRequestHeaders);
 
         // Because the special header isn't there, we don't get the trace extension
         Map<String, Object> result = customContextGraphql.execute(input).toSpecification();
