@@ -37,7 +37,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static graphql.execution.instrumentation.SimpleInstrumentationContext.whenCompleted;
 import static graphql.schema.GraphQLTypeUtil.simplePrint;
@@ -429,11 +429,11 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
     public static class Options {
         private final boolean debuggingEnabled;
-        private final Function<Object,Boolean> evaluateContextFunction;
+        private final Predicate<Object> contextSignalsToTrace;
 
-        public Options(boolean debuggingEnabled, Function<Object, Boolean> evaluateContextFunction) {
+        public Options(boolean debuggingEnabled, Predicate<Object> contextSignalsToTrace) {
             this.debuggingEnabled = debuggingEnabled;
-            this.evaluateContextFunction = evaluateContextFunction;
+            this.contextSignalsToTrace = contextSignalsToTrace;
         }
 
         public Options(boolean debuggingEnabled) {
@@ -461,7 +461,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
         }
 
         public boolean contextIndicatesWeShouldTrace(Object context){
-            return evaluateContextFunction.apply(context);
+            return contextSignalsToTrace.test(context);
         }
     }
 }
