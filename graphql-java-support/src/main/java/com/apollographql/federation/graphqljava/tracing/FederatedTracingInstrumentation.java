@@ -438,21 +438,21 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
         public Options(boolean debuggingEnabled) {
             this(debuggingEnabled,
-                // Default implementation:
-                // If context implements our HTTPRequestHeaders interface, we should only be active
-                // if the special HTTP header has the special value. If the header isn't provided or has
-                // a different value, return false - which is interpreted as meaning "don't instrument".
-                // (If context doesn't implement HTTPRequestHeaders, always instrument.)
-                 (executionInput) -> {
-                     if (executionInput != null && executionInput.getContext() != null) {
-                         Object context =  executionInput.getContext();
-                         if (context instanceof HTTPRequestHeaders) {
-                             String header = ((HTTPRequestHeaders) context).getHTTPRequestHeader(FEDERATED_TRACING_HEADER_NAME);
-                             return FEDERATED_TRACING_HEADER_VALUE.equals(header);
-                         }
-                     }
-                    return true;
-            });
+                    // Default implementation:
+                    // If context implements our HTTPRequestHeaders interface, we should only be active
+                    // if the special HTTP header has the special value. If the header isn't provided or has
+                    // a different value, return false - which is interpreted as meaning "don't instrument".
+                    // (If context doesn't implement HTTPRequestHeaders, always instrument.)
+                    (executionInput) -> {
+                        if (executionInput != null && executionInput.getContext() != null) {
+                            Object context = executionInput.getContext();
+                            if (context instanceof HTTPRequestHeaders) {
+                                String header = ((HTTPRequestHeaders) context).getHTTPRequestHeader(FEDERATED_TRACING_HEADER_NAME);
+                                return FEDERATED_TRACING_HEADER_VALUE.equals(header);
+                            }
+                        }
+                        return true;
+                    });
         }
 
         public static @NotNull Options newOptions() {
@@ -463,7 +463,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
             return debuggingEnabled;
         }
 
-        public boolean shouldTrace(ExecutionInput executionInput){
+        public boolean shouldTrace(ExecutionInput executionInput) {
             return shouldTracePredicate.test(executionInput);
         }
     }
