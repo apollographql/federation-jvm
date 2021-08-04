@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import static com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.FEDERATED_TRACING_HEADER_NAME;
 import static com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.FEDERATED_TRACING_HEADER_VALUE;
@@ -227,45 +226,40 @@ class FederatedTracingInstrumentationTest {
 
     @Test
     void testBringYourOwnContextSignalsToTracePredicate() {
-
-        // create instrumentation which has explicit custom evaluation predicate defined
+        // Create instrumentation which has explicit custom evaluation predicate defined.
         Options options = new Options(false, (ExecutionInput executionInput) -> {
             if (executionInput.getContext() instanceof Map) {
                 Map ctxMap = (Map) executionInput.getContext();
-                return ctxMap.getOrDefault(FEDERATED_TRACING_HEADER_NAME, "NOPE").equals(FEDERATED_TRACING_HEADER_VALUE);
+                return FEDERATED_TRACING_HEADER_VALUE.equals(ctxMap.get(FEDERATED_TRACING_HEADER_NAME));
             }
             return true;
         });
 
-        // Use an alternative GraphQL that uses our instrumentation enablement determination via predicate provided in options
-        GraphQL customContextGraphql = graphql.transform(new Consumer<GraphQL.Builder>() {
-            @Override
-            public void accept(GraphQL.Builder builder) {
-                builder.instrumentation(new FederatedTracingInstrumentation(options));
-            }
-        });
-
+        // Change the instrumentation to the above constructed one.
+        graphql = graphql.transform((GraphQL.Builder builder) ->
+                builder.instrumentation(new FederatedTracingInstrumentation(options))
+        );
 
         Map<String, String> context = new HashMap<>();
         ExecutionInput input = ExecutionInput.newExecutionInput("{widgets {foo}}")
                 .context(context)
                 .build();
 
-        // Our new context object used here is just simply a map, it does NOT implement HttpRequestHeaders
+        // Our context object is just a Map, and should not implement HTTPRequestHeaders.
         assertFalse(input.getContext() instanceof HTTPRequestHeaders);
 
-        // Because the special header isn't there, we don't get the trace extension
-        Map<String, Object> result = customContextGraphql.execute(input).toSpecification();
+        // Because the special header isn't there, we don't get the trace extension.
+        Map<String, Object> result = graphql.execute(input).toSpecification();
         assertNull(result.get("extensions"));
 
         // Try again with the header having the wrong value.
         context.put("apollo-federation-include-trace", "bla");
-        result = customContextGraphql.execute(input).toSpecification();
+        result = graphql.execute(input).toSpecification();
         assertNull(result.get("extensions"));
 
         // Now with the right value.
         context.put("apollo-federation-include-trace", "ftv1");
-        result = customContextGraphql.execute(input).toSpecification();
+        result = graphql.execute(input).toSpecification();
         Object extensions = result.get("extensions");
         assertTrue(extensions instanceof Map);
         assertTrue(((Map) extensions).containsKey("ftv1"));
