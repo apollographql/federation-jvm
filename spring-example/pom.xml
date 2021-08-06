@@ -15,6 +15,11 @@
     <name>federation-spring-example</name>
     <description>Spring Boot example of federation-graphql-java-support usage</description>
 
+    <properties>
+        <!-- Note that spring-example wasn't designed to be imported, so this is fine -->
+        <skip.dependency.convergence>true</skip.dependency.convergence>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.apollographql.federation</groupId>

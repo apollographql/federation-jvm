@@ -62,6 +62,19 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <skip.ci>true</skip.ci>
         <skip.release>true</skip.release>
+        <!--
+        Dependency convergence should only be skipped for projects that aren't expected to be imported. Otherwise, if
+        convergence fails, use Maven <exclusions> to enforce that a single transitive dependency version is exposed.
+
+        Note that Maven <dependencyManagement> is not transitive, so while it can enforce transitive dependency versions
+        during project builds, it won't enforce them for dependents on the project. Dependents will instead only see the
+        versions of the dependencies as declared by their direct dependents, and will ignore <dependencyManagement>
+        entries that try to enforce a transitive dependency version. This might be fine for dependents using Gradle
+        (which picks the highest of all transitive dependency versions), but for dependents using Maven, this can lead
+        to runtime errors, since Maven uses "nearest first" for transitive dependencies which can pick versions that are
+        too small. More info at https://issues.apache.org/jira/browse/MNG-5761 .
+        -->
+        <skip.dependency.convergence>false</skip.dependency.convergence>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
         <graphql-java.version>16.1</graphql-java.version>
         <graphql-java-kickstart.version>11.0.0</graphql-java-kickstart.version>
@@ -252,12 +265,23 @@
                             <configuration>
                                 <rules>
                                     <banDuplicatePomDependencyVersions/>
-                                    <dependencyConvergence/>
                                     <requireReleaseDeps>
                                         <failWhenParentIsSnapshot>false</failWhenParentIsSnapshot>
                                         <excludes>com.apollographql.federation:*</excludes>
                                     </requireReleaseDeps>
                                     <requireUpperBoundDeps/>
+                                </rules>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>enforce-dependency-convergence</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <skip>${skip.dependency.convergence}</skip>
+                                <rules>
+                                    <dependencyConvergence/>
                                 </rules>
                             </configuration>
                         </execution>
