@@ -207,6 +207,18 @@
                             </goals>
                             <configuration>
                                 <failOnWarning>true</failOnWarning>
+                                <ignoredUnusedDeclaredDependencies>
+                                    <!-- We use an aggregator artifact here, which looks unused to static analysis -->
+                                    <ignoredUnusedDeclaredDependency>
+                                        org.junit.jupiter:junit-jupiter
+                                    </ignoredUnusedDeclaredDependency>
+                                </ignoredUnusedDeclaredDependencies>
+                                <ignoredUsedUndeclaredDependencies>
+                                    <!-- Normally we should declare used transitive dependencies, but this it's in an aggregator artifact -->
+                                    <ignoredUsedUndeclaredDependency>
+                                        org.junit.jupiter:junit-jupiter-api
+                                    </ignoredUsedUndeclaredDependency>
+                                </ignoredUsedUndeclaredDependencies>
                             </configuration>
                         </execution>
                         <execution>
