@@ -9,15 +9,4 @@
             <password>${env.SONATYPE_PASSWORD}</password>
         </server>
     </servers>
-    <profiles>
-        <profile>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <!-- This is the public fingerprint for the Apollo PGP key -->
-                <gpg.keyname>5A446C80C27E095353CF3969F165A96372E61948</gpg.keyname>
-            </properties>
-        </profile>
-    </profiles>
 </settings>

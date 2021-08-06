@@ -60,12 +60,16 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
+        <skip.ci>true</skip.ci>
+        <skip.release>true</skip.release>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
         <graphql-java.version>16.1</graphql-java.version>
         <graphql-java-kickstart.version>11.0.0</graphql-java-kickstart.version>
         <java.version>1.8</java.version>
         <jetbrains-annotations.version>17.0.0</jetbrains-annotations.version>
         <junit.version>5.7.1</junit.version>
+        <!-- Can't use extra-enforcer-rules until https://github.com/mojohaus/extra-enforcer-rules/issues/131 is fixed -->
+        <maven-enforcer-plugin.version>3.0.0</maven-enforcer-plugin.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-jar-plugin.version>3.1.2</maven-jar-plugin.version>
         <maven-javadoc-plugin.version>3.1.1</maven-javadoc-plugin.version>
@@ -191,6 +195,70 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${maven-enforcer-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>enforce-always</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <rules>
+                                    <banDuplicatePomDependencyVersions/>
+                                    <dependencyConvergence/>
+                                    <requireReleaseDeps>
+                                        <failWhenParentIsSnapshot>false</failWhenParentIsSnapshot>
+                                        <excludes>com.apollographql.federation:*</excludes>
+                                    </requireReleaseDeps>
+                                    <requireUpperBoundDeps/>
+                                </rules>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>enforce-ci</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <skip>${skip.ci}</skip>
+                                <rules>
+                                    <requireActiveProfile>
+                                        <profiles>ci,release</profiles>
+                                        <all>false</all>
+                                    </requireActiveProfile>
+                                    <requireJavaVendor>
+                                        <includes>
+                                            <include>AdoptOpenJDK</include>
+                                            <include>Azul Systems, Inc.</include>
+                                        </includes>
+                                    </requireJavaVendor>
+                                    <requireJavaVersion>
+                                        <version>[1.8.0-282,1.9)</version>
+                                    </requireJavaVersion>
+                                </rules>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>enforce-release</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <skip>${skip.release}</skip>
+                                <rules>
+                                    <requireActiveProfile>
+                                        <profiles>release</profiles>
+                                    </requireActiveProfile>
+                                    <requireReleaseVersion/>
+                                    <requireReleaseDeps/>
+                                </rules>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-gpg-plugin</artifactId>
                     <version>${maven-gpg-plugin.version}</version>
                     <executions>
@@ -201,6 +269,11 @@
                             </goals>
                         </execution>
                     </executions>
+                    <configuration>
+                        <skip>${skip.release}</skip>
+                        <!-- This is the public fingerprint for the Apollo PGP key -->
+                        <keyname>5A446C80C27E095353CF3969F165A96372E61948</keyname>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.sonatype.plugins</groupId>
@@ -208,6 +281,7 @@
                     <version>${nexus-staging-maven-plugin.version}</version>
                     <extensions>true</extensions>
                     <configuration>
+                        <skipNexusStagingDeployMojo>${skip.release}</skipNexusStagingDeployMojo>
                         <serverId>sonatype-ossrh</serverId>
                         <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                         <autoReleaseAfterClose>true</autoReleaseAfterClose>
@@ -223,6 +297,10 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
             </plugin>
             <plugin>
@@ -231,4 +309,21 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>ci</id>
+            <properties>
+                <skip.ci>false</skip.ci>
+                <skip.release>true</skip.release>
+            </properties>
+        </profile>
+        <profile>
+            <id>release</id>
+            <properties>
+                <skip.ci>false</skip.ci>
+                <skip.release>false</skip.release>
+            </properties>
+        </profile>
+    </profiles>
 </project>
