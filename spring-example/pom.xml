@@ -18,13 +18,57 @@
     <properties>
         <!-- Note that spring-example wasn't designed to be imported, so this is fine. -->
         <skip.dependency.convergence>true</skip.dependency.convergence>
+        <fasterxml.jackson.version>2.12.0</fasterxml.jackson.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!--
+            The following dependencies exist solely to override Maven's default "nearest first" strategy for transitive
+            dependency version conflict resolution. Note that as stated in the parent POM, we would normally use Maven
+            <exclusions> instead to get transitivity, but since spring-example isn't designed to be imported, it's fine
+            (and a lot less work in this case) to just add dependencies to <dependencyManagement>.
+            -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${fasterxml.jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${fasterxml.jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${fasterxml.jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
+                <artifactId>jackson-datatype-jdk8</artifactId>
+                <version>${fasterxml.jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-aop</artifactId>
+                <version>5.2.11.RELEASE</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>com.apollographql.federation</groupId>
             <artifactId>federation-graphql-java-support</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -77,6 +121,64 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>cobertura-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <configuration>
+                            <ignoredUnusedDeclaredDependencies>
+                                <!--
+                                We use aggregator artifacts here, which look unused to static analysis. Note that
+                                this means it's the maintainers' responsibility to know when these artifacts are unused
+                                and can be safely removed (check the starters' docs if you're unsure).
+                                -->
+                                <ignoredUnusedDeclaredDependency>
+                                    org.junit.jupiter:junit-jupiter
+                                </ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>
+                                    org.springframework.boot:spring-boot-starter-actuator
+                                </ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>
+                                    org.springframework.boot:spring-boot-starter-web
+                                </ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>
+                                    org.springframework.boot:spring-boot-starter-test
+                                </ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>
+                                    com.graphql-java-kickstart:graphql-spring-boot-starter
+                                </ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>
+                                    com.graphql-java-kickstart:graphiql-spring-boot-starter
+                                </ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>
+                                    com.graphql-java-kickstart:graphql-spring-boot-starter-test
+                                </ignoredUnusedDeclaredDependency>
+                            </ignoredUnusedDeclaredDependencies>
+                            <ignoredUsedUndeclaredDependencies>
+                                <!--
+                                Normally we should declare used transitive dependencies, but these are in aggregator
+                                artifacts, so it's fine here. We use * for artifacts because realistically maintainers
+                                aren't going to check whether every transitive dependency exists in the aggregator
+                                artifact. This means it's the maintainers' responsibility to ensure used artifacts at
+                                these group IDs are provided by the above aggregator artifacts.
+                                -->
+                                <ignoredUsedUndeclaredDependency>
+                                    org.junit.jupiter:junit-jupiter-api
+                                </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>org.springframework:*</ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
+                                    org.springframework.boot:*
+                                </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
+                                    com.graphql-java-kickstart:*
+                                </ignoredUsedUndeclaredDependency>
+                            </ignoredUsedUndeclaredDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
