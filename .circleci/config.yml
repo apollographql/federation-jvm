@@ -1,31 +1,30 @@
-version: 2
+version: 2.1
 jobs:
-  build:
+  Java SE 8 Maven Verify:
     docker:
-      - image: circleci/openjdk:8
+      - image: cimg/openjdk:8.0
     steps:
       - checkout
       - run:
-          name: Concatenate all pom.xml
+          name: Generate cache checksum
           command: cat pom.xml */pom.xml > allpoms.xml
       - restore_cache:
-          key: cache-{{ checksum "allpoms.xml" }}
+          key: maven-{{ checksum "allpoms.xml" }}
       - run:
           name: Install dependencies
-          # https://issues.apache.org/jira/browse/MDEP-568 for --fail-never
-          command: ./mvnw --settings settings.xml --batch-mode --fail-never dependency:go-offline -DexcludeGroupIds=com.apollographql.federation
+          command: ./mvnw --settings settings-ci.xml --batch-mode dependency:go-offline
       - save_cache:
           paths:
-            - ~/.m2
-          key: cache-{{ checksum "allpoms.xml" }}
+            - ~/.m2/
+          key: maven-{{ checksum "allpoms.xml" }}
       - run:
-          name: Build, install, test
-          command: ./mvnw --settings settings.xml --batch-mode install test -Dgpg.skip
+          name: Compile, test, verify
+          command: ./mvnw --settings settings-ci.xml --batch-mode verify
       - run:
-          name: Save test results
+          name: Collect test results
           command: |
-            mkdir -p ~/test-results/junit/
-            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/junit/ \;
+            mkdir -p ~/test-results/JUnit/
+            find . -type f -regex '.*/target/surefire-reports/.*\.xml' -exec cp {} ~/test-results/JUnit/ \;
           when: always
       - store_test_results:
           path: ~/test-results
@@ -34,4 +33,4 @@ workflows:
   version: 2
   Build and Test:
     jobs:
-      - build
+      - Java SE 8 Maven Verify
