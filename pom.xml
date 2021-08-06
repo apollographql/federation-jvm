@@ -81,9 +81,11 @@
         <java.version>1.8</java.version>
         <jetbrains-annotations.version>17.0.0</jetbrains-annotations.version>
         <junit.version>5.7.1</junit.version>
-        <!-- Can't upgrade to 3.2.X until https://issues.apache.org/jira/browse/MDEP-753 is fixed -->
+        <!-- Can't upgrade to 3.2.X until https://issues.apache.org/jira/browse/MDEP-753 is fixed. -->
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
-        <!-- Can't use extra-enforcer-rules until https://github.com/mojohaus/extra-enforcer-rules/issues/131 is fixed -->
+        <!--
+        Can't use extra-enforcer-rules until https://github.com/mojohaus/extra-enforcer-rules/issues/131 is fixed.
+        -->
         <maven-enforcer-plugin.version>3.0.0</maven-enforcer-plugin.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-jar-plugin.version>3.1.2</maven-jar-plugin.version>
@@ -199,7 +201,7 @@
                     </executions>
                     <configuration>
                         <notimestamp>true</notimestamp>
-                        <!-- protobuf generated java classes are missing various tags, so disable 'missing' -->
+                        <!-- protobuf generated java classes are missing various tags, so disable 'missing'. -->
                         <doclint>all,-missing</doclint>
                     </configuration>
                 </plugin>
@@ -221,13 +223,16 @@
                             <configuration>
                                 <failOnWarning>true</failOnWarning>
                                 <ignoredUnusedDeclaredDependencies>
-                                    <!-- We use an aggregator artifact here, which looks unused to static analysis -->
+                                    <!-- We use an aggregator artifact here, which looks unused to static analysis. -->
                                     <ignoredUnusedDeclaredDependency>
                                         org.junit.jupiter:junit-jupiter
                                     </ignoredUnusedDeclaredDependency>
                                 </ignoredUnusedDeclaredDependencies>
                                 <ignoredUsedUndeclaredDependencies>
-                                    <!-- Normally we should declare used transitive dependencies, but this it's in an aggregator artifact -->
+                                    <!--
+                                    Normally we should declare used transitive dependencies, but it's in an aggregator
+                                    artifact, so it's fine here.
+                                    -->
                                     <ignoredUsedUndeclaredDependency>
                                         org.junit.jupiter:junit-jupiter-api
                                     </ignoredUsedUndeclaredDependency>
@@ -341,7 +346,7 @@
                     </executions>
                     <configuration>
                         <skip>${skip.release}</skip>
-                        <!-- This is the public fingerprint for the Apollo PGP key -->
+                        <!-- This is the public fingerprint for the Apollo PGP key. -->
                         <keyname>5A446C80C27E095353CF3969F165A96372E61948</keyname>
                     </configuration>
                 </plugin>

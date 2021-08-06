@@ -16,7 +16,7 @@
     <description>Spring Boot example of federation-graphql-java-support usage</description>
 
     <properties>
-        <!-- Note that spring-example wasn't designed to be imported, so this is fine -->
+        <!-- Note that spring-example wasn't designed to be imported, so this is fine. -->
         <skip.dependency.convergence>true</skip.dependency.convergence>
     </properties>
 
