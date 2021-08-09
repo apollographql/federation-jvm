@@ -155,8 +155,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
   }
 
   // Field resolvers can throw exceptions or add errors to the DataFetchingResult. This method
-  // normalizes them to a
-  // single list of GraphQLErrors.
+  // normalizes them to a single list of GraphQLErrors.
   @NotNull
   private List<GraphQLError> convertErrors(Throwable throwable, Object result) {
     ArrayList<GraphQLError> graphQLErrors = new ArrayList<>();
