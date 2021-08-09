@@ -15,14 +15,15 @@
 - Delete the `private.key` file.
 
 ## For each release
-- Start a branch `release-VERSION`
-- Update RELEASE_NOTES.md
-- Edit all instances of (next version)-SNAPSHOT in all pom.xml files to be the desired version
-- Edit version in Gradle section of README.md
-- Push branch, open PR, wait for CI to pass
-- Run `SONATYPE_USERNAME=username SONATYPE_PASSWORD=password ./mvnw --settings settings.xml clean deploy`
-- A prompt will appear asking you for the GPG passphrase; get this from 1Password
+- Start a branch `release-VERSION`.
+- Update RELEASE_NOTES.md.
+- Edit all instances of (next version)-SNAPSHOT in all pom.xml files to be the desired version.
+- Edit version in Gradle section of README.md.
+- Push branch, open PR, wait for CI to pass.
+- Ensure you are using the latest Zulu build of OpenJDK 8.
+- Run `SONATYPE_USERNAME=username SONATYPE_PASSWORD=password ./mvnw --settings settings-release.xml clean deploy`
+- A prompt will appear asking you for the GPG passphrase; get this from 1Password.
 - Run `git tag vVERSION && git push origin vVERSION`
-- Edit all instances of the version in all pom.xml files to be the next patch release plus `-SNAPSHOT`
-- Push branch again
-- Merge PR
+- Edit all instances of the version in all pom.xml files to be the next patch release plus the `-SNAPSHOT` suffix.
+- Push branch again.
+- Merge PR.

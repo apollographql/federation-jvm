@@ -3,7 +3,7 @@ This Spring Boot application contains examples for both a microservice using sta
 To run the standard `graphql-java` example, `cd` to the root of this project, then...
 ```
 ## compile and install project including example and dependencies
-mvn install -Dgpg.skip
+mvn install
 ## start local webserver on 9000
 mvn -pl spring-example spring-boot:run
 ```
