@@ -18,6 +18,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Some tips for running with graphql-java-tools:
+ *
  * 1. You may find that graphql-java-tools removes types that are only used by the federation
  *    _entities field. This is because graphql-java-tools performs these optimizations before
  *    federation-graphql-java-support can alter the schema to include the _entities field. The
@@ -27,6 +28,7 @@ import org.springframework.context.annotation.Configuration;
  *    aren't named according to the JavaBeans API specification (i.e. getFoo()/setFoo()). You can
  *    work around this by providing the whole bean via code, or using a {@link BeanPostProcessor}
  *    as shown below to customize the auto-configuration bean.
+ *
  * 2. If you have an empty query type, you don't need to add a dummy field to your
  *    {@link graphql.kickstart.tools.GraphQLQueryResolver} or to your schema string. However, you
  *    do need to (1) declare an empty {@link graphql.kickstart.tools.GraphQLQueryResolver}, (2)
