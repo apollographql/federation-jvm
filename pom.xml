@@ -60,17 +60,38 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
+        <skip.ci>true</skip.ci>
+        <skip.release>true</skip.release>
+        <!--
+        Dependency convergence should only be skipped for projects that aren't expected to be imported. Otherwise, if
+        convergence fails, use Maven <exclusions> to enforce that a single transitive dependency version is exposed.
+
+        Note that Maven <dependencyManagement> is not transitive, so while it can enforce transitive dependency versions
+        during project builds, it won't enforce them for dependents on the project. Dependents will instead only see the
+        versions of the dependencies as declared by their direct dependents, and will ignore <dependencyManagement>
+        entries that try to enforce a transitive dependency version. This might be fine for dependents using Gradle
+        (which picks the highest of all transitive dependency versions), but for dependents using Maven, this can lead
+        to runtime errors, since Maven uses "nearest first" for transitive dependencies which can pick versions that are
+        too small. More info at https://issues.apache.org/jira/browse/MNG-5761 .
+        -->
+        <skip.dependency.convergence>false</skip.dependency.convergence>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
         <graphql-java.version>16.1</graphql-java.version>
         <graphql-java-kickstart.version>11.0.0</graphql-java-kickstart.version>
         <java.version>1.8</java.version>
         <jetbrains-annotations.version>17.0.0</jetbrains-annotations.version>
         <junit.version>5.7.1</junit.version>
+        <!-- Can't upgrade to 3.2.X until https://issues.apache.org/jira/browse/MDEP-753 is fixed. -->
+        <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
+        <!--
+        Can't use extra-enforcer-rules until https://github.com/mojohaus/extra-enforcer-rules/issues/131 is fixed.
+        -->
+        <maven-enforcer-plugin.version>3.0.0</maven-enforcer-plugin.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-jar-plugin.version>3.1.2</maven-jar-plugin.version>
         <maven-javadoc-plugin.version>3.1.1</maven-javadoc-plugin.version>
         <maven-source-plugin.version>3.1.0</maven-source-plugin.version>
-        <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
+        <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <slf4j.version>1.7.30</slf4j.version>
         <spring-boot.version>2.3.6.RELEASE</spring-boot.version>
@@ -118,6 +139,11 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-actuator</artifactId>
                 <version>${spring-boot.version}</version>
@@ -143,10 +169,6 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire-plugin.version}</version>
-                    <configuration>
-                        <!-- Workaround from https://stackoverflow.com/questions/50661648/spring-boot-fails-to-run-maven-surefire-plugin-classnotfoundexception-org-apache/50661649#50661649 -->
-                        <useSystemClassLoader>false</useSystemClassLoader>
-                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -180,7 +202,7 @@
                     </executions>
                     <configuration>
                         <notimestamp>true</notimestamp>
-                        <!-- protobuf generated java classes are missing various tags, so disable 'missing' -->
+                        <!-- protobuf generated java classes are missing various tags, so disable 'missing'. -->
                         <doclint>all,-missing</doclint>
                     </configuration>
                 </plugin>
@@ -188,6 +210,131 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>cobertura-maven-plugin</artifactId>
                     <version>${cobertura-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${maven-dependency-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>analyze</id>
+                            <goals>
+                                <goal>analyze-only</goal>
+                            </goals>
+                            <configuration>
+                                <failOnWarning>true</failOnWarning>
+                                <ignoredUnusedDeclaredDependencies>
+                                    <!-- We use an aggregator artifact here, which looks unused to static analysis. -->
+                                    <ignoredUnusedDeclaredDependency>
+                                        org.junit.jupiter:junit-jupiter
+                                    </ignoredUnusedDeclaredDependency>
+                                </ignoredUnusedDeclaredDependencies>
+                                <ignoredUsedUndeclaredDependencies>
+                                    <!--
+                                    Normally we should declare used transitive dependencies, but it's in an aggregator
+                                    artifact, so it's fine here.
+                                    -->
+                                    <ignoredUsedUndeclaredDependency>
+                                        org.junit.jupiter:junit-jupiter-api
+                                    </ignoredUsedUndeclaredDependency>
+                                </ignoredUsedUndeclaredDependencies>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>analyze-dep-mgt</id>
+                            <goals>
+                                <goal>analyze-dep-mgt</goal>
+                            </goals>
+                            <configuration>
+                                <failBuild>true</failBuild>
+                                <ignoreDirect>false</ignoreDirect>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>analyze-duplicate</id>
+                            <goals>
+                                <goal>analyze-duplicate</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${maven-enforcer-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>enforce-always</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <rules>
+                                    <banDuplicatePomDependencyVersions/>
+                                    <requireReleaseDeps>
+                                        <failWhenParentIsSnapshot>false</failWhenParentIsSnapshot>
+                                        <excludes>com.apollographql.federation:*</excludes>
+                                    </requireReleaseDeps>
+                                    <requireUpperBoundDeps/>
+                                </rules>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>enforce-dependency-convergence</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <skip>${skip.dependency.convergence}</skip>
+                                <rules>
+                                    <dependencyConvergence/>
+                                </rules>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>enforce-ci</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <skip>${skip.ci}</skip>
+                                <rules>
+                                    <requireActiveProfile>
+                                        <profiles>ci,release</profiles>
+                                        <all>false</all>
+                                    </requireActiveProfile>
+                                    <requireJavaVendor>
+                                        <includes>
+                                            <include>AdoptOpenJDK</include>
+                                            <include>Azul Systems, Inc.</include>
+                                        </includes>
+                                    </requireJavaVendor>
+                                    <requireJavaVersion>
+                                        <version>[1.8.0-282,1.9)</version>
+                                    </requireJavaVersion>
+                                    <requireMavenVersion>
+                                        <version>[3.8.1,)</version>
+                                    </requireMavenVersion>
+                                </rules>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>enforce-release</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <skip>${skip.release}</skip>
+                                <rules>
+                                    <requireActiveProfile>
+                                        <profiles>release</profiles>
+                                    </requireActiveProfile>
+                                    <requireReleaseVersion/>
+                                    <requireReleaseDeps/>
+                                </rules>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -201,6 +348,11 @@
                             </goals>
                         </execution>
                     </executions>
+                    <configuration>
+                        <skip>${skip.release}</skip>
+                        <!-- This is the public fingerprint for the Apollo PGP key. -->
+                        <keyname>5A446C80C27E095353CF3969F165A96372E61948</keyname>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.sonatype.plugins</groupId>
@@ -208,6 +360,7 @@
                     <version>${nexus-staging-maven-plugin.version}</version>
                     <extensions>true</extensions>
                     <configuration>
+                        <skipNexusStagingDeployMojo>${skip.release}</skipNexusStagingDeployMojo>
                         <serverId>sonatype-ossrh</serverId>
                         <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                         <autoReleaseAfterClose>true</autoReleaseAfterClose>
@@ -223,6 +376,14 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
             </plugin>
             <plugin>
@@ -231,4 +392,21 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>ci</id>
+            <properties>
+                <skip.ci>false</skip.ci>
+                <skip.release>true</skip.release>
+            </properties>
+        </profile>
+        <profile>
+            <id>release</id>
+            <properties>
+                <skip.ci>false</skip.ci>
+                <skip.release>false</skip.release>
+            </properties>
+        </profile>
+    </profiles>
 </project>
