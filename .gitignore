@@ -3,5 +3,6 @@
 .idea/federation-jvm.iml
 .idea/misc.xml
 .idea/jarRepositories.xml
+/.mvn/jvm.config
 /.mvn/wrapper/maven-wrapper.jar
 target/
