@@ -4,5 +4,4 @@ import graphql.kickstart.tools.GraphQLQueryResolver;
 import org.springframework.stereotype.Component;
 
 @Component
-public class QueryResolver implements GraphQLQueryResolver {
-}
+public class QueryResolver implements GraphQLQueryResolver {}
