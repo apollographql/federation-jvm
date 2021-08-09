@@ -1,5 +1,11 @@
 # Release notes
 
+## v0.6.5
+
+*Enhancements:*
+- Split out the `HTTPRequestHeaders` interface into its own artifact `federation-graphql-java-support-api`. This allows third-party libraries to have their context implement this interface without pulling in all the dependencies of `federation-graphql-java-support`.
+- Allow providing a function to `FederatedTracingInstrumentation.Options` to decide whether to enable tracing based on the `ExecutionInput` and its context. This is useful if a third-party library does not wish to implement `HTTPRequestHeaders`.
+
 ## v0.6.4
 
 *Upgrades:*
