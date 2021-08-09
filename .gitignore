@@ -1,8 +1,4 @@
-/.idea/workspace.xml
-.idea/inspectionProfiles/Project_Default.xml
-.idea/federation-jvm.iml
-.idea/misc.xml
-.idea/jarRepositories.xml
+/.idea/
 /.mvn/jvm.config
 /.mvn/wrapper/maven-wrapper.jar
 target/
