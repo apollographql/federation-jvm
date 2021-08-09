@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ProductResolver implements GraphQLResolver<Product> {
-    public boolean isInStock(Product product) {
-        return product.getQuantity() > 0;
-    }
+  public boolean isInStock(Product product) {
+    return product.getQuantity() > 0;
+  }
 }
