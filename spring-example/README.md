@@ -16,3 +16,4 @@ Now you can query your local graph:
 ## e.g.
 curl -X POST  -H "Content-Type: application/json" --data '{"query":"{__schema{types{name}}}"}' "http://localhost:9000/graphql"
 ```
+You can also query your local graph with GraphiQL at http://localhost:9000/graphiql .
