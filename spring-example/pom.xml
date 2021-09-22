@@ -49,6 +49,16 @@
                 <artifactId>jackson-datatype-jdk8</artifactId>
                 <version>${fasterxml.jackson.version}</version>
             </dependency>
+            <!--
+            There is a bug in com.graphql-java-kickstart:graphql-spring-boot-starter:11.1.0 where it depends on
+            artifact com.graphql-java:graphql-java-extended-scalars:16.0.1, but it really needs 17.0. This forces
+            us to a later version.
+            -->
+            <dependency>
+                <groupId>com.graphql-java</groupId>
+                <artifactId>graphql-java-extended-scalars</artifactId>
+                <version>17.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <dependencies>
