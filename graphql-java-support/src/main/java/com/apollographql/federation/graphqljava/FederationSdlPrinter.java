@@ -1,6 +1,6 @@
 package com.apollographql.federation.graphqljava;
 
-import static com.google.common.base.Predicates.not;
+import static graphql.com.google.common.base.Predicates.not;
 import static graphql.Directives.DeprecatedDirective;
 import static graphql.introspection.Introspection.DirectiveLocation.ARGUMENT_DEFINITION;
 import static graphql.introspection.Introspection.DirectiveLocation.ENUM_VALUE;
