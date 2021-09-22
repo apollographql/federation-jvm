@@ -81,7 +81,7 @@
         <graphql-java-tools.version>11.1.2</graphql-java-tools.version>
         <java.version>1.8</java.version>
         <jetbrains-annotations.version>17.0.0</jetbrains-annotations.version>
-        <junit.version>5.7.1</junit.version>
+        <junit.version>5.7.2</junit.version>
         <!-- Can't upgrade to 3.2.X until https://issues.apache.org/jira/browse/MDEP-753 is fixed. -->
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
         <!--
@@ -94,9 +94,9 @@
         <maven-source-plugin.version>3.1.0</maven-source-plugin.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <slf4j.version>1.7.30</slf4j.version>
+        <slf4j.version>1.7.32</slf4j.version>
         <spotless.version>2.12.2</spotless.version>
-        <spring-boot.version>2.3.6.RELEASE</spring-boot.version>
+        <spring-boot.version>2.5.4</spring-boot.version>
     </properties>
 
     <dependencyManagement>

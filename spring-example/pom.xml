@@ -18,7 +18,7 @@
     <properties>
         <!-- Note that spring-example wasn't designed to be imported, so this is fine. -->
         <skip.dependency.convergence>true</skip.dependency.convergence>
-        <fasterxml.jackson.version>2.12.0</fasterxml.jackson.version>
+        <fasterxml.jackson.version>2.12.5</fasterxml.jackson.version>
     </properties>
 
     <dependencyManagement>
@@ -48,11 +48,6 @@
                 <groupId>com.fasterxml.jackson.datatype</groupId>
                 <artifactId>jackson-datatype-jdk8</artifactId>
                 <version>${fasterxml.jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-aop</artifactId>
-                <version>5.2.11.RELEASE</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
