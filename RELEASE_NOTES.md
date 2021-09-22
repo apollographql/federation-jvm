@@ -1,5 +1,12 @@
 # Release notes
 
+## v0.7.0
+
+This is an upgrade release for graphql-java v17. This release is incompatible with earlier graphql-java versions due to backwards-incompatible changes in their `SchemaPrinter`.
+
+*Upgrades:*
+- graphql-java to `17.3`.
+
 ## v0.6.5
 
 *Enhancements:*
