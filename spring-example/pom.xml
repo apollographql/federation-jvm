@@ -16,13 +16,54 @@
     <description>Spring Boot example of federation-graphql-java-support usage</description>
 
     <properties>
+        <graphql-java-kickstart.version>11.1.0</graphql-java-kickstart.version>
+        <graphql-java-tools.version>11.1.2</graphql-java-tools.version>
         <!-- Note that spring-example wasn't designed to be imported, so this is fine. -->
         <skip.dependency.convergence>true</skip.dependency.convergence>
         <fasterxml.jackson.version>2.12.5</fasterxml.jackson.version>
+        <spring-boot.version>2.5.4</spring-boot.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.graphql-java-kickstart</groupId>
+                <artifactId>graphql-spring-boot-starter</artifactId>
+                <version>${graphql-java-kickstart.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.graphql-java-kickstart</groupId>
+                <artifactId>graphiql-spring-boot-starter</artifactId>
+                <version>${graphql-java-kickstart.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.graphql-java-kickstart</groupId>
+                <artifactId>graphql-spring-boot-starter-test</artifactId>
+                <version>${graphql-java-kickstart.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.graphql-java-kickstart</groupId>
+                <artifactId>graphql-java-tools</artifactId>
+                <version>${graphql-java-tools.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-actuator</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-web</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-test</artifactId>
+                <version>${spring-boot.version}</version>
+                <scope>test</scope>
+            </dependency>
             <!--
             The following dependencies exist solely to override Maven's default "nearest first" strategy for transitive
             dependency version conflict resolution. Note that as stated in the parent POM, we would normally use Maven

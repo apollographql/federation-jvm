@@ -77,8 +77,6 @@
         <skip.dependency.convergence>false</skip.dependency.convergence>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
         <graphql-java.version>17.3</graphql-java.version>
-        <graphql-java-kickstart.version>11.1.0</graphql-java-kickstart.version>
-        <graphql-java-tools.version>11.1.2</graphql-java-tools.version>
         <java.version>1.8</java.version>
         <jetbrains-annotations.version>17.0.0</jetbrains-annotations.version>
         <junit.version>5.7.2</junit.version>
@@ -96,33 +94,10 @@
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <slf4j.version>1.7.32</slf4j.version>
         <spotless.version>2.12.2</spotless.version>
-        <spring-boot.version>2.5.4</spring-boot.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>com.graphql-java-kickstart</groupId>
-                <artifactId>graphql-spring-boot-starter</artifactId>
-                <version>${graphql-java-kickstart.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.graphql-java-kickstart</groupId>
-                <artifactId>graphiql-spring-boot-starter</artifactId>
-                <version>${graphql-java-kickstart.version}</version>
-                <scope>runtime</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.graphql-java-kickstart</groupId>
-                <artifactId>graphql-spring-boot-starter-test</artifactId>
-                <version>${graphql-java-kickstart.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.graphql-java-kickstart</groupId>
-                <artifactId>graphql-java-tools</artifactId>
-                <version>${graphql-java-tools.version}</version>
-            </dependency>
             <dependency>
                 <groupId>com.graphql-java</groupId>
                 <artifactId>graphql-java</artifactId>
@@ -144,22 +119,6 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-actuator</artifactId>
-                <version>${spring-boot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-web</artifactId>
-                <version>${spring-boot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-test</artifactId>
-                <version>${spring-boot.version}</version>
-                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
