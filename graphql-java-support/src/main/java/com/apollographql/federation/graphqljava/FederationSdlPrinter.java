@@ -1,8 +1,11 @@
 package com.apollographql.federation.graphqljava;
 
 import static graphql.Directives.DeprecatedDirective;
+import static graphql.com.google.common.base.Predicates.not;
+import static graphql.introspection.Introspection.DirectiveLocation.ARGUMENT_DEFINITION;
 import static graphql.introspection.Introspection.DirectiveLocation.ENUM_VALUE;
 import static graphql.introspection.Introspection.DirectiveLocation.FIELD_DEFINITION;
+import static graphql.introspection.Introspection.DirectiveLocation.INPUT_FIELD_DEFINITION;
 import static graphql.schema.visibility.DefaultGraphqlFieldVisibility.DEFAULT_FIELD_VISIBILITY;
 import static graphql.util.EscapeUtil.escapeJsonString;
 import static java.util.Optional.ofNullable;
@@ -11,8 +14,8 @@ import static java.util.stream.Collectors.toList;
 
 import graphql.Assert;
 import graphql.PublicApi;
+import graphql.execution.ValuesResolver;
 import graphql.language.AstPrinter;
-import graphql.language.AstValueHelper;
 import graphql.language.Description;
 import graphql.language.Document;
 import graphql.language.EnumTypeDefinition;
@@ -47,6 +50,8 @@ import graphql.schema.GraphQLTypeUtil;
 import graphql.schema.GraphQLUnionType;
 import graphql.schema.GraphqlTypeComparatorEnvironment;
 import graphql.schema.GraphqlTypeComparatorRegistry;
+import graphql.schema.InputValueWithState;
+import graphql.schema.idl.DirectiveInfo;
 import graphql.schema.idl.ScalarInfo;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
@@ -74,8 +79,15 @@ public class FederationSdlPrinter {
   private static final GraphQLDirective DeprecatedDirective4Printing =
       GraphQLDirective.newDirective()
           .name("deprecated")
-          .validLocations(FIELD_DEFINITION, ENUM_VALUE)
+          .validLocations(FIELD_DEFINITION, ENUM_VALUE, ARGUMENT_DEFINITION, INPUT_FIELD_DEFINITION)
           .build();
+
+  /**
+   * This predicate excludes all directives which are specified bt the GraphQL Specification.
+   * Printing these directives is optional.
+   */
+  public static final Predicate<GraphQLDirective> ExcludeGraphQLSpecifiedDirectivesPredicate =
+      not(DirectiveInfo::isGraphqlSpecifiedDirective);
 
   /** Options to use when printing a schema */
   public static class Options {
@@ -390,7 +402,7 @@ public class FederationSdlPrinter {
           this.includeDirectiveDefinitions,
           this.useAstDefinitions,
           this.descriptionsAsHashComments,
-          this.includeDirective,
+          includeDirective,
           this.includeDirectiveDefinition,
           this.includeTypeDefinition,
           includeSchemaElement,
@@ -398,9 +410,9 @@ public class FederationSdlPrinter {
     }
 
     /**
-     * This flag controls whether schema printer will use the {@link graphql.schema.GraphQLType}'s
-     * original Ast {@link graphql.language.TypeDefinition}s when printing the type. This allows
-     * access to any `extend type` declarations that might have been originally made.
+     * This flag controls whether schema printer will use the {@link GraphQLType}'s original Ast
+     * {@link TypeDefinition}s when printing the type. This allows access to any `extend type`
+     * declarations that might have been originally made.
      *
      * @param flag whether to print via AST type definitions
      * @return new instance of options
@@ -492,9 +504,8 @@ public class FederationSdlPrinter {
   /**
    * This can print an in memory GraphQL IDL document back to a logical schema definition. If you
    * want to turn a Introspection query result into a Document (and then into a printed schema) then
-   * use {@link
-   * graphql.introspection.IntrospectionResultToSchema#createSchemaDefinition(java.util.Map)} first
-   * to get the {@link graphql.language.Document} and then print that.
+   * use {@link graphql.introspection.IntrospectionResultToSchema#createSchemaDefinition(Map)} first
+   * to get the {@link Document} and then print that.
    *
    * @param schemaIDL the parsed schema IDL
    * @return the logical schema definition
@@ -810,8 +821,8 @@ public class FederationSdlPrinter {
                   fd -> {
                     printComments(out, fd, "  ");
                     out.format("  %s: %s", fd.getName(), typeString(fd.getType()));
-                    Object defaultValue = fd.getDefaultValue();
-                    if (defaultValue != null) {
+                    if (fd.hasSetDefaultValue()) {
+                      InputValueWithState defaultValue = fd.getInputFieldDefaultValue();
                       String astValue = printAst(defaultValue, fd.getType());
                       out.format(" = %s", astValue);
                     }
@@ -854,12 +865,13 @@ public class FederationSdlPrinter {
     out.println();
   }
 
-  private static String printAst(Object value, GraphQLInputType type) {
-    return AstPrinter.printAst(AstValueHelper.astFromValue(value, type));
+  private static String printAst(InputValueWithState value, GraphQLInputType type) {
+    return AstPrinter.printAst(ValuesResolver.valueToLiteral(value, type));
   }
 
   private TypePrinter<GraphQLSchema> schemaPrinter() {
     return (out, schema, visibility) -> {
+      List<GraphQLDirective> schemaDirectives = schema.getSchemaDirectives();
       GraphQLObjectType queryType = schema.getQueryType();
       GraphQLObjectType mutationType = schema.getMutationType();
       GraphQLObjectType subscriptionType = schema.getSubscriptionType();
@@ -881,7 +893,7 @@ public class FederationSdlPrinter {
       }
 
       if (needsSchemaPrinted) {
-        out.format("schema {\n");
+        out.format("schema %s{\n", directivesString(GraphQLSchemaElement.class, schemaDirectives));
         if (queryType != null) {
           out.format("  query: %s\n", queryType.getName());
         }
@@ -954,8 +966,8 @@ public class FederationSdlPrinter {
           .append(argument.getName())
           .append(": ")
           .append(typeString(argument.getType()));
-      Object defaultValue = argument.getDefaultValue();
-      if (defaultValue != null) {
+      if (argument.hasSetDefaultValue()) {
+        InputValueWithState defaultValue = argument.getArgumentDefaultValue();
         sb.append(" = ");
         sb.append(printAst(defaultValue, argument.getType()));
       }
@@ -993,7 +1005,9 @@ public class FederationSdlPrinter {
       return "";
     }
     StringBuilder sb = new StringBuilder();
-    sb.append(" ");
+    if (parent != GraphQLSchemaElement.class) {
+      sb.append(" ");
+    }
 
     GraphqlTypeComparatorEnvironment environment =
         GraphqlTypeComparatorEnvironment.newEnvironment()
@@ -1037,16 +1051,20 @@ public class FederationSdlPrinter {
         options.comparatorRegistry.getComparator(environment);
 
     List<GraphQLArgument> args = directive.getArguments();
-    args = args.stream().sorted(comparator).collect(toList());
+    args =
+        args.stream()
+            .filter(arg -> arg.getArgumentValue().isSet() || arg.getArgumentDefaultValue().isSet())
+            .sorted(comparator)
+            .collect(toList());
     if (!args.isEmpty()) {
       sb.append("(");
       for (int i = 0; i < args.size(); i++) {
         GraphQLArgument arg = args.get(i);
         String argValue = null;
-        if (arg.getValue() != null) {
-          argValue = printAst(arg.getValue(), arg.getType());
-        } else if (arg.getDefaultValue() != null) {
-          argValue = printAst(arg.getDefaultValue(), arg.getType());
+        if (arg.hasSetValue()) {
+          argValue = printAst(arg.getArgumentValue(), arg.getType());
+        } else if (arg.hasSetDefaultValue()) {
+          argValue = printAst(arg.getArgumentDefaultValue(), arg.getType());
         }
         if (!isNullOrEmpty(argValue)) {
           sb.append(arg.getName());
@@ -1154,6 +1172,10 @@ public class FederationSdlPrinter {
     return sw.toString();
   }
 
+  public String print(GraphQLDirective graphQLDirective) {
+    return directiveDefinition(graphQLDirective);
+  }
+
   private void printType(
       PrintWriter out,
       List<GraphQLType> typesAsList,
@@ -1204,7 +1226,11 @@ public class FederationSdlPrinter {
 
   private void printMultiLineDescription(PrintWriter out, String prefix, List<String> lines) {
     out.printf("%s\"\"\"\n", prefix);
-    lines.forEach(l -> out.printf("%s%s\n", prefix, l));
+    lines.forEach(
+        l -> {
+          String escapedTripleQuotes = l.replaceAll("\"\"\"", "\\\\\"\"\"");
+          out.printf("%s%s\n", prefix, escapedTripleQuotes);
+        });
     out.printf("%s\"\"\"\n", prefix);
   }
 
