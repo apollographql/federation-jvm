@@ -289,7 +289,7 @@
                                     </requireActiveProfile>
                                     <requireJavaVendor>
                                         <includes>
-                                            <include>Eclipse Adoptium</include>
+                                            <include>Temurin</include>
                                             <include>AdoptOpenJDK</include>
                                             <include>Azul Systems, Inc.</include>
                                         </includes>
