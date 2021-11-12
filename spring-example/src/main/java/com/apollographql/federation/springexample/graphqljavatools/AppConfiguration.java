@@ -2,6 +2,7 @@ package com.apollographql.federation.springexample.graphqljavatools;
 
 import com.apollographql.federation.graphqljava.SchemaTransformer;
 import com.apollographql.federation.graphqljava._Entity;
+import com.apollographql.federation.graphqljava.caching.CacheControlInstrumentation;
 import com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation;
 import graphql.schema.GraphQLSchema;
 import java.util.List;
@@ -42,5 +43,10 @@ public class AppConfiguration {
   @Bean
   public FederatedTracingInstrumentation federatedTracingInstrumentation() {
     return new FederatedTracingInstrumentation(new FederatedTracingInstrumentation.Options(true));
+  }
+
+  @Bean
+  public CacheControlInstrumentation cacheControlInstrumentation() {
+    return new CacheControlInstrumentation();
   }
 }
