@@ -1,5 +1,9 @@
 # Release notes
 
+## v0.8.0
+
+This release adds support for the @CacheControl directive in the form of a graphql-java instrumentation class, matching the behavior of the apollo-server's built-in cache control plugin. ([#133](https://github.com/apollographql/federation-jvm/pull/133))
+
 ## v0.7.0
 
 This is an upgrade release for graphql-java v17. This release is incompatible with earlier graphql-java versions due to backwards-incompatible changes in their `SchemaPrinter`.
