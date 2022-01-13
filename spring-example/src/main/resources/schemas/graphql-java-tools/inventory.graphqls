@@ -1,6 +1,17 @@
 type Query
 
-type Product @key(fields: "upc") @extends {
+enum CacheControlScope {
+    PUBLIC
+    PRIVATE
+}
+
+directive @cacheControl(
+    maxAge: Int
+    scope: CacheControlScope
+    inheritMaxAge: Boolean
+) on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+
+type Product @key(fields: "upc") @extends @cacheControl(maxAge: 60) {
     upc: String! @external
     inStock: Boolean
     quantity: Int
