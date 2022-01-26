@@ -467,7 +467,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
      *     context to contain the information necessary for this predicate to have the above
      *     behavior. The default/null behavior is to enable trace generation unless the
      *     GraphQLContext map contains "apollo-federation-include-trace" entry with a value other
-     *     than null/"ftv1" or if (deprecated) context both implements {@link HTTPRequestHeaders}
+     *     than "ftv1" or if (deprecated) context both implements {@link HTTPRequestHeaders}
      *     and calling {@link HTTPRequestHeaders#getHTTPRequestHeader(String)} with
      *     "apollo-federation-include-trace" returns a value that is null or isn't "ftv1".
      */
