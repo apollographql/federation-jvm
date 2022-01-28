@@ -287,4 +287,31 @@ class FederatedTracingInstrumentationTest {
     assertTrue(extensions instanceof Map);
     assertTrue(((Map) extensions).containsKey("ftv1"));
   }
+
+  @Test
+  void testTracingWithGraphQLContextMap() {
+    ExecutionInput input = ExecutionInput.newExecutionInput("{widgets {foo}}").build();
+
+    // Because the special header isn't there, we fallback to the default behavior
+    Map<String, Object> result = graphql.execute(input).toSpecification();
+    Object extensions = result.get("extensions");
+    assertTrue(extensions instanceof Map);
+    assertTrue(((Map) extensions).containsKey("ftv1"));
+
+    // Try again with the header having the wrong value.
+    Map<String, Object> context = new HashMap<>();
+    context.put("apollo-federation-include-trace", "bla");
+
+    input = input.transform((ExecutionInput.Builder builder) -> builder.graphQLContext(context));
+    result = graphql.execute(input).toSpecification();
+    assertNull(result.get("extensions"));
+
+    // Now with the right value.
+    context.put("apollo-federation-include-trace", "ftv1");
+    input = input.transform((ExecutionInput.Builder builder) -> builder.graphQLContext(context));
+    result = graphql.execute(input).toSpecification();
+    extensions = result.get("extensions");
+    assertTrue(extensions instanceof Map);
+    assertTrue(((Map) extensions).containsKey("ftv1"));
+  }
 }

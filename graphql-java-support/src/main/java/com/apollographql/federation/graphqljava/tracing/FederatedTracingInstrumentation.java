@@ -464,11 +464,12 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
      *     request (default: null). Note that when Apollo Gateway provides an HTTP header with name
      *     "apollo-federation-include-trace" and value "ftv1", you must enable tracing for the
      *     request, and it is your responsibility to augment your {@link ExecutionInput} or its
-     *     context to contain the information necessary for this predicate to have the the above
-     *     behavior. The default/null behavior is to enable trace generation unless the context both
-     *     implements {@link HTTPRequestHeaders} and calling {@link
-     *     HTTPRequestHeaders#getHTTPRequestHeader(String)} with "apollo-federation-include-trace"
-     *     returns a value that is null or isn't "ftv1".
+     *     context to contain the information necessary for this predicate to have the above
+     *     behavior. The default/null behavior is to enable trace generation unless the
+     *     GraphQLContext map contains "apollo-federation-include-trace" entry with a value other
+     *     than "ftv1" or if (deprecated) context both implements {@link HTTPRequestHeaders} and
+     *     calling {@link HTTPRequestHeaders#getHTTPRequestHeader(String)} with
+     *     "apollo-federation-include-trace" returns a value that is null or isn't "ftv1".
      */
     public Options(
         boolean debuggingEnabled, @Nullable Predicate<ExecutionInput> shouldTracePredicate) {
@@ -493,13 +494,20 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
         return shouldTracePredicate.test(executionInput);
       }
 
-      // Default/null implementation as described in the javadoc for the Options constructor.
-      if (executionInput != null && executionInput.getContext() != null) {
-        Object context = executionInput.getContext();
-        if (context instanceof HTTPRequestHeaders) {
-          String header =
-              ((HTTPRequestHeaders) context).getHTTPRequestHeader(FEDERATED_TRACING_HEADER_NAME);
-          return FEDERATED_TRACING_HEADER_VALUE.equals(header);
+      if (executionInput != null) {
+        // Default/null implementation as described in the javadoc for the Options constructor.
+        if (executionInput.getGraphQLContext().hasKey(FEDERATED_TRACING_HEADER_NAME)) {
+          return FEDERATED_TRACING_HEADER_VALUE.equals(
+              executionInput.getGraphQLContext().get(FEDERATED_TRACING_HEADER_NAME));
+        } else if (executionInput.getContext() != null) {
+          // ExecutionInput#getContext which returns arbitrary object is deprecated
+          // usage should be replaced by ExecutionInput#getGraphQLContext which returns a map
+          Object context = executionInput.getContext();
+          if (context instanceof HTTPRequestHeaders) {
+            String header =
+                ((HTTPRequestHeaders) context).getHTTPRequestHeader(FEDERATED_TRACING_HEADER_NAME);
+            return FEDERATED_TRACING_HEADER_VALUE.equals(header);
+          }
         }
       }
       return true;
