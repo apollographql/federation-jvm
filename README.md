@@ -72,10 +72,13 @@ GraphQL graphql = GraphQL.newGraphQL(graphQLSchema)
 ```
 
 It is generally desired to only create traces for requests that actually come from Apollo Gateway, as they aren't
-helpful if you're connecting directly to your backend service for testing. In order
-for `FederatedTracingInstrumentation` to know if the request is coming from Gateway, you need to give it access to the
-HTTP request's headers, by making the `context` part of your `ExecutionInput` implement the `HTTPRequestHeaders`
-interface. For example:
+helpful if you're connecting directly to your backend service for testing. There are number of ways to let the 
+`FederatedTracingInstrumentation` know if the request is coming from Gateway.
+
+#### Custom GraphQL context
+
+You can create custom GraphQL context that implements the `HTTPRequestHeaders` interface and provides access to the
+incoming HTTP request headers.
 
 ```java
 HTTPRequestHeaders context = new HTTPRequestHeaders() {
@@ -87,6 +90,26 @@ HTTPRequestHeaders context = new HTTPRequestHeaders() {
 };
 graphql.execute(ExecutionInput.newExecutionInput(queryString).context(context));
 ```
+
+#### GraphQLContext map
+
+You can populate the tracing header information directly in the `GraphQLContext` map.
+
+```java
+Map<Object, Object> contextMap = new HashMap<>();
+String federatedTracingHeaderValue = httpRequest.getHeader(FEDERATED_TRACING_HEADER_NAME);
+if (federatedTracingHeaderValue != null) {
+    contextMap.put(FEDERATED_TRACING_HEADER_NAME, federatedTracingHeaderValue);
+}
+
+ExecutionInput executionInput = ExecutionInput.newExecutionInput()
+        .graphQLContext(contextMap)
+        .query(queryString)
+        .build();
+graphql.executeAsync(executionInput);
+```
+
+#### Custom FederatedTracingInstrumentation Options
 
 Alternatively, if you are using libraries or frameworks whose `context` do not / are not able to implement
 the `HTTPRequestHeaders` interface, you can construct the `FederatedTracingInstrumentation` using an `Options` object
