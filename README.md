@@ -72,28 +72,9 @@ GraphQL graphql = GraphQL.newGraphQL(graphQLSchema)
 ```
 
 It is generally desired to only create traces for requests that actually come from Apollo Gateway, as they aren't
-helpful if you're connecting directly to your backend service for testing. There are number of ways to let the 
-`FederatedTracingInstrumentation` know if the request is coming from Gateway.
-
-#### Custom GraphQL context
-
-You can create custom GraphQL context that implements the `HTTPRequestHeaders` interface and provides access to the
-incoming HTTP request headers.
-
-```java
-HTTPRequestHeaders context = new HTTPRequestHeaders() {
-    @Override
-    public @Nullable
-    String getHTTPRequestHeader(String caseInsensitiveHeaderName) {
-        return myIncomingHTTPRequest.getHeader(caseInsensitiveHeaderName);
-    }
-};
-graphql.execute(ExecutionInput.newExecutionInput(queryString).context(context));
-```
-
-#### GraphQLContext map
-
-You can populate the tracing header information directly in the `GraphQLContext` map.
+helpful if you're connecting directly to your backend service for testing. In order for `FederatedTracingInstrumentation` 
+to know if the request is coming from Gateway, you should populate the tracing header information directly in the 
+`GraphQLContext` map.
 
 ```java
 Map<Object, Object> contextMap = new HashMap<>();
@@ -107,31 +88,4 @@ ExecutionInput executionInput = ExecutionInput.newExecutionInput()
         .query(queryString)
         .build();
 graphql.executeAsync(executionInput);
-```
-
-#### Custom FederatedTracingInstrumentation Options
-
-Alternatively, if you are using libraries or frameworks whose `context` do not / are not able to implement
-the `HTTPRequestHeaders` interface, you can construct the `FederatedTracingInstrumentation` using an `Options` object
-with a predicate that takes the `ExecutionInput` object and returns a boolean indicating whether a trace should be
-created for the request being processed. For example:
-
-```java
-Options options = new Options(false, (ExecutionInput executionInput) -> {
-    // Apollo Gateway indicates that a trace must be computed when the HTTP header "apollo-federation-include-trace"
-    // exists and has the value "ftv1".
-    //
-    // It is expected for you to store the above information in some manner within ExecutionInput or its context, and
-    // for this function to extract that information and return whether the trace must be computed.
-    if (executionInput.getContext() instanceof MySpecialExecutionContext) {
-        return FEDERATED_TRACING_HEADER_VALUE.equals(
-                ((MySpecialExecutionContext) executionInput.getContext()).getHeader(FEDERATED_TRACING_HEADER_NAME));
-    }
-    return false;
-});
-
-GraphQL graphql = GraphQL
-        .newGraphQL(graphQLSchema)
-        .instrumentation(new FederatedTracingInstrumentation(options))
-        .build();
 ```
