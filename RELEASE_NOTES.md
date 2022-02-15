@@ -1,5 +1,10 @@
 # Release notes
 
+## v0.9.0
+
+* Update protobuf-java to 3.19.4 ([#141](https://github.com/apollographql/federation-jvm/issues/141))
+* Add support for `graphql-java` `GraphQLContext`  ([#138](https://github.com/apollographql/federation-jvm/pull/138)). Many thanks to @dariuszuc for the awesome contribution 💙
+
 ## v0.8.0
 
 This release adds support for the @CacheControl directive in the form of a graphql-java instrumentation class, matching the behavior of the apollo-server's built-in cache control plugin. ([#133](https://github.com/apollographql/federation-jvm/pull/133))
