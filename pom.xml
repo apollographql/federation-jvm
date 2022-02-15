@@ -6,7 +6,7 @@
 
     <groupId>com.apollographql.federation</groupId>
     <artifactId>federation-parent</artifactId>
-    <version>0.9.0</version>
+    <version>0.9.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>federation-parent</name>
@@ -56,7 +56,7 @@
     </distributionManagement>
 
     <properties>
-        <release>0.9.0</release>
+        <release>0.9.1-SNAPSHOT</release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
