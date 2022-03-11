@@ -165,6 +165,7 @@ public final class SchemaTransformer {
     hiddenTypeDefinitions.add(_Any.typeName);
     hiddenTypeDefinitions.add(_Entity.typeName);
     hiddenTypeDefinitions.add(_FieldSet.typeName);
+    hiddenTypeDefinitions.add(link__Import.typeName);
     hiddenTypeDefinitions.add(_Service.typeName);
 
     // Change field visibility for the query type if needed.

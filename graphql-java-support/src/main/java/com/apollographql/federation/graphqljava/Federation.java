@@ -136,12 +136,21 @@ public final class Federation {
       typeRegistry.add(_FieldSet.definition);
     }
 
-    // Also add the implementation for _FieldSet.
-    if (!runtimeWiring.getScalars().containsKey(_FieldSet.typeName)) {
-      return copyRuntimeWiring(runtimeWiring).scalar(_FieldSet.type).build();
-    } else {
-      return runtimeWiring;
+    // Add scalar type for link__Import, since the directives depend on it.
+    if (!typeRegistry.getType(link__Import.typeName).isPresent()) {
+      typeRegistry.add(link__Import.definition);
     }
+
+    // Also add the implementation for _FieldSet.
+    RuntimeWiring newRuntimeWiring = runtimeWiring;
+    if (!runtimeWiring.getScalars().containsKey(_FieldSet.typeName)) {
+      newRuntimeWiring = copyRuntimeWiring(newRuntimeWiring).scalar(_FieldSet.type).build();
+    }
+    if (!runtimeWiring.getScalars().containsKey(link__Import.typeName)) {
+      newRuntimeWiring = copyRuntimeWiring(newRuntimeWiring).scalar(link__Import.type).build();
+    }
+
+    return newRuntimeWiring;
   }
 
   private static RuntimeWiring.Builder copyRuntimeWiring(RuntimeWiring runtimeWiring) {
