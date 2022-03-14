@@ -147,9 +147,6 @@ public final class FederationDirectives {
 
   public static final String shareableName = "shareable";
 
-  public static final GraphQLDirective shareable =
-      newDirective().name(shareableName).validLocations(FIELD_DEFINITION, OBJECT).build();
-
   public static final DirectiveDefinition shareableDefinition =
       newDirectiveDefinition()
           .name(shareableName)
@@ -164,9 +161,6 @@ public final class FederationDirectives {
    * refered to using `@federation__key`). """ import: [link__Import], ) repeatable on SCHEMA
    */
   public static final String linkName = "link";
-
-  public static final GraphQLDirective link =
-      newDirective().name(linkName).validLocations(SCHEMA).build();
 
   public static final DirectiveDefinition linkDefinition =
       newDirectiveDefinition()
