@@ -10,6 +10,11 @@ this package may only be available in JCenter, but we are planning to republish 
 An example of [graphql-spring-boot](https://www.graphql-java-kickstart.com/spring-boot/) microservice is available
 in [spring-example](spring-example).
 
+**👍👎 Let us know what you think!**
+
+_We're looking for developers to participate in a 75 minute remote research interview to learn understand the challenges around using and adopting GraphQL. Take the [quick survey here](https://www.surveymonkey.com/r/TZMXTHJ) and we'll follow up by email_
+
+
 ## Getting started
 
 ### Dependency management with Gradle
