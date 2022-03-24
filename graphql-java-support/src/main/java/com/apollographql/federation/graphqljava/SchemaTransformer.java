@@ -36,6 +36,7 @@ public final class SchemaTransformer {
   private DataFetcher entitiesDataFetcher = null;
   private DataFetcherFactory entitiesDataFetcherFactory = null;
   private Coercing coercingForAny = _Any.defaultCoercing;
+  private boolean isFederation2 = false;
 
   SchemaTransformer(GraphQLSchema originalSchema, boolean queryTypeShouldBeEmpty) {
     this.originalSchema = originalSchema;
@@ -67,6 +68,11 @@ public final class SchemaTransformer {
     return this;
   }
 
+  public SchemaTransformer setFederation2(boolean isFederation2) {
+    this.isFederation2 = isFederation2;
+    return this;
+  }
+
   @NotNull
   public final GraphQLSchema build() throws SchemaProblem {
     final List<GraphQLError> errors = new ArrayList<>();
@@ -76,20 +82,9 @@ public final class SchemaTransformer {
 
     final GraphQLObjectType originalQueryType = originalSchema.getQueryType();
 
-    final GraphQLCodeRegistry.Builder newCodeRegistry =
-        GraphQLCodeRegistry.newCodeRegistry(originalSchema.getCodeRegistry());
-
-    // Print the original schema as sdl and expose it as query { _service { sdl } }
-    final String sdl = sdl(originalSchema, queryTypeShouldBeEmpty);
     final GraphQLObjectType.Builder newQueryType = GraphQLObjectType.newObject(originalQueryType);
     if (queryTypeShouldBeEmpty) newQueryType.clearFields();
     newQueryType.field(_Service.field);
-    newCodeRegistry.dataFetcher(
-        FieldCoordinates.coordinates(originalQueryType.getName(), _Service.fieldName),
-        (DataFetcher<Object>) environment -> DUMMY);
-    newCodeRegistry.dataFetcher(
-        FieldCoordinates.coordinates(_Service.typeName, _Service.sdlFieldName),
-        (DataFetcher<String>) environment -> sdl);
 
     // Collecting all entity types: Types with @key directive and all types that implement them
     final Set<String> entityTypeNames =
@@ -123,7 +118,38 @@ public final class SchemaTransformer {
       if (originalAnyType == null) {
         newSchema.additionalType(_Any.type(coercingForAny));
       }
+    }
+    newSchema.query(newQueryType.build());
 
+    final GraphQLCodeRegistry.Builder newCodeRegistry =
+        GraphQLCodeRegistry.newCodeRegistry(originalSchema.getCodeRegistry());
+
+    // expose the schema as _service.sdl
+    final String sdl;
+    if (isFederation2) {
+      // For federation2, we're trying something new and outputing
+      final Set<String> standardDirectives =
+          new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
+
+      sdl = new FederationSdlPrinter(
+          FederationSdlPrinter.Options.defaultOptions()
+              .includeScalarTypes(true)
+              .includeDirectiveDefinitions(
+                  def -> !standardDirectives.contains(def.getName())))
+          .print(newSchema.build())
+          .trim();
+    } else {
+      // For Federation1, we filter out the federation definitions
+      sdl = sdl(originalSchema, queryTypeShouldBeEmpty);
+    }
+    newCodeRegistry.dataFetcher(
+        FieldCoordinates.coordinates(originalQueryType.getName(), _Service.fieldName),
+        (DataFetcher<Object>) environment -> DUMMY);
+    newCodeRegistry.dataFetcher(
+        FieldCoordinates.coordinates(_Service.typeName, _Service.sdlFieldName),
+        (DataFetcher<String>) environment -> sdl);
+
+    if (!entityConcreteTypeNames.isEmpty()) {
       if (entityTypeResolver != null) {
         newCodeRegistry.typeResolver(_Entity.typeName, entityTypeResolver);
       } else {
@@ -147,7 +173,7 @@ public final class SchemaTransformer {
       throw new SchemaProblem(errors);
     }
 
-    return newSchema.query(newQueryType.build()).codeRegistry(newCodeRegistry.build()).build();
+    return newSchema.codeRegistry(newCodeRegistry.build()).build();
   }
 
   public static String sdl(GraphQLSchema schema) {
@@ -165,7 +191,6 @@ public final class SchemaTransformer {
     hiddenTypeDefinitions.add(_Any.typeName);
     hiddenTypeDefinitions.add(_Entity.typeName);
     hiddenTypeDefinitions.add(_FieldSet.typeName);
-    hiddenTypeDefinitions.add(link__Import.typeName);
     hiddenTypeDefinitions.add(_Service.typeName);
 
     // Change field visibility for the query type if needed.

@@ -186,6 +186,7 @@ public final class FederationDirectives {
   public static final Set<String> allNames;
   public static final Set<GraphQLDirective> allDirectives;
   public static final Set<DirectiveDefinition> allDefinitions;
+  public static final Set<DirectiveDefinition> federation2Definitions;
 
   static {
     // We need to maintain sorted order here for tests, since SchemaPrinter doesn't sort
@@ -200,9 +201,15 @@ public final class FederationDirectives {
                 externalDefinition,
                 requiresDefinition,
                 providesDefinition,
-                extendsDefinition,
-                shareableDefinition,
-                linkDefinition)
+                extendsDefinition
+            )
+            .sorted(Comparator.comparing(DirectiveDefinition::getName))
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+    federation2Definitions =
+        Stream.of(
+            shareableDefinition,
+            linkDefinition
+        )
             .sorted(Comparator.comparing(DirectiveDefinition::getName))
             .collect(Collectors.toCollection(LinkedHashSet::new));
     allNames =

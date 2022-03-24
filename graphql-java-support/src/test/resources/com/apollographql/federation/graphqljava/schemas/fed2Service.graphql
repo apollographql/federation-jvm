@@ -8,6 +8,15 @@ directive @provides(fields: _FieldSet!) on FIELD_DEFINITION
 
 directive @requires(fields: _FieldSet!) on FIELD_DEFINITION
 
+directive @link(import: [link__Import], url: String!) repeatable on SCHEMA
+
+directive @shareable on OBJECT | FIELD_DEFINITION
+
+type Position @shareable {
+  x: Int!
+  y: Int!
+}
+
 type Query {
   _service: _Service
 }
@@ -17,3 +26,5 @@ type _Service {
 }
 
 scalar _FieldSet
+
+scalar link__Import
