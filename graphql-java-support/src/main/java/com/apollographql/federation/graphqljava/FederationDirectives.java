@@ -34,6 +34,8 @@ public final class FederationDirectives {
 
   private static final DirectiveLocation DL_SCHEMA = newDirectiveLocation().name("SCHEMA").build();
 
+  private static final DirectiveLocation DL_UNION = newDirectiveLocation().name("UNION").build();
+
   /* fields: _FieldSet */
 
   private static final GraphQLArgument fieldsArgument =
@@ -179,6 +181,20 @@ public final class FederationDirectives {
           .repeatable(true)
           .build();
 
+  /** directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION */
+
+  /**
+   * + * directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION +
+   */
+  public static final String tagName = "tag";
+
+  public static final DirectiveDefinition tagDefinition =
+      newDirectiveDefinition()
+          .name(tagName)
+          .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION, DL_INTERFACE, DL_OBJECT, DL_UNION))
+          .repeatable(true)
+          .build();
+
   private FederationDirectives() {}
 
   /* Sets */
@@ -205,7 +221,7 @@ public final class FederationDirectives {
             .sorted(Comparator.comparing(DirectiveDefinition::getName))
             .collect(Collectors.toCollection(LinkedHashSet::new));
     federation2Definitions =
-        Stream.of(shareableDefinition, linkDefinition)
+        Stream.of(shareableDefinition, linkDefinition, tagDefinition)
             .sorted(Comparator.comparing(DirectiveDefinition::getName))
             .collect(Collectors.toCollection(LinkedHashSet::new));
     allNames =

@@ -12,6 +12,8 @@ directive @link(import: [link__Import], url: String!) repeatable on SCHEMA
 
 directive @shareable on OBJECT | FIELD_DEFINITION
 
+directive @tag repeatable on OBJECT | FIELD_DEFINITION | INTERFACE | UNION
+
 type Position @shareable {
   x: Int!
   y: Int!
