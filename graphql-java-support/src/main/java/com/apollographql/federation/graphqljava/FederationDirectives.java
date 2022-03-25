@@ -201,15 +201,11 @@ public final class FederationDirectives {
                 externalDefinition,
                 requiresDefinition,
                 providesDefinition,
-                extendsDefinition
-            )
+                extendsDefinition)
             .sorted(Comparator.comparing(DirectiveDefinition::getName))
             .collect(Collectors.toCollection(LinkedHashSet::new));
     federation2Definitions =
-        Stream.of(
-            shareableDefinition,
-            linkDefinition
-        )
+        Stream.of(shareableDefinition, linkDefinition)
             .sorted(Comparator.comparing(DirectiveDefinition::getName))
             .collect(Collectors.toCollection(LinkedHashSet::new));
     allNames =

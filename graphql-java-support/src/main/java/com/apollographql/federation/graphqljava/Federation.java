@@ -12,7 +12,6 @@ import java.io.Reader;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-
 import org.jetbrains.annotations.NotNull;
 
 public final class Federation {
@@ -130,10 +129,12 @@ public final class Federation {
     // Add Federation directives if they don't exist.
     Stream<DirectiveDefinition> directivesToAdd = FederationDirectives.allDefinitions.stream();
     if (isFederation2) {
-      directivesToAdd = Stream.concat(directivesToAdd, FederationDirectives.federation2Definitions.stream());
+      directivesToAdd =
+          Stream.concat(directivesToAdd, FederationDirectives.federation2Definitions.stream());
     }
 
-    directivesToAdd.filter(def -> !typeRegistry.getDirectiveDefinition(def.getName()).isPresent())
+    directivesToAdd
+        .filter(def -> !typeRegistry.getDirectiveDefinition(def.getName()).isPresent())
         .forEachOrdered(typeRegistry::add);
 
     // Add scalar type for _FieldSet, since the directives depend on it.
@@ -202,17 +203,23 @@ public final class Federation {
   }
 
   public static boolean isFederation2(TypeDefinitionRegistry typeDefinitionRegistry) {
-    return typeDefinitionRegistry.getSchemaExtensionDefinitions().stream().anyMatch(
-        schemaExtensionDefinition -> schemaExtensionDefinition.getDirectives().stream().anyMatch(
-            directive -> directive.getName().equals("link") && directive.getArguments().stream().anyMatch(
-                argument -> {
-                  Value value = argument.getValue();
-                  return  argument.getName().equals("url")
-                      && value instanceof StringValue
-                      && ((StringValue)value).getValue().equals("https://specs.apollo.dev/federation/v2.0");
-                }
-            )
-        )
-    );
+    return typeDefinitionRegistry.getSchemaExtensionDefinitions().stream()
+        .anyMatch(
+            schemaExtensionDefinition ->
+                schemaExtensionDefinition.getDirectives().stream()
+                    .anyMatch(
+                        directive ->
+                            directive.getName().equals("link")
+                                && directive.getArguments().stream()
+                                    .anyMatch(
+                                        argument -> {
+                                          Value value = argument.getValue();
+                                          return argument.getName().equals("url")
+                                              && value instanceof StringValue
+                                              && ((StringValue) value)
+                                                  .getValue()
+                                                  .equals(
+                                                      "https://specs.apollo.dev/federation/v2.0");
+                                        })));
   }
 }

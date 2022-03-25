@@ -131,13 +131,14 @@ public final class SchemaTransformer {
       final Set<String> standardDirectives =
           new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
 
-      sdl = new FederationSdlPrinter(
-          FederationSdlPrinter.Options.defaultOptions()
-              .includeScalarTypes(true)
-              .includeDirectiveDefinitions(
-                  def -> !standardDirectives.contains(def.getName())))
-          .print(newSchema.build())
-          .trim();
+      sdl =
+          new FederationSdlPrinter(
+                  FederationSdlPrinter.Options.defaultOptions()
+                      .includeScalarTypes(true)
+                      .includeDirectiveDefinitions(
+                          def -> !standardDirectives.contains(def.getName())))
+              .print(newSchema.build())
+              .trim();
     } else {
       // For Federation1, we filter out the federation definitions
       sdl = sdl(originalSchema, queryTypeShouldBeEmpty);
