@@ -155,7 +155,7 @@ public final class FederationDirectives {
           .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION, DL_OBJECT))
           .build();
 
-  /**
+  /*
    * directive @link( """ Url of the linked core feature. """ url: String!, """ Optional list of
    * element names to import in the top-level namesapce. Elements of the feature not part of this
    * list can only be referenced by prefixing the element named by the feature name (for instance,
@@ -181,11 +181,7 @@ public final class FederationDirectives {
           .repeatable(true)
           .build();
 
-  /** directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION */
-
-  /**
-   * + * directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION +
-   */
+  /* directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION */
   public static final String tagName = "tag";
 
   public static final DirectiveDefinition tagDefinition =
