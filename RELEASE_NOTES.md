@@ -1,5 +1,9 @@
 # Release notes
 
+## 2.0.0-alpha.1
+
+This release adds support for the [Federation 2](https://www.apollographql.com/docs/federation/v2/federation-spec/) directives ([#142](https://github.com/apollographql/federation-jvm/pull/142)). It is initially published as an alpha in order to get the community to test it out and [gather feedback](https://github.com/apollographql/federation-jvm/issues/new).
+
 ## v0.9.0
 
 * Update protobuf-java to 3.19.4 ([#141](https://github.com/apollographql/federation-jvm/issues/141))
