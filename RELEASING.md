@@ -23,6 +23,7 @@
 - Ensure you are using the latest Zulu build of OpenJDK 8.
 - Run `SONATYPE_USERNAME=username SONATYPE_PASSWORD=password ./mvnw --settings settings-release.xml clean deploy`
 - A prompt will appear asking you for the GPG passphrase; get this from 1Password.
+  - If you get an error similar to `gpg: signing failed: Inappropriate ioctl for device`, run `export GPG_TTY=$(tty)` and try again ([source](https://github.com/keybase/keybase-issues/issues/2798))
 - Run `git tag vVERSION && git push origin vVERSION`
 - Edit all instances of the version in all pom.xml files to be the next patch release plus the `-SNAPSHOT` suffix.
 - Push branch again.
