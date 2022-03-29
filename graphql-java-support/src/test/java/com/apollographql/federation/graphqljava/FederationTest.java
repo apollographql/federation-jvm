@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import graphql.ExecutionResult;
 import graphql.Scalars;
+import graphql.com.google.common.collect.ImmutableMap;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLObjectType;
@@ -222,7 +223,14 @@ class FederationTest {
 
   @Test
   void testFed2() {
-    final GraphQLSchema federatedSchema = Federation.transform(fed2SDL).build();
+    final GraphQLSchema federatedSchema = Federation.transform(fed2SDL)
+        .resolveEntityType(env -> env.getSchema().getObjectType("Point"))
+        .fetchEntities(entityFetcher -> ImmutableMap.builder()
+            .put("id", "1000")
+            .put("x", 0)
+            .put("y", 0)
+            .build())
+        .build();
     SchemaUtils.assertSDL(federatedSchema, fed2FederatedSDL, fed2ServiceSDL);
   }
 }

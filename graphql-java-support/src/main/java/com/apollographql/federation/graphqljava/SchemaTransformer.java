@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 
 public final class SchemaTransformer {
-  private static final Object DUMMY = new Object();
+  private static final Object serviceObject = new Object();
   // Apollo Gateway will fail composition if it sees standard directive definitions.
   private static final Set<String> STANDARD_DIRECTIVES =
       new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
@@ -124,32 +124,6 @@ public final class SchemaTransformer {
     final GraphQLCodeRegistry.Builder newCodeRegistry =
         GraphQLCodeRegistry.newCodeRegistry(originalSchema.getCodeRegistry());
 
-    // expose the schema as _service.sdl
-    final String sdl;
-    if (isFederation2) {
-      // For federation2, we're trying something new and outputing
-      final Set<String> standardDirectives =
-          new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
-
-      sdl =
-          new FederationSdlPrinter(
-                  FederationSdlPrinter.Options.defaultOptions()
-                      .includeScalarTypes(true)
-                      .includeDirectiveDefinitions(
-                          def -> !standardDirectives.contains(def.getName())))
-              .print(newSchema.build())
-              .trim();
-    } else {
-      // For Federation1, we filter out the federation definitions
-      sdl = sdl(originalSchema, queryTypeShouldBeEmpty);
-    }
-    newCodeRegistry.dataFetcher(
-        FieldCoordinates.coordinates(originalQueryType.getName(), _Service.fieldName),
-        (DataFetcher<Object>) environment -> DUMMY);
-    newCodeRegistry.dataFetcher(
-        FieldCoordinates.coordinates(_Service.typeName, _Service.sdlFieldName),
-        (DataFetcher<String>) environment -> sdl);
-
     if (!entityConcreteTypeNames.isEmpty()) {
       if (entityTypeResolver != null) {
         newCodeRegistry.typeResolver(_Entity.typeName, entityTypeResolver);
@@ -173,6 +147,34 @@ public final class SchemaTransformer {
     if (!errors.isEmpty()) {
       throw new SchemaProblem(errors);
     }
+
+    // expose the schema as _service.sdl
+    newCodeRegistry.dataFetcher(
+        FieldCoordinates.coordinates(originalQueryType.getName(), _Service.fieldName),
+        (DataFetcher<Object>) environment -> serviceObject);
+    final String sdl;
+    if (isFederation2) {
+      // For federation2, we're trying something new and outputing
+      final Set<String> standardDirectives =
+          new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
+
+      sdl =
+          new FederationSdlPrinter(
+              FederationSdlPrinter.Options.defaultOptions()
+                  .includeScalarTypes(true)
+                  .includeDirectiveDefinitions(
+                      def -> !standardDirectives.contains(def.getName())))
+              .print(newSchema.codeRegistry(newCodeRegistry.build()).build())
+              .trim();
+    } else {
+      // For Federation1, we filter out the federation definitions
+      sdl = sdl(originalSchema, queryTypeShouldBeEmpty);
+    }
+    newCodeRegistry.dataFetcher(
+        FieldCoordinates.coordinates(_Service.typeName, _Service.sdlFieldName),
+        (DataFetcher<String>) environment -> sdl
+    );
+
 
     return newSchema.codeRegistry(newCodeRegistry.build()).build();
   }

@@ -14,18 +14,24 @@ directive @shareable on OBJECT | FIELD_DEFINITION
 
 directive @tag repeatable on OBJECT | FIELD_DEFINITION | INTERFACE | UNION
 
-type Position @shareable {
+union _Entity = Position
+
+type Position @key(fields : "id") @shareable {
+  id: ID!
   x: Int!
   y: Int!
 }
 
 type Query {
+  _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service
 }
 
 type _Service {
   sdl: String!
 }
+
+scalar _Any
 
 scalar _FieldSet
 
