@@ -72,28 +72,6 @@
                 <scope>test</scope>
             </dependency>
             <!--
-            The following dependencies exist solely to override Maven's default "nearest first" strategy for transitive
-            dependency version conflict resolution. Note that as stated in the parent POM, we would normally use Maven
-            <exclusions> instead to get transitivity, but since spring-example isn't designed to be imported, it's fine
-            (and a lot less work in this case) to just add dependencies to <dependencyManagement>.
-            -->
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.datatype</groupId>
-                <artifactId>jackson-datatype-jdk8</artifactId>
-            </dependency>
-            <!--
             There is a bug in com.graphql-java-kickstart:graphql-spring-boot-starter:11.1.0 where it depends on
             artifact com.graphql-java:graphql-java-extended-scalars:16.0.1, but it really needs 17.0. This forces
             us to a later version.
