@@ -20,7 +20,7 @@
         <graphql-java-tools.version>11.1.2</graphql-java-tools.version>
         <!-- Note that spring-example wasn't designed to be imported, so this is fine. -->
         <skip.dependency.convergence>true</skip.dependency.convergence>
-        <fasterxml.jackson.version>2.12.5</fasterxml.jackson.version>
+        <fasterxml.jackson.version>2.12.6.1</fasterxml.jackson.version>
         <spring-boot.version>2.5.4</spring-boot.version>
     </properties>
 
