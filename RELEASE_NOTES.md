@@ -1,5 +1,9 @@
 # Release notes
 
+## 2.0.0-alpha.2
+
+This hotfix release fixes an issue found in v2.0.0-alpha.1 where the Federation 2 SDL printer would fail with an exception. ([#148](https://github.com/apollographql/federation-jvm/pull/148))
+
 ## 2.0.0-alpha.1
 
 This release adds support for the [Federation 2](https://www.apollographql.com/docs/federation/v2/federation-spec/) directives ([#142](https://github.com/apollographql/federation-jvm/pull/142)). It is initially published as an alpha in order to get the community to test it out and [gather feedback](https://github.com/apollographql/federation-jvm/issues/new).
