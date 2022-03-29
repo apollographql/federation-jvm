@@ -160,10 +160,10 @@ public final class SchemaTransformer {
 
       sdl =
           new FederationSdlPrinter(
-              FederationSdlPrinter.Options.defaultOptions()
-                  .includeScalarTypes(true)
-                  .includeDirectiveDefinitions(
-                      def -> !standardDirectives.contains(def.getName())))
+                  FederationSdlPrinter.Options.defaultOptions()
+                      .includeScalarTypes(true)
+                      .includeDirectiveDefinitions(
+                          def -> !standardDirectives.contains(def.getName())))
               .print(newSchema.codeRegistry(newCodeRegistry.build()).build())
               .trim();
     } else {
@@ -172,9 +172,7 @@ public final class SchemaTransformer {
     }
     newCodeRegistry.dataFetcher(
         FieldCoordinates.coordinates(_Service.typeName, _Service.sdlFieldName),
-        (DataFetcher<String>) environment -> sdl
-    );
-
+        (DataFetcher<String>) environment -> sdl);
 
     return newSchema.codeRegistry(newCodeRegistry.build()).build();
   }

@@ -223,14 +223,13 @@ class FederationTest {
 
   @Test
   void testFed2() {
-    final GraphQLSchema federatedSchema = Federation.transform(fed2SDL)
-        .resolveEntityType(env -> env.getSchema().getObjectType("Point"))
-        .fetchEntities(entityFetcher -> ImmutableMap.builder()
-            .put("id", "1000")
-            .put("x", 0)
-            .put("y", 0)
-            .build())
-        .build();
+    final GraphQLSchema federatedSchema =
+        Federation.transform(fed2SDL)
+            .resolveEntityType(env -> env.getSchema().getObjectType("Point"))
+            .fetchEntities(
+                entityFetcher ->
+                    ImmutableMap.builder().put("id", "1000").put("x", 0).put("y", 0).build())
+            .build();
     SchemaUtils.assertSDL(federatedSchema, fed2FederatedSDL, fed2ServiceSDL);
   }
 }
