@@ -20,12 +20,19 @@
         <graphql-java-tools.version>11.1.2</graphql-java-tools.version>
         <!-- Note that spring-example wasn't designed to be imported, so this is fine. -->
         <skip.dependency.convergence>true</skip.dependency.convergence>
-        <fasterxml.jackson.version>2.12.5</fasterxml.jackson.version>
+        <fasterxml.jackson.bom.version>2.13.2.20220328</fasterxml.jackson.bom.version>
         <spring-boot.version>2.5.4</spring-boot.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${fasterxml.jackson.bom.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
             <dependency>
                 <groupId>com.graphql-java-kickstart</groupId>
                 <artifactId>graphql-spring-boot-starter</artifactId>
@@ -73,22 +80,18 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
-                <version>${fasterxml.jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>${fasterxml.jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>${fasterxml.jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.datatype</groupId>
                 <artifactId>jackson-datatype-jdk8</artifactId>
-                <version>${fasterxml.jackson.version}</version>
             </dependency>
             <!--
             There is a bug in com.graphql-java-kickstart:graphql-spring-boot-starter:11.1.0 where it depends on
