@@ -1,8 +1,6 @@
 package com.apollographql.federation.graphqljava;
 
-import static graphql.introspection.Introspection.DirectiveLocation.FIELD_DEFINITION;
-import static graphql.introspection.Introspection.DirectiveLocation.INTERFACE;
-import static graphql.introspection.Introspection.DirectiveLocation.OBJECT;
+import static graphql.introspection.Introspection.DirectiveLocation.*;
 import static graphql.language.DirectiveDefinition.newDirectiveDefinition;
 import static graphql.language.DirectiveLocation.newDirectiveLocation;
 import static graphql.language.InputValueDefinition.newInputValueDefinition;
@@ -10,11 +8,7 @@ import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLDirective.newDirective;
 
 import graphql.PublicApi;
-import graphql.language.DirectiveDefinition;
-import graphql.language.DirectiveLocation;
-import graphql.language.InputValueDefinition;
-import graphql.language.NonNullType;
-import graphql.language.TypeName;
+import graphql.language.*;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLNonNull;
@@ -37,6 +31,10 @@ public final class FederationDirectives {
 
   private static final DirectiveLocation DL_FIELD_DEFINITION =
       newDirectiveLocation().name("FIELD_DEFINITION").build();
+
+  private static final DirectiveLocation DL_SCHEMA = newDirectiveLocation().name("SCHEMA").build();
+
+  private static final DirectiveLocation DL_UNION = newDirectiveLocation().name("UNION").build();
 
   /* fields: _FieldSet */
 
@@ -147,6 +145,52 @@ public final class FederationDirectives {
           .directiveLocations(Arrays.asList(DL_OBJECT, DL_INTERFACE))
           .build();
 
+  /* directive @shareable on FIELD_DEFINITION | OBJECT */
+
+  public static final String shareableName = "shareable";
+
+  public static final DirectiveDefinition shareableDefinition =
+      newDirectiveDefinition()
+          .name(shareableName)
+          .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION, DL_OBJECT))
+          .build();
+
+  /*
+   * directive @link( """ Url of the linked core feature. """ url: String!, """ Optional list of
+   * element names to import in the top-level namesapce. Elements of the feature not part of this
+   * list can only be referenced by prefixing the element named by the feature name (for instance,
+   * if the `@key` is not imported in this list for the `federation` feature, it can still be
+   * refered to using `@federation__key`). """ import: [link__Import], ) repeatable on SCHEMA
+   */
+  public static final String linkName = "link";
+
+  public static final DirectiveDefinition linkDefinition =
+      newDirectiveDefinition()
+          .name(linkName)
+          .directiveLocations(Collections.singletonList(DL_SCHEMA))
+          .inputValueDefinition(
+              newInputValueDefinition()
+                  .name("url")
+                  .type(new NonNullType(new TypeName("String")))
+                  .build())
+          .inputValueDefinition(
+              newInputValueDefinition()
+                  .name("import")
+                  .type(new ListType(new TypeName("link__Import")))
+                  .build())
+          .repeatable(true)
+          .build();
+
+  /* directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION */
+  public static final String tagName = "tag";
+
+  public static final DirectiveDefinition tagDefinition =
+      newDirectiveDefinition()
+          .name(tagName)
+          .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION, DL_INTERFACE, DL_OBJECT, DL_UNION))
+          .repeatable(true)
+          .build();
+
   private FederationDirectives() {}
 
   /* Sets */
@@ -154,6 +198,7 @@ public final class FederationDirectives {
   public static final Set<String> allNames;
   public static final Set<GraphQLDirective> allDirectives;
   public static final Set<DirectiveDefinition> allDefinitions;
+  public static final Set<DirectiveDefinition> federation2Definitions;
 
   static {
     // We need to maintain sorted order here for tests, since SchemaPrinter doesn't sort
@@ -169,6 +214,10 @@ public final class FederationDirectives {
                 requiresDefinition,
                 providesDefinition,
                 extendsDefinition)
+            .sorted(Comparator.comparing(DirectiveDefinition::getName))
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+    federation2Definitions =
+        Stream.of(shareableDefinition, linkDefinition, tagDefinition)
             .sorted(Comparator.comparing(DirectiveDefinition::getName))
             .collect(Collectors.toCollection(LinkedHashSet::new));
     allNames =

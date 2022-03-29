@@ -47,6 +47,9 @@ class FederationTest {
   private final String printerFilterSDL = TestUtils.readResource("schemas/printerFilter.graphql");
   private final String printerFilterExpectedSDL =
       TestUtils.readResource("schemas/printerFilterExpected.graphql");
+  private final String fed2SDL = TestUtils.readResource("schemas/fed2.graphql");
+  private final String fed2FederatedSDL = TestUtils.readResource("schemas/fed2Federated.graphql");
+  private final String fed2ServiceSDL = TestUtils.readResource("schemas/fed2Service.graphql");
 
   @Test
   void testEmptySDL() {
@@ -215,5 +218,11 @@ class FederationTest {
                     .includeTypeDefinitions(def -> !def.getName().endsWith("1")))
             .print(graphQLSchema)
             .trim());
+  }
+
+  @Test
+  void testFed2() {
+    final GraphQLSchema federatedSchema = Federation.transform(fed2SDL).build();
+    SchemaUtils.assertSDL(federatedSchema, fed2FederatedSDL, fed2ServiceSDL);
   }
 }

@@ -1,9 +1,6 @@
 package com.apollographql.federation.graphqljava;
 
-import graphql.language.FieldDefinition;
-import graphql.language.ObjectTypeDefinition;
-import graphql.language.TypeDefinition;
-import graphql.language.TypeName;
+import graphql.language.*;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
@@ -14,6 +11,7 @@ import java.io.File;
 import java.io.Reader;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.jetbrains.annotations.NotNull;
 
 public final class Federation {
@@ -43,12 +41,14 @@ public final class Federation {
   public static SchemaTransformer transform(
       final TypeDefinitionRegistry typeRegistry, final RuntimeWiring runtimeWiring) {
     final boolean queryTypeShouldBeEmpty = ensureQueryTypeExists(typeRegistry);
+
+    boolean isFederation2 = isFederation2(typeRegistry);
     RuntimeWiring newRuntimeWiring =
-        ensureFederationDirectiveDefinitionsExist(typeRegistry, runtimeWiring);
+        ensureFederationDirectiveDefinitionsExist(typeRegistry, runtimeWiring, isFederation2);
     final GraphQLSchema original =
         new SchemaGenerator()
             .makeExecutableSchema(generatorOptions, typeRegistry, newRuntimeWiring);
-    return transform(original, queryTypeShouldBeEmpty);
+    return transform(original, queryTypeShouldBeEmpty).setFederation2(isFederation2);
   }
 
   public static SchemaTransformer transform(final TypeDefinitionRegistry typeRegistry) {
@@ -125,9 +125,15 @@ public final class Federation {
   }
 
   private static RuntimeWiring ensureFederationDirectiveDefinitionsExist(
-      TypeDefinitionRegistry typeRegistry, RuntimeWiring runtimeWiring) {
+      TypeDefinitionRegistry typeRegistry, RuntimeWiring runtimeWiring, boolean isFederation2) {
     // Add Federation directives if they don't exist.
-    FederationDirectives.allDefinitions.stream()
+    Stream<DirectiveDefinition> directivesToAdd = FederationDirectives.allDefinitions.stream();
+    if (isFederation2) {
+      directivesToAdd =
+          Stream.concat(directivesToAdd, FederationDirectives.federation2Definitions.stream());
+    }
+
+    directivesToAdd
         .filter(def -> !typeRegistry.getDirectiveDefinition(def.getName()).isPresent())
         .forEachOrdered(typeRegistry::add);
 
@@ -137,11 +143,22 @@ public final class Federation {
     }
 
     // Also add the implementation for _FieldSet.
+    RuntimeWiring newRuntimeWiring = runtimeWiring;
     if (!runtimeWiring.getScalars().containsKey(_FieldSet.typeName)) {
-      return copyRuntimeWiring(runtimeWiring).scalar(_FieldSet.type).build();
-    } else {
-      return runtimeWiring;
+      newRuntimeWiring = copyRuntimeWiring(newRuntimeWiring).scalar(_FieldSet.type).build();
     }
+
+    // Add scalar type for link__Import, since the directives depend on it.
+    if (isFederation2) {
+      if (!typeRegistry.getType(link__Import.typeName).isPresent()) {
+        typeRegistry.add(link__Import.definition);
+      }
+      if (!runtimeWiring.getScalars().containsKey(link__Import.typeName)) {
+        newRuntimeWiring = copyRuntimeWiring(newRuntimeWiring).scalar(link__Import.type).build();
+      }
+    }
+
+    return newRuntimeWiring;
   }
 
   private static RuntimeWiring.Builder copyRuntimeWiring(RuntimeWiring runtimeWiring) {
@@ -183,5 +200,26 @@ public final class Federation {
     runtimeWiring.getSchemaGeneratorPostProcessings().forEach(builder::transformer);
 
     return builder;
+  }
+
+  public static boolean isFederation2(TypeDefinitionRegistry typeDefinitionRegistry) {
+    return typeDefinitionRegistry.getSchemaExtensionDefinitions().stream()
+        .anyMatch(
+            schemaExtensionDefinition ->
+                schemaExtensionDefinition.getDirectives().stream()
+                    .anyMatch(
+                        directive ->
+                            directive.getName().equals("link")
+                                && directive.getArguments().stream()
+                                    .anyMatch(
+                                        argument -> {
+                                          Value value = argument.getValue();
+                                          return argument.getName().equals("url")
+                                              && value instanceof StringValue
+                                              && ((StringValue) value)
+                                                  .getValue()
+                                                  .equals(
+                                                      "https://specs.apollo.dev/federation/v2.0");
+                                        })));
   }
 }
