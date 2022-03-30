@@ -94,7 +94,13 @@ public final class SchemaTransformer {
                     t instanceof GraphQLDirectiveContainer
                         && !((GraphQLDirectiveContainer) t)
                             .getDirectives(FederationDirectives.keyName)
-                            .isEmpty())
+                            .isEmpty()
+                        // If there is an extend, it means it's an entity from another graph
+                        // No need to have it in _Entity
+                        && ((GraphQLDirectiveContainer) t)
+                        .getDirectives(FederationDirectives.extendsName)
+                        .isEmpty()
+            )
             .map(GraphQLNamedType::getName)
             .collect(Collectors.toSet());
 
@@ -106,7 +112,8 @@ public final class SchemaTransformer {
                     entityTypeNames.contains(type.getName())
                         || ((GraphQLObjectType) type)
                             .getInterfaces().stream()
-                                .anyMatch(itf -> entityTypeNames.contains(itf.getName())))
+                                .anyMatch(itf -> entityTypeNames.contains(itf.getName()))
+            )
             .map(GraphQLNamedType::getName)
             .collect(Collectors.toSet());
 

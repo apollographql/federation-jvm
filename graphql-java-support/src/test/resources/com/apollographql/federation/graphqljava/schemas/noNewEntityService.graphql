@@ -1,0 +1,17 @@
+schema {
+  query: Query
+}
+
+type ExternalType @extends @key(fields : "primaryKey") {
+  primaryKey: ID @external
+}
+
+"""
+ This schema doesn't add any new entity and shouldn't require a `_entities` resolver
+ See https://github.com/apollographql/federation-jvm/issues/150
+"""
+type MyType {
+  externalData: ExternalType
+}
+
+type Query
