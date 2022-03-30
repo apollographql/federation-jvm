@@ -51,8 +51,10 @@ class FederationTest {
   private final String fed2FederatedSDL = TestUtils.readResource("schemas/fed2Federated.graphql");
   private final String fed2ServiceSDL = TestUtils.readResource("schemas/fed2Service.graphql");
   private final String noNewEntitySDL = TestUtils.readResource("schemas/noNewEntity.graphql");
-  private final String noNewEntityFederatedSDL = TestUtils.readResource("schemas/noNewEntityFederated.graphql");
-  private final String noNewEntityServiceSDL = TestUtils.readResource("schemas/noNewEntityService.graphql");
+  private final String noNewEntityFederatedSDL =
+      TestUtils.readResource("schemas/noNewEntityFederated.graphql");
+  private final String noNewEntityServiceSDL =
+      TestUtils.readResource("schemas/noNewEntityService.graphql");
 
   @Test
   void testEmptySDL() {
@@ -234,5 +236,4 @@ class FederationTest {
     final GraphQLSchema federatedSchema = Federation.transform(noNewEntitySDL).build();
     SchemaUtils.assertSDL(federatedSchema, noNewEntityFederatedSDL, noNewEntityServiceSDL);
   }
-
 }
