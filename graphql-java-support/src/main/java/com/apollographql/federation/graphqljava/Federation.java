@@ -11,7 +11,7 @@ import java.io.File;
 import java.io.Reader;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 
 public final class Federation {
@@ -126,14 +126,15 @@ public final class Federation {
 
   private static RuntimeWiring ensureFederationDirectiveDefinitionsExist(
       TypeDefinitionRegistry typeRegistry, RuntimeWiring runtimeWiring, boolean isFederation2) {
-    // Add Federation directives if they don't exist.
-    Stream<DirectiveDefinition> directivesToAdd = FederationDirectives.allDefinitions.stream();
+    Set<DirectiveDefinition> directivesToAdd;
     if (isFederation2) {
-      directivesToAdd =
-          Stream.concat(directivesToAdd, FederationDirectives.federation2Definitions.stream());
+      directivesToAdd = FederationDirectives.federation2DirectiveDefinitions;
+    } else {
+      directivesToAdd = FederationDirectives.federation1DirectiveDefinitions;
     }
 
-    directivesToAdd
+    // Add Federation directives if they don't exist.
+    directivesToAdd.stream()
         .filter(def -> !typeRegistry.getDirectiveDefinition(def.getName()).isPresent())
         .forEachOrdered(typeRegistry::add);
 

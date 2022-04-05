@@ -67,11 +67,21 @@ public final class FederationDirectives {
     return newDirective(key).argument(fieldsArgument(fields)).build();
   }
 
-  public static final DirectiveDefinition keyDefinition =
+  public static final DirectiveDefinition keyDefinitionFed1 =
       newDirectiveDefinition()
           .name(keyName)
           .directiveLocations(Arrays.asList(DL_OBJECT, DL_INTERFACE))
           .inputValueDefinition(fieldsDefinition)
+          .repeatable(true)
+          .build();
+
+  public static final DirectiveDefinition keyDefinitionFed2 =
+      newDirectiveDefinition()
+          .name(keyName)
+          .directiveLocations(Arrays.asList(DL_OBJECT, DL_INTERFACE))
+          .inputValueDefinition(fieldsDefinition)
+          .inputValueDefinition(
+              newInputValueDefinition().name("resolvable").type(new TypeName("Boolean")).build())
           .repeatable(true)
           .build();
 
@@ -203,7 +213,8 @@ public final class FederationDirectives {
   public static final Set<String> allNames;
   public static final Set<GraphQLDirective> allDirectives;
   public static final Set<DirectiveDefinition> allDefinitions;
-  public static final Set<DirectiveDefinition> federation2Definitions;
+  public static final Set<DirectiveDefinition> federation2DirectiveDefinitions;
+  public static final Set<DirectiveDefinition> federation1DirectiveDefinitions;
 
   static {
     // We need to maintain sorted order here for tests, since SchemaPrinter doesn't sort
@@ -214,20 +225,38 @@ public final class FederationDirectives {
             .collect(Collectors.toCollection(LinkedHashSet::new));
     allDefinitions =
         Stream.of(
-                keyDefinition,
+                keyDefinitionFed1,
                 externalDefinition,
                 requiresDefinition,
                 providesDefinition,
                 extendsDefinition)
             .sorted(Comparator.comparing(DirectiveDefinition::getName))
             .collect(Collectors.toCollection(LinkedHashSet::new));
-    federation2Definitions =
-        Stream.of(shareableDefinition, linkDefinition, tagDefinition)
-            .sorted(Comparator.comparing(DirectiveDefinition::getName))
-            .collect(Collectors.toCollection(LinkedHashSet::new));
     allNames =
         allDefinitions.stream()
             .map(DirectiveDefinition::getName)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+
+    federation1DirectiveDefinitions =
+        Stream.of(
+                keyDefinitionFed1,
+                externalDefinition,
+                requiresDefinition,
+                providesDefinition,
+                extendsDefinition)
+            .sorted(Comparator.comparing(DirectiveDefinition::getName))
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+    federation2DirectiveDefinitions =
+        Stream.of(
+                keyDefinitionFed2,
+                externalDefinition,
+                requiresDefinition,
+                providesDefinition,
+                extendsDefinition,
+                shareableDefinition,
+                linkDefinition,
+                tagDefinition)
+            .sorted(Comparator.comparing(DirectiveDefinition::getName))
             .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 }
