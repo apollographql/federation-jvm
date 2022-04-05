@@ -187,6 +187,11 @@ public final class FederationDirectives {
   public static final DirectiveDefinition tagDefinition =
       newDirectiveDefinition()
           .name(tagName)
+          .inputValueDefinition(
+              newInputValueDefinition()
+                  .name("name")
+                  .type(new NonNullType(new TypeName("String")))
+                  .build())
           .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION, DL_INTERFACE, DL_OBJECT, DL_UNION))
           .repeatable(true)
           .build();
