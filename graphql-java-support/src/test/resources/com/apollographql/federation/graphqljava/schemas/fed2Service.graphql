@@ -2,22 +2,22 @@ directive @extends on OBJECT | INTERFACE
 
 directive @external on FIELD_DEFINITION
 
-directive @key(fields: _FieldSet!) repeatable on OBJECT | INTERFACE
+directive @key(fields: _FieldSet!, resolvable: Boolean) repeatable on OBJECT | INTERFACE
+
+directive @link(import: [link__Import], url: String!) repeatable on SCHEMA
 
 directive @provides(fields: _FieldSet!) on FIELD_DEFINITION
 
 directive @requires(fields: _FieldSet!) on FIELD_DEFINITION
 
-directive @link(import: [link__Import], url: String!) repeatable on SCHEMA
-
 directive @shareable on OBJECT | FIELD_DEFINITION
 
-directive @tag repeatable on OBJECT | FIELD_DEFINITION | INTERFACE | UNION
+directive @tag(name: String!) repeatable on OBJECT | FIELD_DEFINITION | INTERFACE | UNION
 
 union _Entity = Position
 
-type Position @key(fields : "id") @shareable {
-  id: ID!
+type Position @key(fields : "id", resolvable : false) @shareable {
+  id: ID! @tag(name : "internal")
   x: Int!
   y: Int!
 }
