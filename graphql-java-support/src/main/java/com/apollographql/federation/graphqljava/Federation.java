@@ -1,6 +1,13 @@
 package com.apollographql.federation.graphqljava;
 
-import graphql.language.*;
+import graphql.language.DirectiveDefinition;
+import graphql.language.FieldDefinition;
+import graphql.language.ObjectTypeDefinition;
+import graphql.language.StringValue;
+import graphql.language.TypeDefinition;
+import graphql.language.TypeName;
+import graphql.language.Value;
+import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
@@ -9,6 +16,7 @@ import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.TypeRuntimeWiring;
 import java.io.File;
 import java.io.Reader;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -146,7 +154,7 @@ public final class Federation {
     // Also add the implementation for _FieldSet.
     RuntimeWiring newRuntimeWiring = runtimeWiring;
     if (!runtimeWiring.getScalars().containsKey(_FieldSet.typeName)) {
-      newRuntimeWiring = copyRuntimeWiring(newRuntimeWiring).scalar(_FieldSet.type).build();
+      newRuntimeWiring = copyRuntimeWiring(newRuntimeWiring, Collections.singleton(_FieldSet.type));
     }
 
     // Add scalar type for link__Import, since the directives depend on it.
@@ -155,14 +163,16 @@ public final class Federation {
         typeRegistry.add(link__Import.definition);
       }
       if (!runtimeWiring.getScalars().containsKey(link__Import.typeName)) {
-        newRuntimeWiring = copyRuntimeWiring(newRuntimeWiring).scalar(link__Import.type).build();
+        newRuntimeWiring =
+            copyRuntimeWiring(newRuntimeWiring, Collections.singleton(link__Import.type));
       }
     }
 
     return newRuntimeWiring;
   }
 
-  private static RuntimeWiring.Builder copyRuntimeWiring(RuntimeWiring runtimeWiring) {
+  private static RuntimeWiring copyRuntimeWiring(
+      RuntimeWiring runtimeWiring, Set<GraphQLScalarType> additionalScalars) {
     // Annoyingly graphql-java doesn't have a copy constructor for RuntimeWiring.Builder.
     RuntimeWiring.Builder builder = RuntimeWiring.newRuntimeWiring();
 
@@ -192,6 +202,7 @@ public final class Federation {
       builder.codeRegistry(runtimeWiring.getCodeRegistry());
     }
     runtimeWiring.getScalars().forEach((name, scalar) -> builder.scalar(scalar));
+    additionalScalars.forEach(builder::scalar);
     if (runtimeWiring.getFieldVisibility() != null) {
       builder.fieldVisibility(runtimeWiring.getFieldVisibility());
     }
@@ -200,7 +211,11 @@ public final class Federation {
     builder.comparatorRegistry(runtimeWiring.getComparatorRegistry());
     runtimeWiring.getSchemaGeneratorPostProcessings().forEach(builder::transformer);
 
-    return builder;
+    RuntimeWiring runtimeWiringCopy = builder.build();
+    runtimeWiring
+        .getTypeResolvers()
+        .forEach((key, value) -> runtimeWiringCopy.getTypeResolvers().putIfAbsent(key, value));
+    return runtimeWiringCopy;
   }
 
   public static boolean isFederation2(TypeDefinitionRegistry typeDefinitionRegistry) {
