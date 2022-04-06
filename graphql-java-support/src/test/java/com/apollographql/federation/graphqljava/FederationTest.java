@@ -8,12 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import graphql.ExecutionResult;
 import graphql.Scalars;
 import graphql.com.google.common.collect.ImmutableMap;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLNamedType;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLScalarType;
-import graphql.schema.GraphQLSchema;
-import graphql.schema.GraphQLUnionType;
+import graphql.schema.*;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
@@ -156,6 +151,8 @@ class FederationTest {
         RuntimeWiring.newRuntimeWiring()
             .type(TypeRuntimeWiring.newTypeWiring("Product").typeResolver(env -> null).build())
             .build();
+
+    GraphQLCodeRegistry.newCodeRegistry(existingCodeRegistry)
 
     final GraphQLSchema transformed =
         Federation.transform(interfacesSDL, wiring)
