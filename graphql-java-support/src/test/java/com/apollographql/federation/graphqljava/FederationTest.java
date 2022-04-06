@@ -51,6 +51,9 @@ class FederationTest {
   private final String fed2SDL = TestUtils.readResource("schemas/fed2.graphql");
   private final String fed2FederatedSDL = TestUtils.readResource("schemas/fed2Federated.graphql");
   private final String fed2ServiceSDL = TestUtils.readResource("schemas/fed2Service.graphql");
+  private final String unionsSDL = TestUtils.readResource("schemas/unions.graphql");
+  private final String unionsFederatedSDL =
+      TestUtils.readResource("schemas/unionsFederated.graphql");
 
   @Test
   void testEmptySDL() {
@@ -231,5 +234,13 @@ class FederationTest {
                     ImmutableMap.builder().put("id", "1000").put("x", 0).put("y", 0).build())
             .build();
     SchemaUtils.assertSDL(federatedSchema, fed2FederatedSDL, fed2ServiceSDL);
+  }
+
+  @Test
+  void testUnions() {
+    final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
+    runtimeWiring.getTypeResolvers().put("ProductResult", env -> null);
+    final GraphQLSchema federatedSchema = Federation.transform(unionsSDL, runtimeWiring).build();
+    SchemaUtils.assertSDL(federatedSchema, unionsFederatedSDL, unionsSDL);
   }
 }

@@ -1,0 +1,20 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+union ProductResult = Product | ProductError
+
+type Mutation {
+  createProduct(symbol: String!): ProductResult
+}
+
+type Product {
+  symbol: String!
+}
+
+type ProductError {
+  reason: String
+}
+
+type Query
