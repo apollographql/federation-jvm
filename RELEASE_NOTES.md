@@ -2,7 +2,8 @@
 
 ## 2.0.0-alpha.3
 
-Update the Federation 2 directive definitions ([#153](https://github.com/apollographql/federation-jvm/pull/153))
+* Update the Federation 2 directive definitions ([#153](https://github.com/apollographql/federation-jvm/pull/153))
+* Fix unions not working with spring-boot-graphql-starter ([#156](https://github.com/apollographql/federation-jvm/pull/156))
 
 ## 2.0.0-alpha.2
 
