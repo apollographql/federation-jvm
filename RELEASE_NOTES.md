@@ -1,5 +1,10 @@
 # Release notes
 
+## 2.0.0-alpha.4-SNAPSHOT
+
+* Update the Federation 2 directive definitions ([#153](https://github.com/apollographql/federation-jvm/pull/153))
+* Fix unions not working with spring-boot-graphql-starter ([#156](https://github.com/apollographql/federation-jvm/pull/156))
+
 ## 2.0.0-alpha.2
 
 This hotfix release fixes an issue found in v2.0.0-alpha.1 where the Federation 2 SDL printer would fail with an exception. ([#148](https://github.com/apollographql/federation-jvm/pull/148))
