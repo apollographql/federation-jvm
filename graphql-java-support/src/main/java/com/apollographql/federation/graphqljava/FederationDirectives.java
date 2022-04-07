@@ -216,7 +216,6 @@ public final class FederationDirectives {
                   .type(new NonNullType(new TypeName("String")))
                   .build())
           .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION))
-          .repeatable(true)
           .build();
 
   private FederationDirectives() {}
