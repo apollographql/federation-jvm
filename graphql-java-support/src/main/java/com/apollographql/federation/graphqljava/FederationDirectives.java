@@ -206,6 +206,18 @@ public final class FederationDirectives {
           .repeatable(true)
           .build();
 
+  // directive @override(from: String!) on FIELD_DEFINITION
+  public static final DirectiveDefinition overrideDefinition =
+      newDirectiveDefinition()
+          .name("override")
+          .inputValueDefinition(
+              newInputValueDefinition()
+                  .name("from")
+                  .type(new NonNullType(new TypeName("String")))
+                  .build())
+          .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION))
+          .build();
+
   private FederationDirectives() {}
 
   /* Sets */
@@ -255,7 +267,8 @@ public final class FederationDirectives {
                 extendsDefinition,
                 shareableDefinition,
                 linkDefinition,
-                tagDefinition)
+                tagDefinition,
+                overrideDefinition)
             .sorted(Comparator.comparing(DirectiveDefinition::getName))
             .collect(Collectors.toCollection(LinkedHashSet::new));
   }

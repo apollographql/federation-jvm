@@ -6,6 +6,8 @@ directive @key(fields: _FieldSet!, resolvable: Boolean) repeatable on OBJECT | I
 
 directive @link(import: [link__Import], url: String!) repeatable on SCHEMA
 
+directive @override(from: String!) on FIELD_DEFINITION
+
 directive @provides(fields: _FieldSet!) on FIELD_DEFINITION
 
 directive @requires(fields: _FieldSet!) on FIELD_DEFINITION
@@ -18,7 +20,7 @@ union _Entity = Position
 
 type Position @key(fields : "id", resolvable : false) @shareable {
   id: ID! @tag(name : "internal")
-  x: Int!
+  x: Int! @override(from : "otherGraph")
   y: Int!
 }
 

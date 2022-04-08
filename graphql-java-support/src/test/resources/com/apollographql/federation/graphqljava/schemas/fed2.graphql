@@ -4,6 +4,6 @@ extend schema
 
 type Position @shareable @key(fields: "id", resolvable: false) {
  id: ID! @tag(name: "internal")
- x: Int!
+ x: Int! @override(from: "otherGraph")
  y: Int!
 }
