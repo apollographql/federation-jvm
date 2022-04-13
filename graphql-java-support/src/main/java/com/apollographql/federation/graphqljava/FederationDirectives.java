@@ -44,7 +44,7 @@ public final class FederationDirectives {
 
   private static final DirectiveLocation DL_ENUM = newDirectiveLocation().name("ENUM").build();
 
-  private static final DirectiveLocation DL_ENUM = newDirectiveLocation().name("ENUM_VALUE").build();
+  private static final DirectiveLocation DL_ENUM_VALUE = newDirectiveLocation().name("ENUM_VALUE").build();
 
   private static final DirectiveLocation DL_INPUT_OBJECT = newDirectiveLocation().name("INPUT_OBJECT").build();
 
