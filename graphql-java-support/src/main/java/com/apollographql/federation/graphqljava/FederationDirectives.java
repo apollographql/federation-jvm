@@ -44,6 +44,8 @@ public final class FederationDirectives {
 
   private static final DirectiveLocation DL_ENUM = newDirectiveLocation().name("ENUM").build();
 
+  private static final DirectiveLocation DL_ENUM = newDirectiveLocation().name("ENUM_VALUE").build();
+
   private static final DirectiveLocation DL_INPUT_OBJECT = newDirectiveLocation().name("INPUT_OBJECT").build();
 
 
@@ -233,7 +235,7 @@ public final class FederationDirectives {
   public static final DirectiveDefinition inaccessibleDefinition =
       newDirectiveDefinition()
           .name("inaccessible")
-          .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION, DL_INTERFACE, DL_OBJECT, DL_UNION, DL_ARGUMENT_DEFINITION, DL_SCALAR, DL_ENUM, DL_INPUT_OBJECT, DL_INPUT_FIELD_DEFINITION))
+          .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION, DL_INTERFACE, DL_OBJECT, DL_UNION, DL_ARGUMENT_DEFINITION, DL_SCALAR, DL_ENUM, DL_ENUM_VALUE, DL_INPUT_OBJECT, DL_INPUT_FIELD_DEFINITION))
           .build();
 
 
