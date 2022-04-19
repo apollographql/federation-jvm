@@ -2,6 +2,8 @@ directive @extends on OBJECT | INTERFACE
 
 directive @external on FIELD_DEFINITION
 
+directive @inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+
 directive @key(fields: _FieldSet!, resolvable: Boolean) repeatable on OBJECT | INTERFACE
 
 directive @link(import: [link__Import], url: String!) repeatable on SCHEMA

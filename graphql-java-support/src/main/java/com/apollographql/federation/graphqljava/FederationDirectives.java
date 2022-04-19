@@ -36,6 +36,22 @@ public final class FederationDirectives {
 
   private static final DirectiveLocation DL_UNION = newDirectiveLocation().name("UNION").build();
 
+  private static final DirectiveLocation DL_ARGUMENT_DEFINITION =
+      newDirectiveLocation().name("ARGUMENT_DEFINITION").build();
+
+  private static final DirectiveLocation DL_INPUT_FIELD_DEFINITION =
+      newDirectiveLocation().name("INPUT_FIELD_DEFINITION").build();
+
+  private static final DirectiveLocation DL_SCALAR = newDirectiveLocation().name("SCALAR").build();
+
+  private static final DirectiveLocation DL_ENUM = newDirectiveLocation().name("ENUM").build();
+
+  private static final DirectiveLocation DL_ENUM_VALUE =
+      newDirectiveLocation().name("ENUM_VALUE").build();
+
+  private static final DirectiveLocation DL_INPUT_OBJECT =
+      newDirectiveLocation().name("INPUT_OBJECT").build();
+
   /* fields: _FieldSet */
 
   private static final GraphQLArgument fieldsArgument =
@@ -218,6 +234,25 @@ public final class FederationDirectives {
           .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION))
           .build();
 
+  // directive @inaccessible on FIELD_DEFINITION | INTERFACE | OBJECT | UNION | ARGUMENT_DEFINITION
+  // | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+  public static final DirectiveDefinition inaccessibleDefinition =
+      newDirectiveDefinition()
+          .name("inaccessible")
+          .directiveLocations(
+              Arrays.asList(
+                  DL_FIELD_DEFINITION,
+                  DL_INTERFACE,
+                  DL_OBJECT,
+                  DL_UNION,
+                  DL_ARGUMENT_DEFINITION,
+                  DL_SCALAR,
+                  DL_ENUM,
+                  DL_ENUM_VALUE,
+                  DL_INPUT_OBJECT,
+                  DL_INPUT_FIELD_DEFINITION))
+          .build();
+
   private FederationDirectives() {}
 
   /* Sets */
@@ -268,7 +303,8 @@ public final class FederationDirectives {
                 shareableDefinition,
                 linkDefinition,
                 tagDefinition,
-                overrideDefinition)
+                overrideDefinition,
+                inaccessibleDefinition)
             .sorted(Comparator.comparing(DirectiveDefinition::getName))
             .collect(Collectors.toCollection(LinkedHashSet::new));
   }
