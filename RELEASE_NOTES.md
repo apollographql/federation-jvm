@@ -1,5 +1,9 @@
 # Release notes
 
+## 2.0.0-alpha.5
+
+* Add @inaccessible ([#160](https://github.com/apollographql/federation-jvm/pull/160))
+
 ## 2.0.0-alpha.4
 
 * Add @override ([#158](https://github.com/apollographql/federation-jvm/pull/158))
