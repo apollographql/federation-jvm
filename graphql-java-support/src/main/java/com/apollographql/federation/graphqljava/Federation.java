@@ -1,5 +1,7 @@
 package com.apollographql.federation.graphqljava;
 
+import static graphql.util.TreeTransformerUtil.changeNode;
+
 import graphql.Scalars;
 import graphql.language.*;
 import graphql.schema.GraphQLScalarType;
@@ -9,26 +11,21 @@ import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.TypeRuntimeWiring;
-
+import graphql.util.TraversalControl;
+import graphql.util.TraverserContext;
 import java.io.File;
 import java.io.Reader;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import graphql.util.TraversalControl;
-import graphql.util.TraverserContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static graphql.util.TreeTransformerUtil.changeNode;
 
 public final class Federation {
   private static final SchemaGenerator.Options generatorOptions =
       SchemaGenerator.Options.defaultOptions();
 
-  private Federation() {
-  }
+  private Federation() {}
 
   @NotNull
   public static SchemaTransformer transform(final GraphQLSchema schema) {
@@ -56,7 +53,8 @@ public final class Federation {
     RuntimeWiring newRuntimeWiring;
 
     if (fed2Imports != null) {
-      newRuntimeWiring = ensureFederation2DirectiveDefinitionsExist(typeRegistry, runtimeWiring, fed2Imports);
+      newRuntimeWiring =
+          ensureFederation2DirectiveDefinitionsExist(typeRegistry, runtimeWiring, fed2Imports);
     } else {
       newRuntimeWiring = ensureFederationDirectiveDefinitionsExist(typeRegistry, runtimeWiring);
     }
@@ -118,9 +116,9 @@ public final class Federation {
         newQueryType instanceof ObjectTypeDefinition
             && ((ObjectTypeDefinition) newQueryType).getFieldDefinitions().isEmpty()
             && Optional.ofNullable(typeRegistry.objectTypeExtensions().get(queryName))
-            // Note that an object type extension must have at least one field
-            .map(List::isEmpty)
-            .orElse(true);
+                // Note that an object type extension must have at least one field
+                .map(List::isEmpty)
+                .orElse(true);
     if (addDummyField) {
       newQueryType =
           ((ObjectTypeDefinition) newQueryType)
@@ -139,11 +137,16 @@ public final class Federation {
     return addDummyField;
   }
 
-  private static Stream<SDLNamedDefinition> renameDefinitions(List<SDLNamedDefinition> sdlNamedDefinition, Map<String, String> fed2Imports) {
-    return sdlNamedDefinition.stream().map(definition -> {
-      SDLNamedDefinition newDefinition = (SDLNamedDefinition) new AstTransformer().transform(definition, new RenamingVisitor(fed2Imports));
-      return newDefinition;
-    });
+  private static Stream<SDLNamedDefinition> renameDefinitions(
+      List<SDLNamedDefinition> sdlNamedDefinition, Map<String, String> fed2Imports) {
+    return sdlNamedDefinition.stream()
+        .map(
+            definition -> {
+              SDLNamedDefinition newDefinition =
+                  (SDLNamedDefinition)
+                      new AstTransformer().transform(definition, new RenamingVisitor(fed2Imports));
+              return newDefinition;
+            });
   }
 
   private static String newName(String name, Map<String, String> fed2Imports, boolean isDirective) {
@@ -154,10 +157,7 @@ public final class Federation {
       key = name;
     }
 
-    if (key.equals("String")
-        || key.equals("Boolean")
-        || key.equals("Int")
-        || key.equals("Float")) {
+    if (key.equals("String") || key.equals("Boolean") || key.equals("Int") || key.equals("Float")) {
       // Do not rename builtin types
       return name;
     }
@@ -204,27 +204,31 @@ public final class Federation {
   }
 
   private static RuntimeWiring ensureFederation2DirectiveDefinitionsExist(
-      TypeDefinitionRegistry typeRegistry, RuntimeWiring runtimeWiring, @Nullable Map<String, String> fed2Imports) {
+      TypeDefinitionRegistry typeRegistry,
+      RuntimeWiring runtimeWiring,
+      @Nullable Map<String, String> fed2Imports) {
 
     RuntimeWiring newRuntimeWiring = runtimeWiring;
     HashSet<GraphQLScalarType> scalarTypesToAdd = new HashSet<GraphQLScalarType>();
 
-    Stream<SDLNamedDefinition> renamedDefinitions = renameDefinitions(FederationDirectives.federation2Definitions, fed2Imports);
+    Stream<SDLNamedDefinition> renamedDefinitions =
+        renameDefinitions(FederationDirectives.federation2Definitions, fed2Imports);
 
-    renamedDefinitions.forEach(def -> {
-      if (!typeRegistry.getDirectiveDefinition(def.getName()).isPresent()) {
-        typeRegistry.add(def);
-      }
-      if (def instanceof ScalarTypeDefinition && !runtimeWiring.getScalars().containsKey(def.getName())) {
-        scalarTypesToAdd.add(
-            GraphQLScalarType.newScalar(Scalars.GraphQLString)
-                .name(def.getName())
-                .description(null)
-                .coercing(Scalars.GraphQLString.getCoercing())
-                .build()
-        );
-      }
-    });
+    renamedDefinitions.forEach(
+        def -> {
+          if (!typeRegistry.getDirectiveDefinition(def.getName()).isPresent()) {
+            typeRegistry.add(def);
+          }
+          if (def instanceof ScalarTypeDefinition
+              && !runtimeWiring.getScalars().containsKey(def.getName())) {
+            scalarTypesToAdd.add(
+                GraphQLScalarType.newScalar(Scalars.GraphQLString)
+                    .name(def.getName())
+                    .description(null)
+                    .coercing(Scalars.GraphQLString.getCoercing())
+                    .build());
+          }
+        });
     return copyRuntimeWiring(newRuntimeWiring, scalarTypesToAdd);
   }
 
@@ -303,97 +307,114 @@ public final class Federation {
   /**
    * Looks for an @link extension and gets the import from it
    *
-   * @return - null if this typeDefinitionRegistry is not Fed2
-   * - the list of imports and potential renames else
+   * @return - null if this typeDefinitionRegistry is not Fed2 - the list of imports and potential
+   *     renames else
    */
-  private static @Nullable Map<String, String> fed2DirectiveImports(TypeDefinitionRegistry typeDefinitionRegistry) {
-    Map<String, String> imports = typeDefinitionRegistry.getSchemaExtensionDefinitions().stream()
-        .flatMap(
-            schemaExtensionDefinition -> schemaExtensionDefinition.getDirectives().stream().filter(
-                directive -> directive.getName().equals("link")
-            )
-        )
-        .filter(
-            directive -> {
-              Optional<Argument> arg = directive.getArguments().stream().filter(argument -> argument.getName().equals("url")).findFirst();
+  private static @Nullable Map<String, String> fed2DirectiveImports(
+      TypeDefinitionRegistry typeDefinitionRegistry) {
+    List<Directive> linkDirectives =
+        typeDefinitionRegistry.getSchemaExtensionDefinitions().stream()
+            .flatMap(
+                schemaExtensionDefinition ->
+                    schemaExtensionDefinition.getDirectives().stream()
+                        .filter(directive -> directive.getName().equals("link")))
+            .filter(
+                directive -> {
+                  Optional<Argument> arg =
+                      directive.getArguments().stream()
+                          .filter(argument -> argument.getName().equals("url"))
+                          .findFirst();
 
-              if (!arg.isPresent()) {
-                return false;
-              }
-
-              Value value = arg.get().getValue();
-              if (!(value instanceof StringValue)) {
-                return false;
-              }
-
-              StringValue stringValue = (StringValue) value;
-              return stringValue.getValue().equals("https://specs.apollo.dev/federation/v2.0");
-            }
-        ).flatMap(
-            directive -> {
-              Optional<Argument> arg = directive.getArguments().stream().filter(argument -> argument.getName().equals("import")).findFirst();
-
-              if (!arg.isPresent()) {
-                return Stream.empty();
-              }
-
-              Value value = arg.get().getValue();
-              if (!(value instanceof ArrayValue)) {
-                return Stream.empty();
-              }
-
-              ArrayValue arrayValue = (ArrayValue) value;
-
-              List<Map.Entry<String, String>> entries = new ArrayList<>();
-
-              for (Value imp : arrayValue.getValues()) {
-                if (imp instanceof StringValue) {
-                  String name = ((StringValue) imp).getValue();
-                  entries.add(new AbstractMap.SimpleEntry(name, name));
-                } else if (imp instanceof ObjectValue) {
-                  ObjectValue objectValue = (ObjectValue) imp;
-                  Optional<ObjectField> nameField = objectValue.getObjectFields().stream().filter(field -> field.getName().equals("name")).findFirst();
-                  Optional<ObjectField> asField = objectValue.getObjectFields().stream().filter(field -> field.getName().equals("as")).findFirst();
-
-                  if (!nameField.isPresent()) {
-                    throw new RuntimeException("Unsupported import: " + imp);
+                  if (!arg.isPresent()) {
+                    return false;
                   }
 
-                  Value nameValue = nameField.get().getValue();
-                  if (!(nameValue instanceof StringValue)) {
-                    throw new RuntimeException("Unsupported import: " + imp);
+                  Value value = arg.get().getValue();
+                  if (!(value instanceof StringValue)) {
+                    return false;
                   }
 
-                  String as;
-                  if (!asField.isPresent()) {
-                    as = null;
-                  } else {
-                    Value asValue = asField.get().getValue();
-                    if (asValue instanceof StringValue) {
-                      throw new RuntimeException("Unsupported import: " + imp);
+                  StringValue stringValue = (StringValue) value;
+                  return stringValue.getValue().equals("https://specs.apollo.dev/federation/v2.0");
+                })
+            .collect(Collectors.toList());
+
+    if (linkDirectives.isEmpty()) {
+      return null;
+    }
+
+    Map<String, String> imports =
+        linkDirectives.stream()
+            .flatMap(
+                directive -> {
+                  Optional<Argument> arg =
+                      directive.getArguments().stream()
+                          .filter(argument -> argument.getName().equals("import"))
+                          .findFirst();
+
+                  if (!arg.isPresent()) {
+                    return Stream.empty();
+                  }
+
+                  Value value = arg.get().getValue();
+                  if (!(value instanceof ArrayValue)) {
+                    return Stream.empty();
+                  }
+
+                  ArrayValue arrayValue = (ArrayValue) value;
+
+                  List<Map.Entry<String, String>> entries = new ArrayList<>();
+
+                  for (Value imp : arrayValue.getValues()) {
+                    if (imp instanceof StringValue) {
+                      String name = ((StringValue) imp).getValue();
+                      entries.add(new AbstractMap.SimpleEntry(name, name));
+                    } else if (imp instanceof ObjectValue) {
+                      ObjectValue objectValue = (ObjectValue) imp;
+                      Optional<ObjectField> nameField =
+                          objectValue.getObjectFields().stream()
+                              .filter(field -> field.getName().equals("name"))
+                              .findFirst();
+                      Optional<ObjectField> asField =
+                          objectValue.getObjectFields().stream()
+                              .filter(field -> field.getName().equals("as"))
+                              .findFirst();
+
+                      if (!nameField.isPresent()) {
+                        throw new RuntimeException("Unsupported import: " + imp);
+                      }
+
+                      Value nameValue = nameField.get().getValue();
+                      if (!(nameValue instanceof StringValue)) {
+                        throw new RuntimeException("Unsupported import: " + imp);
+                      }
+
+                      String as;
+                      if (!asField.isPresent()) {
+                        as = null;
+                      } else {
+                        Value asValue = asField.get().getValue();
+                        if (asValue instanceof StringValue) {
+                          throw new RuntimeException("Unsupported import: " + imp);
+                        }
+                        as = ((StringValue) asValue).getValue();
+                      }
+
+                      entries.add(
+                          new AbstractMap.SimpleEntry(((StringValue) nameValue).getValue(), as));
+                    } else {
+                      throw new RuntimeException("Unsupported import: " + imp.toString());
                     }
-                    as = ((StringValue) asValue).getValue();
                   }
 
-                  entries.add(new AbstractMap.SimpleEntry(((StringValue) nameValue).getValue(), as));
-                } else {
-                  throw new RuntimeException("Unsupported import: " + imp.toString());
-                }
-              }
-
-              return entries.stream();
-            }
-        )
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey,
-                Map.Entry::getValue,
-                (value1, value2) -> value2
-            )
-        );
+                  return entries.stream();
+                })
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey, Map.Entry::getValue, (value1, value2) -> value2));
 
     // Add hardcoded @link to avoid having federation__link all over the place
     imports.put("@link", "@link");
-    return  imports;
+    return imports;
   }
 }

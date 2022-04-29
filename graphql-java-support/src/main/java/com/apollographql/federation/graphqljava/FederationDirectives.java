@@ -13,7 +13,6 @@ import graphql.parser.Parser;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLNonNull;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -155,8 +154,10 @@ public final class FederationDirectives {
   public static final Set<DirectiveDefinition> federation1DirectiveDefinitions;
 
   private static List<SDLNamedDefinition> fed2Definitions() {
-    InputStream inputStream = FederationDirectives.class.getClassLoader().getResourceAsStream("fed2directives.graphqls");
-    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+    InputStream inputStream =
+        FederationDirectives.class.getClassLoader().getResourceAsStream("fed2directives.graphqls");
+    BufferedReader reader =
+        new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
     try {
       Document document = new Parser().parseDocument(reader);
 
