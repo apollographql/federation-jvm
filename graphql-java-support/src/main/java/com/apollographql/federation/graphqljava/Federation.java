@@ -157,7 +157,7 @@ public final class Federation {
       key = name;
     }
 
-    if (key.equals("String") || key.equals("Boolean") || key.equals("Int") || key.equals("Float")) {
+    if (key.equals("String") || key.equals("Boolean") || key.equals("Int") || key.equals("Float") || key.equals("ID")) {
       // Do not rename builtin types
       return name;
     }
