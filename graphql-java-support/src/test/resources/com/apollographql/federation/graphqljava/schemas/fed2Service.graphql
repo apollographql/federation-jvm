@@ -16,12 +16,12 @@ directive @federation__requires(fields: federation__FieldSet!) on FIELD_DEFINITI
 
 directive @shareable on OBJECT | FIELD_DEFINITION
 
-directive @tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+directive @apollo_tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
 union _Entity = Position
 
 type Position @key(fields : "id", resolvable : false) @shareable {
-  id: ID! @tag(name : "internal")
+  id: ID! @apollo_tag(name : "internal")
   x: Int! @override(from : "otherGraph")
   y: Int!
 }

@@ -222,10 +222,10 @@ public final class Federation {
           if (def instanceof ScalarTypeDefinition
               && !runtimeWiring.getScalars().containsKey(def.getName())) {
             scalarTypesToAdd.add(
-                GraphQLScalarType.newScalar(Scalars.GraphQLString)
+                GraphQLScalarType.newScalar()
                     .name(def.getName())
                     .description(null)
-                    .coercing(Scalars.GraphQLString.getCoercing())
+                    .coercing(_Any.defaultCoercing)
                     .build());
           }
         });
@@ -394,7 +394,7 @@ public final class Federation {
                         as = null;
                       } else {
                         Value asValue = asField.get().getValue();
-                        if (asValue instanceof StringValue) {
+                        if (!(asValue instanceof StringValue)) {
                           throw new RuntimeException("Unsupported import: " + imp);
                         }
                         as = ((StringValue) asValue).getValue();
