@@ -1,0 +1,29 @@
+# Fed2 directives taken from https://github.com/apollographql/federation/blob/c68e501b4c02bd65f6b0bbbabf1b2aa4a2ab3c47/subgraph-js/src/federation-atlas.ts
+# 
+
+directive @key(fields: FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
+directive @requires(fields: FieldSet!) on FIELD_DEFINITION
+directive @provides(fields: FieldSet!) on FIELD_DEFINITION
+directive @external on OBJECT | FIELD_DEFINITION
+directive @shareable on FIELD_DEFINITION | OBJECT
+directive @extends on OBJECT | INTERFACE
+directive @override(from: String!) on FIELD_DEFINITION
+
+directive @tag(name: String!) repeatable on FIELD_DEFINITION
+    | INTERFACE
+    | OBJECT
+    | UNION
+    | ARGUMENT_DEFINITION
+    | SCALAR
+    | ENUM
+    | ENUM_VALUE
+    | INPUT_OBJECT
+    | INPUT_FIELD_DEFINITION
+
+directive @inaccessible on FIELD_DEFINITION | INTERFACE | OBJECT | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+
+scalar FieldSet
+
+directive @link(url: String!, as: String, import: [Import]) repeatable on SCHEMA
+
+scalar Import

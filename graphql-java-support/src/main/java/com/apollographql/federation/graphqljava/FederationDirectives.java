@@ -9,14 +9,17 @@ import static graphql.schema.GraphQLDirective.newDirective;
 
 import graphql.PublicApi;
 import graphql.language.*;
+import graphql.parser.Parser;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLNonNull;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedHashSet;
-import java.util.Set;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,26 +34,6 @@ public final class FederationDirectives {
 
   private static final DirectiveLocation DL_FIELD_DEFINITION =
       newDirectiveLocation().name("FIELD_DEFINITION").build();
-
-  private static final DirectiveLocation DL_SCHEMA = newDirectiveLocation().name("SCHEMA").build();
-
-  private static final DirectiveLocation DL_UNION = newDirectiveLocation().name("UNION").build();
-
-  private static final DirectiveLocation DL_ARGUMENT_DEFINITION =
-      newDirectiveLocation().name("ARGUMENT_DEFINITION").build();
-
-  private static final DirectiveLocation DL_INPUT_FIELD_DEFINITION =
-      newDirectiveLocation().name("INPUT_FIELD_DEFINITION").build();
-
-  private static final DirectiveLocation DL_SCALAR = newDirectiveLocation().name("SCALAR").build();
-
-  private static final DirectiveLocation DL_ENUM = newDirectiveLocation().name("ENUM").build();
-
-  private static final DirectiveLocation DL_ENUM_VALUE =
-      newDirectiveLocation().name("ENUM_VALUE").build();
-
-  private static final DirectiveLocation DL_INPUT_OBJECT =
-      newDirectiveLocation().name("INPUT_OBJECT").build();
 
   /* fields: _FieldSet */
 
@@ -88,16 +71,6 @@ public final class FederationDirectives {
           .name(keyName)
           .directiveLocations(Arrays.asList(DL_OBJECT, DL_INTERFACE))
           .inputValueDefinition(fieldsDefinition)
-          .repeatable(true)
-          .build();
-
-  public static final DirectiveDefinition keyDefinitionFed2 =
-      newDirectiveDefinition()
-          .name(keyName)
-          .directiveLocations(Arrays.asList(DL_OBJECT, DL_INTERFACE))
-          .inputValueDefinition(fieldsDefinition)
-          .inputValueDefinition(
-              newInputValueDefinition().name("resolvable").type(new TypeName("Boolean")).build())
           .repeatable(true)
           .build();
 
@@ -171,88 +144,6 @@ public final class FederationDirectives {
           .directiveLocations(Arrays.asList(DL_OBJECT, DL_INTERFACE))
           .build();
 
-  /* directive @shareable on FIELD_DEFINITION | OBJECT */
-
-  public static final String shareableName = "shareable";
-
-  public static final DirectiveDefinition shareableDefinition =
-      newDirectiveDefinition()
-          .name(shareableName)
-          .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION, DL_OBJECT))
-          .build();
-
-  /*
-   * directive @link( """ Url of the linked core feature. """ url: String!, """ Optional list of
-   * element names to import in the top-level namesapce. Elements of the feature not part of this
-   * list can only be referenced by prefixing the element named by the feature name (for instance,
-   * if the `@key` is not imported in this list for the `federation` feature, it can still be
-   * refered to using `@federation__key`). """ import: [link__Import], ) repeatable on SCHEMA
-   */
-  public static final String linkName = "link";
-
-  public static final DirectiveDefinition linkDefinition =
-      newDirectiveDefinition()
-          .name(linkName)
-          .directiveLocations(Collections.singletonList(DL_SCHEMA))
-          .inputValueDefinition(
-              newInputValueDefinition()
-                  .name("url")
-                  .type(new NonNullType(new TypeName("String")))
-                  .build())
-          .inputValueDefinition(
-              newInputValueDefinition()
-                  .name("import")
-                  .type(new ListType(new TypeName("link__Import")))
-                  .build())
-          .repeatable(true)
-          .build();
-
-  /* directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION */
-  public static final String tagName = "tag";
-
-  public static final DirectiveDefinition tagDefinition =
-      newDirectiveDefinition()
-          .name(tagName)
-          .inputValueDefinition(
-              newInputValueDefinition()
-                  .name("name")
-                  .type(new NonNullType(new TypeName("String")))
-                  .build())
-          .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION, DL_INTERFACE, DL_OBJECT, DL_UNION))
-          .repeatable(true)
-          .build();
-
-  // directive @override(from: String!) on FIELD_DEFINITION
-  public static final DirectiveDefinition overrideDefinition =
-      newDirectiveDefinition()
-          .name("override")
-          .inputValueDefinition(
-              newInputValueDefinition()
-                  .name("from")
-                  .type(new NonNullType(new TypeName("String")))
-                  .build())
-          .directiveLocations(Arrays.asList(DL_FIELD_DEFINITION))
-          .build();
-
-  // directive @inaccessible on FIELD_DEFINITION | INTERFACE | OBJECT | UNION | ARGUMENT_DEFINITION
-  // | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
-  public static final DirectiveDefinition inaccessibleDefinition =
-      newDirectiveDefinition()
-          .name("inaccessible")
-          .directiveLocations(
-              Arrays.asList(
-                  DL_FIELD_DEFINITION,
-                  DL_INTERFACE,
-                  DL_OBJECT,
-                  DL_UNION,
-                  DL_ARGUMENT_DEFINITION,
-                  DL_SCALAR,
-                  DL_ENUM,
-                  DL_ENUM_VALUE,
-                  DL_INPUT_OBJECT,
-                  DL_INPUT_FIELD_DEFINITION))
-          .build();
-
   private FederationDirectives() {}
 
   /* Sets */
@@ -260,8 +151,26 @@ public final class FederationDirectives {
   public static final Set<String> allNames;
   public static final Set<GraphQLDirective> allDirectives;
   public static final Set<DirectiveDefinition> allDefinitions;
-  public static final Set<DirectiveDefinition> federation2DirectiveDefinitions;
+  static final List<SDLNamedDefinition> federation2Definitions;
   public static final Set<DirectiveDefinition> federation1DirectiveDefinitions;
+
+  private static List<SDLNamedDefinition> fed2Definitions() {
+    InputStream inputStream = FederationDirectives.class.getClassLoader().getResourceAsStream("fed2directives.graphqls");
+    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+    try {
+      Document document = new Parser().parseDocument(reader);
+
+      return document.getDefinitionsOfType(SDLNamedDefinition.class).stream()
+          .sorted(Comparator.comparing(SDLNamedDefinition::getName))
+          .collect(Collectors.toList());
+    } finally {
+      try {
+        reader.close();
+      } catch (IOException e) {
+        // close silently
+      }
+    }
+  }
 
   static {
     // We need to maintain sorted order here for tests, since SchemaPrinter doesn't sort
@@ -293,19 +202,7 @@ public final class FederationDirectives {
                 extendsDefinition)
             .sorted(Comparator.comparing(DirectiveDefinition::getName))
             .collect(Collectors.toCollection(LinkedHashSet::new));
-    federation2DirectiveDefinitions =
-        Stream.of(
-                keyDefinitionFed2,
-                externalDefinition,
-                requiresDefinition,
-                providesDefinition,
-                extendsDefinition,
-                shareableDefinition,
-                linkDefinition,
-                tagDefinition,
-                overrideDefinition,
-                inaccessibleDefinition)
-            .sorted(Comparator.comparing(DirectiveDefinition::getName))
-            .collect(Collectors.toCollection(LinkedHashSet::new));
+
+    federation2Definitions = fed2Definitions();
   }
 }

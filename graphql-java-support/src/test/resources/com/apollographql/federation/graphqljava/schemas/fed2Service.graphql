@@ -1,22 +1,22 @@
-directive @extends on OBJECT | INTERFACE
+directive @federation__extends on OBJECT | INTERFACE
 
-directive @external on FIELD_DEFINITION
+directive @federation__external on OBJECT | FIELD_DEFINITION
 
-directive @inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+directive @federation__inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
-directive @key(fields: _FieldSet!, resolvable: Boolean) repeatable on OBJECT | INTERFACE
+directive @key(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
 
-directive @link(import: [link__Import], url: String!) repeatable on SCHEMA
+directive @link(as: String, import: [federation__Import], url: String!) repeatable on SCHEMA
 
 directive @override(from: String!) on FIELD_DEFINITION
 
-directive @provides(fields: _FieldSet!) on FIELD_DEFINITION
+directive @federation__provides(fields: federation__FieldSet!) on FIELD_DEFINITION
 
-directive @requires(fields: _FieldSet!) on FIELD_DEFINITION
+directive @federation__requires(fields: federation__FieldSet!) on FIELD_DEFINITION
 
 directive @shareable on OBJECT | FIELD_DEFINITION
 
-directive @tag(name: String!) repeatable on OBJECT | FIELD_DEFINITION | INTERFACE | UNION
+directive @tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
 union _Entity = Position
 
@@ -37,6 +37,6 @@ type _Service {
 
 scalar _Any
 
-scalar _FieldSet
+scalar federation__FieldSet
 
-scalar link__Import
+scalar federation__Import

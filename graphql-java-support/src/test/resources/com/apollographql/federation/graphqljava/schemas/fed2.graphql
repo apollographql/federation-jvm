@@ -1,6 +1,6 @@
 extend schema
     @link(url: "https://specs.apollo.dev/federation/v2.0",
-       import: ["@key", "@shareable", "@tag"])
+       import: ["@key", "@shareable", "@tag", "@override"])
 
 type Position @shareable @key(fields: "id", resolvable: false) {
  id: ID! @tag(name: "internal")
