@@ -1,5 +1,9 @@
 # Release notes
 
+## 2.0.0
+
+* Add support for renaming directives ([#166](https://github.com/apollographql/federation-jvm/pull/166))
+
 ## 2.0.0-alpha.5
 
 * Add @inaccessible ([#160](https://github.com/apollographql/federation-jvm/pull/160))
