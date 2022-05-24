@@ -23,7 +23,7 @@ jobs:
           cache: maven
 
       - name: Build library with Maven
-        run: mvn -B package
+        run: mvn -B verify
 
   release-notes:
     timeout-minutes: 10
