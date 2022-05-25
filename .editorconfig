@@ -19,3 +19,7 @@ indent_size = 2
 [*.java]
 indent_size = 2
 max_line_length = 200
+
+[*.kts]
+indent_size = 4
+max_line_length = 200
