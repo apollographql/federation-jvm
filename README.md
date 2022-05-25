@@ -1,10 +1,11 @@
+[![Continuous Integration](https://github.com/apollographql/federation-jvm/workflows/Continuous%20Integration/badge.svg)](https://github.com/apollographql/federation-jvm/actions?query=workflow%3A%22Continuous+Integration%22)
 [![MIT License](https://img.shields.io/github/license/apollographql/federation-jvm.svg)](LICENSE)
 [![Maven Central](https://img.shields.io/maven-central/v/com.apollographql.federation/federation-graphql-java-support.svg)](https://maven-badges.herokuapp.com/maven-central/com.apollographql.federation/federation-graphql-java-support)
-[![CircleCI](https://circleci.com/gh/apollographql/federation-jvm.svg?style=svg)](https://circleci.com/gh/apollographql/federation-jvm)
+[![Join the community forum](https://img.shields.io/badge/join%20the%20community-forum-blueviolet)](https://community.apollographql.com)
 
 # Apollo Federation on the JVM
 
-Packages published to Maven Central; release notes in [RELEASE_NOTES.md](RELEASE_NOTES.md). Note that older versions of
+Packages published to Maven Central. Note that older versions of
 this package may only be available in JCenter, but we are planning to republish these versions to Maven Central.
 
 An example of [graphql-spring-boot](https://www.graphql-java-kickstart.com/spring-boot/) microservice is available
