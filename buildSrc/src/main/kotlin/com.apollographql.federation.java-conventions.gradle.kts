@@ -28,7 +28,7 @@ java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 
-    if (rootProject.extra["isReleaseVersion"] as Boolean) {
+    if (!version.toString().endsWith("SNAPSHOT")) {
         withJavadocJar()
         withSourcesJar()
     }
