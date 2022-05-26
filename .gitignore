@@ -1,4 +1,14 @@
-/.idea/
-/.mvn/jvm.config
-/.mvn/wrapper/maven-wrapper.jar
-target/
+# idea
+*.iml
+.idea/
+
+# mac
+.DS_Store
+
+# gradle ignore
+.gradle
+build/
+out/
+
+# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
+!gradle-wrapper.jar
