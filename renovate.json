@@ -13,6 +13,10 @@
       "groupName": "Gradle version updates",
       "matchPaths": ["gradle-wrapper.properties"],
       "labels": ["type: build"]
+    },
+    {
+      "groupName": "Protobuf",
+      "matchPackagePrefixes": ["com.google.protobuf:"]
     }
   ]
 }
