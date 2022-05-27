@@ -1,5 +1,12 @@
 {
   "extends": [
     "config:base"
+  ],
+  "packageRules": [
+    {
+      "groupName": "GraphQL Java (ignoring snapshot builds)",
+      "matchPackagePrefixes": ["com.graphql-java:"],
+      "allowedVersions": "/^[0-9]+\\.[0-9]+(\\.[0-9]+)?$/"
+    }
   ]
 }
