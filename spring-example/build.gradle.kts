@@ -2,7 +2,7 @@ description = "Spring Boot example of federation-graphql-java-support usage"
 
 plugins {
     id("com.apollographql.federation.java-conventions")
-    id("org.springframework.boot") version "2.5.4"
+    id("org.springframework.boot") version "2.7.0"
 }
 
 val annotationsVersion: String by project
