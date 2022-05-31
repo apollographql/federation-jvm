@@ -31,10 +31,11 @@ jobs:
           echo "New version: ${NEW_VERSION}"
           ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository -Pversion=${NEW_VERSION}
         env:
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          GPG_SECRET: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PRIVATE_KEY_PASSPHRASE }}
+          SONATYPE_NEXUS_USERNAME: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
+          SONATYPE_NEXUS_PASSWORD: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
+          COM_APOLLOGRAPHQL_PROFILE_ID: ${{ secrets.COM_APOLLOGRAPHQL_PROFILE_ID }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PRIVATE_KEY_PASSPHRASE: ${{ secrets.GPG_PRIVATE_KEY_PASSPHRASE }}
 
       - name: Archive failure build reports
         uses: actions/upload-artifact@v3
