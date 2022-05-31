@@ -17,8 +17,6 @@ repositories {
     }
 }
 
-extra["isReleaseVersion"] = !version.toString().endsWith("SNAPSHOT")
-
 val junitVersion: String by project
 dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
@@ -107,7 +105,7 @@ tasks {
     }
     signing {
         setRequired {
-            (rootProject.extra["isReleaseVersion"] as Boolean) && gradle.taskGraph.hasTask("publish")
+            !version.toString().endsWith("SNAPSHOT") && gradle.taskGraph.hasTask("publish")
         }
         val signingKey: String? = System.getenv("GPG_PRIVATE_KEY")
         val signingPassword: String? = System.getenv("GPG_PRIVATE_KEY_PASSWORD")
