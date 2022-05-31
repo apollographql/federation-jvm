@@ -27,7 +27,7 @@ jobs:
 
       - name: Publish libraries with Gradle
         run: |
-          NEW_VERSION=$(echo "${GITHUB_REF}" | cut -d "/" -f3)
+          NEW_VERSION=$(echo "${GITHUB_REF}" | sed 's/.*\/v//')
           echo "New version: ${NEW_VERSION}"
           ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository -Pversion=${NEW_VERSION}
         env:
