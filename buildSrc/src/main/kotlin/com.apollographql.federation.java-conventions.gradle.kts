@@ -109,8 +109,8 @@ tasks {
         setRequired {
             (rootProject.extra["isReleaseVersion"] as Boolean) && gradle.taskGraph.hasTask("publish")
         }
-        val signingKey: String? = System.getenv("GPG_SECRET")
-        val signingPassword: String? = System.getenv("GPG_PASSPHRASE")
+        val signingKey: String? = System.getenv("GPG_PRIVATE_KEY")
+        val signingPassword: String? = System.getenv("GPG_PRIVATE_KEY_PASSWORD")
         useInMemoryPgpKeys(signingKey, signingPassword)
         sign(publishing.publications)
     }
