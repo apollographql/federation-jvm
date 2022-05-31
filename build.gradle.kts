@@ -6,8 +6,9 @@ tasks {
     nexusPublishing {
         repositories {
             sonatype {
-                username.set(System.getenv("SONATYPE_USERNAME"))
-                password.set(System.getenv("SONATYPE_PASSWORD"))
+                username.set(System.getenv("SONATYPE_NEXUS_USERNAME"))
+                password.set(System.getenv("SONATYPE_NEXUS_PASSWORD"))
+                stagingProfileId.set(System.getenv("COM_APOLLOGRAPHQL_PROFILE_ID"))
             }
         }
 
