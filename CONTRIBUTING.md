@@ -2,7 +2,7 @@
 
 The Apollo team welcomes contributions of all kinds, including bug reports, documentation, test cases, bug fixes, and features. There are just a few guidelines you need to follow which are described in detail below.
 
-If you want to discuss the project or just say hi, stop by [Apollo community forums](https://community.apollographql.com/).
+If you want to discuss the project or just say hi, stop by [the Apollo community forums](https://community.apollographql.com/).
 
 ## Workflow
 
