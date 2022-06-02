@@ -5,9 +5,6 @@
 
 # Apollo Federation on the JVM
 
-> _We're looking for developers to participate in a 75 minute remote research interview to learn understand the challenges around using and adopting GraphQL. Take the
-> [quick survey here](https://www.surveymonkey.com/r/TZMXTHJ) and we'll follow up by email_
-
 [**Apollo Federation**](https://www.apollographql.com/docs/federation/) is a powerful, open architecture that helps you create a **unified supergraph** that combines multiple GraphQL APIs.
 `graphql-java-support` provides Apollo Federation support for building subgraphs in the `graphql-java` ecosystem. Individual subgraphs can be run independently of each other but can also specify
 relationships to the other subgraphs by using Federated directives. See [Apollo Federation documentation](https://www.apollographql.com/docs/federation/) for details.
