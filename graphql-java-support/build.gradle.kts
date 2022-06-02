@@ -1,5 +1,3 @@
-import com.google.protobuf.gradle.generateProtoTasks
-import com.google.protobuf.gradle.plugins
 import com.google.protobuf.gradle.protobuf
 import com.google.protobuf.gradle.protoc
 
@@ -28,4 +26,12 @@ protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:3.21.1"
     }
+}
+
+// gradle protobuf plugin currently does not correctly register the sources
+// this is a workaround for intellij to correctly recognize the generated sources
+// https://github.com/google/protobuf-gradle-plugin/issues/109
+sourceSets {
+    val main by getting { }
+    main.java.srcDirs("build/generated/source/proto/main/java")
 }
