@@ -18,7 +18,7 @@ graph BT;
   gateway --- serviceA & serviceB & serviceC;
 ```
 
-`graphql-java-support` is built on top of `graphql-java` library and provides transformation logic to make your GraphQL schemas Federation compatible. `SchemaTransformer` adds common Federation
+`graphql-java-support` is built on top of `graphql-java` and provides transformation logic to make your GraphQL schemas Federation compatible. `SchemaTransformer` adds common Federation
 type definitions (e.g. `_Any` scalar, `_Entity` union, Federation directives, etc) and allows you to easily specify your Federated entity resolvers.
 
 This project also provides a set of Federation aware instrumentations:
