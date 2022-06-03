@@ -51,6 +51,12 @@ implementation 'com.apollographql.federation:federation-graphql-java-support:$la
 
 Additional documentation on the Apollo Federation and JVM usage can be found on the [Apollo Documentation Portal](https://www.apollographql.com/docs/federation/).
 
+Federation JVM example integrations
+
+* [Spring GraphQL Federation Example](https://github.com/apollographql/federation-jvm-spring-example)
+* [Netflix DGS Federation Example](https://github.com/Netflix/dgs-federation-example)
+* [GraphQL Java Kickstart Federation Example](https://github.com/setchy/graphql-java-kickstart-federation-example)
+
 ### Creating Federated Schemas
 
 Using `graphql-java` (or [your](https://docs.spring.io/spring-graphql/docs/current/reference/html/) [framework](https://netflix.github.io/dgs/) of [choice](https://www.graphql-java-kickstart.com/spring-boot/))
