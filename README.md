@@ -5,71 +5,171 @@
 
 # Apollo Federation on the JVM
 
-Packages published to Maven Central. Note that older versions of
-this package may only be available in JCenter, but we are planning to republish these versions to Maven Central.
+[**Apollo Federation**](https://www.apollographql.com/docs/federation/) is a powerful, open architecture that helps you create a **unified supergraph** that combines multiple GraphQL APIs.
+`graphql-java-support` provides Apollo Federation support for building subgraphs in the `graphql-java` ecosystem. Individual subgraphs can be run independently of each other but can also specify
+relationships to the other subgraphs by using Federated directives. See [Apollo Federation documentation](https://www.apollographql.com/docs/federation/) for details.
 
-An example of [graphql-spring-boot](https://www.graphql-java-kickstart.com/spring-boot/) microservice is available
-in [spring-example](spring-example).
+```mermaid
+graph BT;
+  gateway([Supergraph<br/>gateway]);
+  serviceA[Users<br/>subgraph];
+  serviceB[Products<br/>subgraph];
+  serviceC[Reviews<br/>subgraph];
+  gateway --- serviceA & serviceB & serviceC;
+```
 
-**👍👎 Let us know what you think!**
+`graphql-java-support` is built on top of `graphql-java` and provides transformation logic to make your GraphQL schemas Federation compatible. `SchemaTransformer` adds common Federation
+type definitions (e.g. `_Any` scalar, `_Entity` union, Federation directives, etc) and allows you to easily specify your Federated entity resolvers.
 
-_We're looking for developers to participate in a 75 minute remote research interview to learn understand the challenges around using and adopting GraphQL. Take the [quick survey here](https://www.surveymonkey.com/r/TZMXTHJ) and we'll follow up by email_
+This project also provides a set of Federation aware instrumentations:
 
+* `CacheControlInstrumentation` - instrumentation that computes a max age for an operation based on `@cacheControl` directives
+* `FederatedTracingInstrumentation` - instrumentation that generates trace information for federated operations
 
-## Getting started
+## Installation
 
-### Dependency management with Gradle
+Federation JVM libraries are published to [Maven Central](https://search.maven.org/search?q=g:com.apollographql.federation%20AND%20a:federation-graphql-java-support).
+Using a JVM dependency manager, link `graphql-java-support` to your project.
 
-Make sure Maven Central is among your repositories:
+With Maven:
+
+```xml
+<dependency>
+  <groupId>com.apollographql.federation</groupId>
+  <artifactId>federation-graphql-java-support</artifactId>
+  <version>${latestVersion}</version>
+</dependency>
+```
+
+With Gradle (Groovy):
 
 ```groovy
-repositories {
-    mavenCentral()
+implementation 'com.apollographql.federation:federation-graphql-java-support:$latestVersion'
+```
+
+## Usage
+
+Additional documentation on the Apollo Federation and JVM usage can be found on the [Apollo Documentation Portal](https://www.apollographql.com/docs/federation/).
+
+Federation JVM example integrations
+
+* [Spring GraphQL Federation Example](https://github.com/apollographql/federation-jvm-spring-example)
+* [Netflix DGS Federation Example](https://github.com/Netflix/dgs-federation-example)
+* [GraphQL Java Kickstart Federation Example](https://github.com/setchy/graphql-java-kickstart-federation-example)
+
+### Creating Federated Schemas
+
+Using `graphql-java` (or [your](https://docs.spring.io/spring-graphql/docs/current/reference/html/) [framework](https://netflix.github.io/dgs/) of [choice](https://www.graphql-java-kickstart.com/spring-boot/))
+we first need to create a GraphQL schema.
+
+Assuming there is already a subgraph that defines a base `Product` type
+
+```graphql
+# product subgraph
+type Query {
+  product(id: ID!): Product
+}
+
+type Product @key(fields: "id") {
+  id: ID!,
+  description: String
 }
 ```
 
-Add a dependency to `graphql-java-support`:
+We can create another subgraph that extends `Product` type and adds the `reviews` field.
 
-```groovy
-dependencies {
-    implementation 'com.apollographql.federation:federation-graphql-java-support:2.0.0'
+```graphql
+# reviews subgraph
+type Product @extends @key(fields: "id") {
+    id: ID! @external
+    reviews: [Review!]!
+}
+
+type Review {
+    id: ID!
+    text: String
+    rating: Int!
 }
 ```
 
-### graphql-java schema transformation
+>NOTE: This subgraph does not specify any top level queries.
 
-`graphql-java-support` produces a `graphql.schema.GraphQLSchema` by transforming your existing schema in accordance to
-the [federation specification](https://www.apollographql.com/docs/apollo-server/federation/federation-spec/). It follows
-the `Builder` pattern.
+Using the above schema file, we first need to generate the `TypeDefinitionRegistry` and `RuntimeWiring` objects.
 
-Start with `com.apollographql.federation.graphqljava.Federation.transform(…)`, which can receive either:
+```java
+SchemaParser parser = new SchemaParser();
+TypeDefinitionRegistry typeDefinitionRegistry = parser.parse(Paths.get("schema.graphqls").toFile());
+RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
+```
 
-- A `GraphQLSchema`;
-- A `TypeDefinitionRegistry`, optionally with a `RuntimeWiring`;
-- A String, Reader, or File declaring the schema using
-  the [Schema Definition Language](https://www.apollographql.com/docs/apollo-server/essentials/schema/#schema-definition-language),
-  optionally with a `RuntimeWiring`;
+We can then generate Federation compatible schema using schema transformer. In order to be able to resolve the federated `Product` type, we need to provide `TypeResolver` to resolve [`_Entity`](https://www.apollographql.com/docs/federation/federation-spec/#union-_entity)
+union type and a `DataFetcher` to resolve [`_entities`](https://www.apollographql.com/docs/federation/federation-spec/#query_entities) query.
 
-and returns a `SchemaTransformer`.
+```java
+DataFetcher entityDataFetcher = env -> {
+    List<Map<String, Object>> representations = env.getArgument(_Entity.argumentName);
+    return representations.stream()
+        .map(representation -> {
+            if ("Product".equals(representation.get("__typename"))) {
+                return new Product((String)representation.get("id"));
+            }
+            return null;
+        })
+        .collect(Collectors.toList());
+    };
+TypeResolver entityTypeResolver = env -> {
+    final Object src = env.getObject();
+    if (src instanceof Product) {
+        return env.getSchema()
+            .getObjectType("Product");
+    }
+    return null;
+};
 
-If your schema does not contain any types annotated with the `@key` directive, nothing else is required. You can build a
-transformed `GraphQLSchema` with `SchemaTransformer#build()`, and confirm it exposes `query { _schema { sdl } }`.
+GraphQLSchema federatedSchema = Federation.transform(typeDefinitionRegistry, runtimeWiring)
+    .fetchEntities(entityDataFetcher)
+    .resolveEntityType(entityTypeResolver)
+    .build();
+```
 
-Otherwise, all types annotated with `@key` will be part of the `_Entity` union type, and reachable
-through `query { _entities(representations: [Any!]!) { … } }`. Before calling `SchemaTransformer#build()`, you will also
-need to provide:
+This will generate a schema with additional federated info.
 
-- A `TypeResolver` for `_Entity` using `SchemaTransformer#resolveEntityType(TypeResolver)`;
-- A `DataFetcher` or `DataFetcherFactory` for `_entities`
-  using `SchemaTransformer#fetchEntities(DataFetcher|DataFetcherFactory)`.
+```graphql
+union _Entity = Product
 
-A minimal but complete example is available in
-[AppConfiguration](spring-example/src/main/java/com/apollographql/federation/springexample/graphqljava/AppConfiguration.java).
+type Product @extends @key(fields : "id") {
+  id: ID! @external
+  reviews: [Review!]!
+}
 
-### Federated tracing
+type Query {
+  _entities(representations: [_Any!]!): [_Entity]!
+  _service: _Service
+}
 
-To make your server generate performance traces and return them along with responses to the Apollo Gateway (which then
-can send them to Apollo Graph Manager), install the `FederatedTracingInstrumentation` into your `GraphQL` object:
+type Review {
+  id: ID!
+  rating: Int!
+  text: String
+}
+
+type _Service {
+  sdl: String!
+}
+
+scalar _Any
+
+scalar _FieldSet
+```
+
+### Instrumentation
+
+#### Federated Tracing
+
+[Tracing your GraphQL queries](https://www.apollographql.com/docs/federation/metrics) can provide you detailed insights into your GraphQL layer's performance and usage. Single federated query may
+be executed against multiple GraphQL servers. Apollo Gateway provides ability to aggregate trace data generated by the subgraphs calls and then send them to [Apollo Studio](https://www.apollographql.com/docs/studio/)
+
+To make your server generate performance traces and return them along with responses to the Apollo Gateway, install the `FederatedTracingInstrumentation` into your `GraphQL` object:
 
 ```java
 GraphQL graphql = GraphQL.newGraphQL(graphQLSchema)
@@ -77,10 +177,8 @@ GraphQL graphql = GraphQL.newGraphQL(graphQLSchema)
         .build();
 ```
 
-It is generally desired to only create traces for requests that actually come from Apollo Gateway, as they aren't
-helpful if you're connecting directly to your backend service for testing. In order for `FederatedTracingInstrumentation` 
-to know if the request is coming from Gateway, you should populate the tracing header information directly in the 
-`GraphQLContext` map.
+It is generally desired to only create traces for requests that actually come from Apollo Gateway, as they aren't helpful if you're connecting directly to your backend service for testing. In order
+for `FederatedTracingInstrumentation` to know if the request is coming from the Gateway, you should populate the tracing header information directly in the `GraphQLContext` map.
 
 ```java
 Map<Object, Object> contextMap = new HashMap<>();
@@ -95,3 +193,27 @@ ExecutionInput executionInput = ExecutionInput.newExecutionInput()
         .build();
 graphql.executeAsync(executionInput);
 ```
+
+## Contact
+
+If you have a specific question about the library or code, please start a discussion in the [Apollo community forums](https://community.apollographql.com/).
+
+## Contributing
+
+To get started, please fork the repo and checkout a new branch. You can then build the library locally with Gradle
+
+```shell
+./gradlew clean build
+```
+
+See more info in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+After you have your local branch set up, take a look at our open issues to see where you can contribute.
+
+## Security
+
+For more info on how to contact the team for security issues, see our [Security Policy](https://github.com/apollographql/federation-jvm/security/policy).
+
+## License
+
+This library is licensed under [The MIT License (MIT)](LICENSE).
