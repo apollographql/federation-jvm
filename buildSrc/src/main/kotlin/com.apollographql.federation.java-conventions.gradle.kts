@@ -85,6 +85,8 @@ spotless {
         removeUnusedImports()
         // Note that later versions use a bytecode target incompatible with Java SE 8
         googleJavaFormat("1.7")
+        // exclude generated proto
+        targetExclude("build/generated/**/*.java")
     }
 }
 
