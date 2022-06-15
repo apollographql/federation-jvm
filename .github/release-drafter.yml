@@ -3,13 +3,13 @@ tag-template: v$NEXT_PATCH_VERSION
 change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
 categories:
   - title: Major Changes
-    label: "changes: major"
+    label: "change: major"
 
   - title: Minor Changes
-    label: "changes: minor"
+    label: "change: minor"
 
   - title: Patch Changes
-    label: "changes: patch"
+    label: "change: patch"
 
   - title: Other Changes
 
