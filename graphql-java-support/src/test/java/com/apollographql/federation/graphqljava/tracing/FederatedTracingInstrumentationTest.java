@@ -1,4 +1,4 @@
-package com.apollographql.federation.graphqljava;
+package com.apollographql.federation.graphqljava.tracing;
 
 import static com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.FEDERATED_TRACING_HEADER_NAME;
 import static com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.FEDERATED_TRACING_HEADER_VALUE;
@@ -8,8 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation;
-import com.apollographql.federation.graphqljava.tracing.HTTPRequestHeaders;
+import com.apollographql.federation.graphqljava.TestUtils;
 import com.google.protobuf.InvalidProtocolBufferException;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
