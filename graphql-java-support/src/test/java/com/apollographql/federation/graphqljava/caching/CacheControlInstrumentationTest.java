@@ -1,9 +1,10 @@
-package com.apollographql.federation.graphqljava;
+package com.apollographql.federation.graphqljava.caching;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.apollographql.federation.graphqljava.caching.CacheControlInstrumentation;
+import com.apollographql.federation.graphqljava.Federation;
+import com.apollographql.federation.graphqljava._Entity;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
 import graphql.GraphQLContext;
@@ -11,7 +12,11 @@ import graphql.schema.DataFetcher;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
-import graphql.schema.idl.*;
+import graphql.schema.idl.FieldWiringEnvironment;
+import graphql.schema.idl.RuntimeWiring;
+import graphql.schema.idl.SchemaParser;
+import graphql.schema.idl.TypeDefinitionRegistry;
+import graphql.schema.idl.WiringFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

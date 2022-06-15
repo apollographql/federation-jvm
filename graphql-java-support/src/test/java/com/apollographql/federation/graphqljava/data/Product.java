@@ -1,10 +1,10 @@
-package com.apollographql.federation.graphqljava;
+package com.apollographql.federation.graphqljava.data;
 
 import java.util.Objects;
 
 @SuppressWarnings("WeakerAccess")
-class Product {
-  static final Product PLANCK = new Product("PLANCK", "P", "Planck", 180);
+public class Product {
+  public static final Product PLANCK = new Product("PLANCK", "P", "Planck", 180);
 
   private final String upc;
   private final String sku;

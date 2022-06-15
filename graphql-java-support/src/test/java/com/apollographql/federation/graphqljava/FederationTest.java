@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.apollographql.federation.graphqljava.data.Product;
 import graphql.ExecutionResult;
 import graphql.Scalars;
 import graphql.com.google.common.collect.ImmutableMap;

@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 
@@ -86,33 +87,10 @@ public final class SchemaTransformer {
     if (queryTypeShouldBeEmpty) newQueryType.clearFields();
     newQueryType.field(_Service.field);
 
-    // Collecting all entity types: Types with @key directive and all types that implement them
-    final Set<String> entityTypeNames =
-        originalSchema.getAllTypesAsList().stream()
-            .filter(
-                t ->
-                    t instanceof GraphQLDirectiveContainer
-                        && !((GraphQLDirectiveContainer) t)
-                            .getDirectives(FederationDirectives.keyName)
-                            .isEmpty())
-            .map(GraphQLNamedType::getName)
-            .collect(Collectors.toSet());
-
-    final Set<String> entityConcreteTypeNames =
-        originalSchema.getAllTypesAsList().stream()
-            .filter(type -> type instanceof GraphQLObjectType)
-            .filter(
-                type ->
-                    entityTypeNames.contains(type.getName())
-                        || ((GraphQLObjectType) type)
-                            .getInterfaces().stream()
-                                .anyMatch(itf -> entityTypeNames.contains(itf.getName())))
-            .map(GraphQLNamedType::getName)
-            .collect(Collectors.toSet());
-
+    final Set<String> entityTypeNames = getFederatedEntities();
     // If there are entity types install: Query._entities(representations: [_Any!]!): [_Entity]!
-    if (!entityConcreteTypeNames.isEmpty()) {
-      newQueryType.field(_Entity.field(entityConcreteTypeNames));
+    if (!entityTypeNames.isEmpty()) {
+      newQueryType.field(_Entity.field(entityTypeNames));
 
       final GraphQLType originalAnyType = originalSchema.getType(_Any.typeName);
       if (originalAnyType == null) {
@@ -124,7 +102,7 @@ public final class SchemaTransformer {
     final GraphQLCodeRegistry.Builder newCodeRegistry =
         GraphQLCodeRegistry.newCodeRegistry(originalSchema.getCodeRegistry());
 
-    if (!entityConcreteTypeNames.isEmpty()) {
+    if (!entityTypeNames.isEmpty()) {
       if (entityTypeResolver != null) {
         newCodeRegistry.typeResolver(_Entity.typeName, entityTypeResolver);
       } else {
@@ -175,6 +153,63 @@ public final class SchemaTransformer {
         (DataFetcher<String>) environment -> sdl);
 
     return newSchema.codeRegistry(newCodeRegistry.build()).build();
+  }
+
+  /**
+   * Find all federated entities in the given GraphQLSchema.
+   *
+   * @return Set containing all federated entity type names.
+   */
+  Set<String> getFederatedEntities() {
+    final Set<String> entityTypeNames =
+        originalSchema.getAllTypesAsList().stream()
+            .filter(entityPredicate())
+            .map(GraphQLNamedType::getName)
+            .collect(Collectors.toSet());
+
+    return originalSchema.getAllTypesAsList().stream()
+        .filter(entityObjectPredicate(entityTypeNames))
+        .map(GraphQLNamedType::getName)
+        .collect(Collectors.toSet());
+  }
+
+  /**
+   * Check against GraphQLNamedType to determine whether it is a Federated entity type (including
+   * interfaces).
+   *
+   * @return true <em>iff</em> type contains `@key` directive
+   */
+  private Predicate<GraphQLNamedType> entityPredicate() {
+    return type -> {
+      if (type instanceof GraphQLDirectiveContainer) {
+        GraphQLDirectiveContainer entityCandidate = (GraphQLDirectiveContainer) type;
+        return entityCandidate
+                .getAllAppliedDirectivesByName()
+                .containsKey(FederationDirectives.keyName)
+            || entityCandidate.getAllDirectivesByName().containsKey(FederationDirectives.keyName);
+      } else {
+        return false;
+      }
+    };
+  }
+
+  /**
+   * Check whether GraphQLObjectType specifies `@key` directive OR implements an interface that
+   * specifies `@key` directive.
+   *
+   * @return true <em>iff</em> GraphQL object is federated entity type.
+   */
+  private Predicate<GraphQLNamedType> entityObjectPredicate(Set<String> entityNames) {
+    return type -> {
+      if (type instanceof GraphQLObjectType) {
+        GraphQLObjectType objectType = (GraphQLObjectType) type;
+        return entityNames.contains(objectType.getName())
+            || objectType.getInterfaces().stream()
+                .anyMatch(interfaceType -> entityNames.contains(interfaceType.getName()));
+      } else {
+        return false;
+      }
+    };
   }
 
   public static String sdl(GraphQLSchema schema) {
