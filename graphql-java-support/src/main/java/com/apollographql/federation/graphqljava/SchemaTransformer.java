@@ -161,14 +161,14 @@ public final class SchemaTransformer {
    * @return Set containing all federated entity type names.
    */
   Set<String> getFederatedEntities() {
-    final Set<String> entityTypeNames =
+    final Set<String> entitiesWithExplicitKeys =
         originalSchema.getAllTypesAsList().stream()
             .filter(entityPredicate())
             .map(GraphQLNamedType::getName)
             .collect(Collectors.toSet());
 
     return originalSchema.getAllTypesAsList().stream()
-        .filter(entityObjectPredicate(entityTypeNames))
+        .filter(entityObjectPredicate(entitiesWithExplicitKeys))
         .map(GraphQLNamedType::getName)
         .collect(Collectors.toSet());
   }
