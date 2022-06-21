@@ -1,3 +1,7 @@
+schema @link(import : ["@key", "@shareable", {name : "@tag", as : "@apollo_tag"}, "@override"], url : "https://specs.apollo.dev/federation/v2.0"){
+  query: Query
+}
+
 directive @federation__extends on OBJECT | INTERFACE
 
 directive @federation__external on OBJECT | FIELD_DEFINITION
