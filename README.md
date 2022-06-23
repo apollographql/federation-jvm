@@ -177,15 +177,14 @@ GraphQL graphql = GraphQL.newGraphQL(graphQLSchema)
         .build();
 ```
 
-It is generally desired to only create traces for requests that actually come from Apollo Gateway, as they aren't helpful if you're connecting directly to your backend service for testing. In order
-for `FederatedTracingInstrumentation` to know if the request is coming from the Gateway, you should populate the tracing header information directly in the `GraphQLContext` map.
+**By default, all requests will be traced.** In order to skip dev requests and only trace requests that come from the Apollo Gateway, you should populate tracing information in the `GraphQLContext` map.
+This will ensure that only requests with `apollo-federation-include-trace=ftv1` header value will be traced.
 
 ```java
-Map<Object, Object> contextMap = new HashMap<>();
 String federatedTracingHeaderValue = httpRequest.getHeader(FEDERATED_TRACING_HEADER_NAME);
-if (federatedTracingHeaderValue != null) {
-    contextMap.put(FEDERATED_TRACING_HEADER_NAME, federatedTracingHeaderValue);
-}
+
+Map<Object, Object> contextMap = new HashMap<>();
+contextMap.put(FEDERATED_TRACING_HEADER_NAME, federatedTracingHeaderValue);
 
 ExecutionInput executionInput = ExecutionInput.newExecutionInput()
         .graphQLContext(contextMap)
