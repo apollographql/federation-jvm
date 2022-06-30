@@ -5,7 +5,7 @@ description = "GraphQL Java server support for Apollo Federation"
 
 plugins {
     id("com.apollographql.federation.java-conventions")
-    id("com.google.protobuf") version "0.8.18"
+    id("com.google.protobuf") version "0.8.19"
 }
 
 val annotationsVersion: String by project
