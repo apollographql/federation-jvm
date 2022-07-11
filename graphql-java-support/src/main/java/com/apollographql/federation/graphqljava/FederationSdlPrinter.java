@@ -2,10 +2,6 @@ package com.apollographql.federation.graphqljava;
 
 import static graphql.Directives.DeprecatedDirective;
 import static graphql.com.google.common.base.Predicates.not;
-import static graphql.introspection.Introspection.DirectiveLocation.ARGUMENT_DEFINITION;
-import static graphql.introspection.Introspection.DirectiveLocation.ENUM_VALUE;
-import static graphql.introspection.Introspection.DirectiveLocation.FIELD_DEFINITION;
-import static graphql.introspection.Introspection.DirectiveLocation.INPUT_FIELD_DEFINITION;
 import static graphql.schema.visibility.DefaultGraphqlFieldVisibility.DEFAULT_FIELD_VISIBILITY;
 import static graphql.util.EscapeUtil.escapeJsonString;
 import static java.util.Optional.ofNullable;
@@ -15,42 +11,8 @@ import static java.util.stream.Collectors.toList;
 import graphql.Assert;
 import graphql.PublicApi;
 import graphql.execution.ValuesResolver;
-import graphql.language.AstPrinter;
-import graphql.language.Description;
-import graphql.language.Document;
-import graphql.language.EnumTypeDefinition;
-import graphql.language.EnumValueDefinition;
-import graphql.language.FieldDefinition;
-import graphql.language.InputObjectTypeDefinition;
-import graphql.language.InputValueDefinition;
-import graphql.language.InterfaceTypeDefinition;
-import graphql.language.ObjectTypeDefinition;
-import graphql.language.ScalarTypeDefinition;
-import graphql.language.TypeDefinition;
-import graphql.language.UnionTypeDefinition;
-import graphql.schema.DefaultGraphqlTypeComparatorRegistry;
-import graphql.schema.GraphQLArgument;
-import graphql.schema.GraphQLDirective;
-import graphql.schema.GraphQLEnumType;
-import graphql.schema.GraphQLEnumValueDefinition;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLInputObjectField;
-import graphql.schema.GraphQLInputObjectType;
-import graphql.schema.GraphQLInputType;
-import graphql.schema.GraphQLInterfaceType;
-import graphql.schema.GraphQLNamedOutputType;
-import graphql.schema.GraphQLNamedType;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLOutputType;
-import graphql.schema.GraphQLScalarType;
-import graphql.schema.GraphQLSchema;
-import graphql.schema.GraphQLSchemaElement;
-import graphql.schema.GraphQLType;
-import graphql.schema.GraphQLTypeUtil;
-import graphql.schema.GraphQLUnionType;
-import graphql.schema.GraphqlTypeComparatorEnvironment;
-import graphql.schema.GraphqlTypeComparatorRegistry;
-import graphql.schema.InputValueWithState;
+import graphql.language.*;
+import graphql.schema.*;
 import graphql.schema.idl.DirectiveInfo;
 import graphql.schema.idl.ScalarInfo;
 import graphql.schema.idl.SchemaParser;
@@ -76,11 +38,8 @@ public class FederationSdlPrinter {
   // we use this so that we get the simple "@deprecated" as text and not a full exploded
   // text with arguments (but only when we auto add this)
   //
-  private static final GraphQLDirective DeprecatedDirective4Printing =
-      GraphQLDirective.newDirective()
-          .name("deprecated")
-          .validLocations(FIELD_DEFINITION, ENUM_VALUE, ARGUMENT_DEFINITION, INPUT_FIELD_DEFINITION)
-          .build();
+  private static final GraphQLAppliedDirective DeprecatedDirective4Printing =
+      GraphQLAppliedDirective.newDirective().name("deprecated").build();
 
   /**
    * This predicate excludes all directives which are specified bt the GraphQL Specification.
@@ -104,7 +63,7 @@ public class FederationSdlPrinter {
 
     private final boolean descriptionsAsHashComments;
 
-    private final Predicate<GraphQLDirective> includeDirective;
+    private final Predicate<GraphQLAppliedDirective> includeDirective;
 
     private final Predicate<GraphQLDirective> includeDirectiveDefinition;
 
@@ -121,7 +80,7 @@ public class FederationSdlPrinter {
         boolean includeDirectiveDefinitions,
         boolean useAstDefinitions,
         boolean descriptionsAsHashComments,
-        Predicate<GraphQLDirective> includeDirective,
+        Predicate<GraphQLAppliedDirective> includeDirective,
         Predicate<GraphQLDirective> includeDirectiveDefinition,
         Predicate<GraphQLNamedType> includeTypeDefinition,
         Predicate<GraphQLSchemaElement> includeSchemaElement,
@@ -155,7 +114,7 @@ public class FederationSdlPrinter {
       return includeDirectiveDefinitions;
     }
 
-    public Predicate<GraphQLDirective> getIncludeDirective() {
+    public Predicate<GraphQLAppliedDirective> getIncludeDirective() {
       return includeDirective;
     }
 
@@ -321,7 +280,7 @@ public class FederationSdlPrinter {
      * @param includeDirective the predicate to decide of a directive is printed
      * @return new instance of options
      */
-    public Options includeDirectives(Predicate<GraphQLDirective> includeDirective) {
+    public Options includeDirectives(Predicate<GraphQLAppliedDirective> includeDirective) {
       return new Options(
           this.includeIntrospectionTypes,
           this.includeScalars,
@@ -580,7 +539,8 @@ public class FederationSdlPrinter {
           printComments(out, type, "");
           out.format(
               "scalar %s%s\n\n",
-              type.getName(), directivesString(GraphQLScalarType.class, type.getDirectives()));
+              type.getName(),
+              directivesString(GraphQLScalarType.class, type.getAppliedDirectives()));
         }
       }
     };
@@ -606,14 +566,15 @@ public class FederationSdlPrinter {
         printComments(out, type, "");
         out.format(
             "enum %s%s",
-            type.getName(), directivesString(GraphQLEnumType.class, type.getDirectives()));
+            type.getName(), directivesString(GraphQLEnumType.class, type.getAppliedDirectives()));
         List<GraphQLEnumValueDefinition> values =
             type.getValues().stream().sorted(comparator).collect(toList());
         if (values.size() > 0) {
           out.format(" {\n");
           for (GraphQLEnumValueDefinition enumValueDefinition : values) {
             printComments(out, enumValueDefinition, "  ");
-            List<GraphQLDirective> enumValueDirectives = enumValueDefinition.getDirectives();
+            List<GraphQLAppliedDirective> enumValueDirectives =
+                enumValueDefinition.getAppliedDirectives();
             if (enumValueDefinition.isDeprecated()) {
               enumValueDirectives = addDeprecatedDirectiveIfNeeded(enumValueDirectives);
             }
@@ -644,7 +605,7 @@ public class FederationSdlPrinter {
         .forEach(
             fd -> {
               printComments(out, fd, "  ");
-              List<GraphQLDirective> fieldDirectives = fd.getDirectives();
+              List<GraphQLAppliedDirective> fieldDirectives = fd.getAppliedDirectives();
               if (fd.isDeprecated()) {
                 fieldDirectives = addDeprecatedDirectiveIfNeeded(fieldDirectives);
               }
@@ -672,7 +633,8 @@ public class FederationSdlPrinter {
         if (type.getInterfaces().isEmpty()) {
           out.format(
               "interface %s%s",
-              type.getName(), directivesString(GraphQLInterfaceType.class, type.getDirectives()));
+              type.getName(),
+              directivesString(GraphQLInterfaceType.class, type.getAppliedDirectives()));
         } else {
 
           GraphqlTypeComparatorEnvironment environment =
@@ -691,7 +653,7 @@ public class FederationSdlPrinter {
               "interface %s implements %s%s",
               type.getName(),
               interfaceNames.collect(joining(" & ")),
-              directivesString(GraphQLInterfaceType.class, type.getDirectives()));
+              directivesString(GraphQLInterfaceType.class, type.getAppliedDirectives()));
         }
 
         GraphqlTypeComparatorEnvironment environment =
@@ -728,7 +690,7 @@ public class FederationSdlPrinter {
         printComments(out, type, "");
         out.format(
             "union %s%s = ",
-            type.getName(), directivesString(GraphQLUnionType.class, type.getDirectives()));
+            type.getName(), directivesString(GraphQLUnionType.class, type.getAppliedDirectives()));
         List<GraphQLNamedOutputType> types =
             type.getTypes().stream().sorted(comparator).collect(toList());
         for (int i = 0; i < types.size(); i++) {
@@ -755,7 +717,8 @@ public class FederationSdlPrinter {
         if (type.getInterfaces().isEmpty()) {
           out.format(
               "type %s%s",
-              type.getName(), directivesString(GraphQLObjectType.class, type.getDirectives()));
+              type.getName(),
+              directivesString(GraphQLObjectType.class, type.getAppliedDirectives()));
         } else {
 
           GraphqlTypeComparatorEnvironment environment =
@@ -774,7 +737,7 @@ public class FederationSdlPrinter {
               "type %s implements %s%s",
               type.getName(),
               interfaceNames.collect(joining(" & ")),
-              directivesString(GraphQLObjectType.class, type.getDirectives()));
+              directivesString(GraphQLObjectType.class, type.getAppliedDirectives()));
         }
 
         GraphqlTypeComparatorEnvironment environment =
@@ -810,7 +773,8 @@ public class FederationSdlPrinter {
 
         out.format(
             "input %s%s",
-            type.getName(), directivesString(GraphQLInputObjectType.class, type.getDirectives()));
+            type.getName(),
+            directivesString(GraphQLInputObjectType.class, type.getAppliedDirectives()));
         List<GraphQLInputObjectField> inputObjectFields = visibility.getFieldDefinitions(type);
         if (inputObjectFields.size() > 0) {
           out.format(" {\n");
@@ -826,7 +790,8 @@ public class FederationSdlPrinter {
                       String astValue = printAst(defaultValue, fd.getType());
                       out.format(" = %s", astValue);
                     }
-                    out.format(directivesString(GraphQLInputObjectField.class, fd.getDirectives()));
+                    out.format(
+                        directivesString(GraphQLInputObjectField.class, fd.getAppliedDirectives()));
                     out.format("\n");
                   });
           out.format("}");
@@ -871,7 +836,7 @@ public class FederationSdlPrinter {
 
   private TypePrinter<GraphQLSchema> schemaPrinter() {
     return (out, schema, visibility) -> {
-      List<GraphQLDirective> schemaDirectives = schema.getSchemaDirectives();
+      List<GraphQLAppliedDirective> schemaDirectives = schema.getSchemaAppliedDirectives();
       GraphQLObjectType queryType = schema.getQueryType();
       GraphQLObjectType mutationType = schema.getMutationType();
       GraphQLObjectType subscriptionType = schema.getSubscriptionType();
@@ -917,7 +882,6 @@ public class FederationSdlPrinter {
 
   private List<GraphQLDirective> getSchemaDirectives(GraphQLSchema schema) {
     return schema.getDirectives().stream()
-        .filter(options.getIncludeDirective())
         .filter(options.getIncludeSchemaElement())
         .filter(options.getIncludeDirectiveDefinition())
         .collect(toList());
@@ -972,7 +936,7 @@ public class FederationSdlPrinter {
         sb.append(printAst(defaultValue, argument.getType()));
       }
 
-      argument.getDirectives().stream()
+      argument.getAppliedDirectives().stream()
           .filter(options.getIncludeSchemaElement())
           .map(this::directiveString)
           .filter(it -> !it.isEmpty())
@@ -990,7 +954,7 @@ public class FederationSdlPrinter {
   }
 
   String directivesString(
-      Class<? extends GraphQLSchemaElement> parent, List<GraphQLDirective> directives) {
+      Class<? extends GraphQLSchemaElement> parent, List<GraphQLAppliedDirective> directives) {
     directives =
         directives.stream()
             // @deprecated is special - we always print it if something is deprecated
@@ -1019,7 +983,7 @@ public class FederationSdlPrinter {
 
     directives = directives.stream().sorted(comparator).collect(toList());
     for (int i = 0; i < directives.size(); i++) {
-      GraphQLDirective directive = directives.get(i);
+      GraphQLAppliedDirective directive = directives.get(i);
       sb.append(directiveString(directive));
       if (i < directives.size() - 1) {
         sb.append(" ");
@@ -1028,7 +992,7 @@ public class FederationSdlPrinter {
     return sb.toString();
   }
 
-  private String directiveString(GraphQLDirective directive) {
+  private String directiveString(GraphQLAppliedDirective directive) {
     if (!options.getIncludeSchemaElement().test(directive)) {
       return "";
     }
@@ -1050,21 +1014,19 @@ public class FederationSdlPrinter {
     Comparator<? super GraphQLSchemaElement> comparator =
         options.comparatorRegistry.getComparator(environment);
 
-    List<GraphQLArgument> args = directive.getArguments();
+    List<GraphQLAppliedDirectiveArgument> args = directive.getArguments();
     args =
         args.stream()
-            .filter(arg -> arg.getArgumentValue().isSet() || arg.getArgumentDefaultValue().isSet())
+            .filter(arg -> arg.getArgumentValue().isSet())
             .sorted(comparator)
             .collect(toList());
     if (!args.isEmpty()) {
       sb.append("(");
       for (int i = 0; i < args.size(); i++) {
-        GraphQLArgument arg = args.get(i);
+        GraphQLAppliedDirectiveArgument arg = args.get(i);
         String argValue = null;
         if (arg.hasSetValue()) {
           argValue = printAst(arg.getArgumentValue(), arg.getType());
-        } else if (arg.hasSetDefaultValue()) {
-          argValue = printAst(arg.getArgumentDefaultValue(), arg.getType());
         }
         if (!isNullOrEmpty(argValue)) {
           sb.append(arg.getName());
@@ -1080,15 +1042,16 @@ public class FederationSdlPrinter {
     return sb.toString();
   }
 
-  private boolean isDeprecatedDirective(GraphQLDirective directive) {
+  private boolean isDeprecatedDirective(GraphQLAppliedDirective directive) {
     return directive.getName().equals(DeprecatedDirective.getName());
   }
 
-  private boolean hasDeprecatedDirective(List<GraphQLDirective> directives) {
+  private boolean hasDeprecatedDirective(List<GraphQLAppliedDirective> directives) {
     return directives.stream().filter(this::isDeprecatedDirective).count() == 1;
   }
 
-  private List<GraphQLDirective> addDeprecatedDirectiveIfNeeded(List<GraphQLDirective> directives) {
+  private List<GraphQLAppliedDirective> addDeprecatedDirectiveIfNeeded(
+      List<GraphQLAppliedDirective> directives) {
     if (!hasDeprecatedDirective(directives)) {
       directives = new ArrayList<>(directives);
       directives.add(DeprecatedDirective4Printing);

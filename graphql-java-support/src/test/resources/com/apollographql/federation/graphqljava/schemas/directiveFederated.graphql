@@ -1,0 +1,16 @@
+union _Entity = Test
+
+type Query {
+  _entities(representations: [_Any!]!): [_Entity]!
+  _service: _Service
+}
+
+type Test @key(fields : "dummy") {
+  dummy: String
+}
+
+type _Service {
+  sdl: String!
+}
+
+scalar _Any

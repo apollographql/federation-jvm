@@ -1,0 +1,9 @@
+schema {
+  query: Query
+}
+
+type Query
+
+type Test @key(fields : "dummy") {
+  dummy: String
+}

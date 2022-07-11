@@ -9,12 +9,8 @@ import com.apollographql.federation.graphqljava.data.Product;
 import graphql.ExecutionResult;
 import graphql.Scalars;
 import graphql.com.google.common.collect.ImmutableMap;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLNamedType;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLScalarType;
-import graphql.schema.GraphQLSchema;
-import graphql.schema.GraphQLUnionType;
+import graphql.language.StringValue;
+import graphql.schema.*;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
@@ -51,6 +47,10 @@ class FederationTest {
       TestUtils.readResource("schemas/printerFilterExpected.graphql");
   private final String fed2SDL = TestUtils.readResource("schemas/fed2.graphql");
   private final String fed2FederatedSDL = TestUtils.readResource("schemas/fed2Federated.graphql");
+  private final String directiveFederatedSDL =
+      TestUtils.readResource("schemas/directiveFederated.graphql");
+  private final String directiveFederatedServiceSDL =
+      TestUtils.readResource("schemas/directiveFederatedService.graphql");
   private final String fed2ServiceSDL = TestUtils.readResource("schemas/fed2Service.graphql");
   private final String unionsSDL = TestUtils.readResource("schemas/unions.graphql");
   private final String unionsFederatedSDL =
@@ -235,6 +235,51 @@ class FederationTest {
                     ImmutableMap.builder().put("id", "1000").put("x", 0).put("y", 0).build())
             .build();
     SchemaUtils.assertSDL(federatedSchema, fed2FederatedSDL, fed2ServiceSDL);
+  }
+
+  @Test
+  void testFederationDirectives() {
+    final GraphQLSchema federatedSchema =
+        Federation.transform(
+                GraphQLSchema.newSchema()
+                    .query(
+                        GraphQLObjectType.newObject()
+                            .name("Query")
+                            .field(
+                                GraphQLFieldDefinition.newFieldDefinition()
+                                    .name("dummy")
+                                    .type(Scalars.GraphQLString)
+                                    .build())
+                            .build())
+                    .additionalType(
+                        GraphQLObjectType.newObject()
+                            .name("Test")
+                            .withAppliedDirective(
+                                GraphQLAppliedDirective.newDirective()
+                                    .name("key")
+                                    .argument(
+                                        GraphQLAppliedDirectiveArgument.newArgument()
+                                            .name("fields")
+                                            .type(_FieldSet.type)
+                                            .valueLiteral(
+                                                StringValue.newStringValue("dummy").build())
+                                            .build())
+                                    .build())
+                            .field(
+                                GraphQLFieldDefinition.newFieldDefinition()
+                                    .name("dummy")
+                                    .type(Scalars.GraphQLString)
+                                    .build())
+                            .build())
+                    .build(),
+                true)
+            .resolveEntityType(env -> env.getSchema().getObjectType("Point"))
+            .fetchEntities(
+                entityFetcher ->
+                    ImmutableMap.builder().put("id", "1000").put("x", 0).put("y", 0).build())
+            .build();
+
+    SchemaUtils.assertSDL(federatedSchema, directiveFederatedSDL, directiveFederatedServiceSDL);
   }
 
   @Test
