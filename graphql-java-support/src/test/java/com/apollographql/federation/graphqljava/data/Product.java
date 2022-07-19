@@ -1,71 +1,113 @@
 package com.apollographql.federation.graphqljava.data;
 
-import java.util.Objects;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.jetbrains.annotations.NotNull;
 
-@SuppressWarnings("WeakerAccess")
 public class Product {
-  public static final Product PLANCK = new Product("PLANCK", "P", "Planck", 180);
 
-  private final String upc;
+  private static final Map<String, Product> PRODUCTS = Stream.of(
+    new Product("apollo-federation", "federation", "@apollo/federation", "OSS"),
+    new Product("apollo-studio", "studio", "", "platform")
+  ).collect(Collectors.toMap(Product::getId, product -> product));
+
+  private final String id;
   private final String sku;
-  private final String name;
-  private final int price;
+  private final String productPackage;
+  private final ProductVariation variation;
+  private final ProductDimension dimensions;
+  private final User createdBy;
 
-  public Product(final String upc, final String sku, final String name, final int price) {
-    this.upc = upc;
-    this.sku = sku;
-    this.name = name;
-    this.price = price;
+  public Product(String id) {
+    this.id = id;
+    this.sku = "";
+    this.productPackage = "";
+    this.variation = new ProductVariation("");
+    this.dimensions = new ProductDimension("small", 1);
+
+    this.createdBy = new User("support@apollographql.com");
   }
 
-  public String getUpc() {
-    return this.upc;
+  public Product(String id, String sku, String productPackage, String variationId) {
+    this.id = id;
+    this.sku = sku;
+    this.productPackage = productPackage;
+    this.variation = new ProductVariation(variationId);
+    this.dimensions = new ProductDimension("small", 1);
+    this.createdBy = new User("support@apollographql.com");
+  }
+
+  public Product(String sku, String productPackage) {
+    this.id = "";
+    this.sku = sku;
+    this.productPackage = productPackage;
+    this.variation = new ProductVariation("");
+    this.dimensions = new ProductDimension("small", 1);
+    this.createdBy = new User("support@apollographql.com");
+  }
+
+  public Product(String sku, ProductVariation variation) {
+    this.id = "";
+    this.productPackage = "";
+    this.sku = sku;
+    this.variation = variation;
+    this.dimensions = new ProductDimension("small", 1);
+    this.createdBy = new User("support@apollographql.com");
+  }
+
+  public String getId() {
+    return id;
   }
 
   public String getSku() {
-    return this.sku;
+    return sku;
   }
 
-  public String getName() {
-    return this.name;
+  public ProductDimension getDimensions() {
+    return dimensions;
   }
 
-  public int getPrice() {
-    return this.price;
+  public String getProductPackage() {
+    return productPackage;
   }
 
-  @Override
-  public boolean equals(final Object o) {
-    if (o == this) return true;
-    if (!(o instanceof Product)) return false;
-    final Product other = (Product) o;
-    final Object this$upc = this.getUpc();
-    final Object other$upc = other.getUpc();
-    if (this$upc == null ? other$upc != null : !this$upc.equals(other$upc)) return false;
-    final Object this$sku = this.getSku();
-    final Object other$sku = other.getSku();
-    if (this$sku == null ? other$sku != null : !this$sku.equals(other$sku)) return false;
-    final Object this$name = this.getName();
-    final Object other$name = other.getName();
-    if (this$name == null ? other$name != null : !this$name.equals(other$name)) return false;
-    return this.getPrice() == other.getPrice();
+  public ProductVariation getVariation() {
+    return variation;
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(upc, sku, name, price);
+  public User getCreatedBy() {
+    return createdBy;
   }
 
-  @Override
-  public String toString() {
-    return "Product(upc="
-        + this.getUpc()
-        + ", sku="
-        + this.getSku()
-        + ", name="
-        + this.getName()
-        + ", price="
-        + this.getPrice()
-        + ")";
+  public static Product resolveById(String id) {
+    return PRODUCTS.get(id);
+  }
+
+  public static Product resolveReference(@NotNull Map<String, Object> reference) {
+    if (reference.get("id") instanceof String) {
+      final String productId = (String) reference.get("id");
+      return PRODUCTS.get(productId);
+    } else {
+      String productSku = (String) reference.get("sku");
+      if (reference.get("package") instanceof String) {
+        final String productPackage = (String) reference.get("package");
+        for (Product product : PRODUCTS.values()) {
+          if (product.getSku().equals(productSku) && product.getProductPackage().equals(productPackage)) {
+            return product;
+          }
+        }
+      } else if (reference.get("variation") instanceof HashMap) {
+        final HashMap productVariation = (HashMap) reference.get("variation");
+        for (Product product : PRODUCTS.values()) {
+          if (product.getSku().equals(productSku) && product.getVariation().getId().equals(productVariation.get("id"))) {
+            return product;
+          }
+        }
+      }
+    }
+
+    return null;
   }
 }

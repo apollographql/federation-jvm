@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.apollographql.federation.graphqljava.TestUtils;
+import com.apollographql.federation.graphqljava.FileUtils;
 import com.google.protobuf.InvalidProtocolBufferException;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
@@ -27,7 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class FederatedTracingInstrumentationTest {
-  private final String tracingSDL = TestUtils.readResource("schemas/tracing.graphql");
+  private final String tracingSDL = FileUtils.readResource("schemas/tracingSchema.graphql");
   private GraphQL graphql;
 
   @BeforeEach

@@ -8,9 +8,14 @@ directive @provides(fields: _FieldSet!) on FIELD_DEFINITION
 
 directive @requires(fields: _FieldSet!) on FIELD_DEFINITION
 
+type Product {
+  id: ID!
+  name: String
+}
+
 type Query {
-  _service: _Service
-  field1: String
+  _service: _Service!
+  product(id: ID!): Product
 }
 
 type _Service {

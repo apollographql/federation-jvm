@@ -1,0 +1,15 @@
+schema {
+  query: Query
+}
+
+type Product @extends @key(fields : "id") {
+  id: ID!
+  reviews: [Review!]!
+}
+
+type Query
+
+type Review {
+  id: ID!
+  text: String!
+}

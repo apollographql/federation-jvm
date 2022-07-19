@@ -8,8 +8,8 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLObjectType;
 
-final class _Service {
-  static final String typeName = "_Service";
+public final class _Service {
+  public static final String typeName = "_Service";
   static final String fieldName = "_service";
   static final String sdlFieldName = "sdl";
 
@@ -24,7 +24,9 @@ final class _Service {
           .build();
 
   static final GraphQLFieldDefinition field =
-      newFieldDefinition().name(fieldName).type(type).build();
+      newFieldDefinition().name(fieldName)
+        .type(GraphQLNonNull.nonNull(type))
+        .build();
 
   private _Service() {}
 }
