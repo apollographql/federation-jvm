@@ -196,7 +196,8 @@ public final class SchemaTransformer {
   }
 
   /**
-   * Generate Apollo Federation v1 compatible SDL that should be returned from `_service { sdl }` query.
+   * Generate Apollo Federation v1 compatible SDL that should be returned from `_service { sdl }`
+   * query.
    *
    * @param schema target schema
    * @deprecated use ServiceSDLPrinter instead
@@ -208,10 +209,12 @@ public final class SchemaTransformer {
   }
 
   /**
-   * Generate Apollo Federation v1 compatible SDL that should be returned from `_service { sdl }` query.
+   * Generate Apollo Federation v1 compatible SDL that should be returned from `_service { sdl }`
+   * query.
    *
    * @param schema target schema
-   * @param queryTypeShouldBeEmpty boolean flag indicating whether schema contains dummy query that should be removed
+   * @param queryTypeShouldBeEmpty boolean flag indicating whether schema contains dummy query that
+   *     should be removed
    * @deprecated use ServiceSDLPrinter instead
    * @return SDL compatible with Apollo Federation v1
    */

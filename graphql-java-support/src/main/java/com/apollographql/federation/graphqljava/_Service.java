@@ -24,9 +24,7 @@ public final class _Service {
           .build();
 
   static final GraphQLFieldDefinition field =
-      newFieldDefinition().name(fieldName)
-        .type(GraphQLNonNull.nonNull(type))
-        .build();
+      newFieldDefinition().name(fieldName).type(GraphQLNonNull.nonNull(type)).build();
 
   private _Service() {}
 }

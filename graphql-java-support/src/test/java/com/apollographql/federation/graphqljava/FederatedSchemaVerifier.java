@@ -35,42 +35,49 @@ final class FederatedSchemaVerifier {
    *
    * @param schema test schema
    * @param expectedSchemaSDL expected SDL
-   * @param isFederationV2 boolean flag indicating whether we are testing Federation v1 or v2 specification.
+   * @param isFederationV2 boolean flag indicating whether we are testing Federation v1 or v2
+   *     specification.
    */
-  public static void verifySchemaSDL(GraphQLSchema schema, String expectedSchemaSDL, boolean isFederationV2) {
+  public static void verifySchemaSDL(
+      GraphQLSchema schema, String expectedSchemaSDL, boolean isFederationV2) {
     Assertions.assertEquals(
-      expectedSchemaSDL.trim(),
-      new SchemaPrinter(
-        SchemaPrinter.Options.defaultOptions()
-          .includeSchemaDefinition(isFederationV2)
-          .includeScalarTypes(true)
-          .includeDirectives(directive -> !standardDirectives.contains(directive))
-      )
-        .print(schema)
-        .trim(),
-      "Generated schema SDL should match expected one"
-    );
+        expectedSchemaSDL.trim(),
+        new SchemaPrinter(
+                SchemaPrinter.Options.defaultOptions()
+                    .includeSchemaDefinition(isFederationV2)
+                    .includeScalarTypes(true)
+                    .includeDirectives(directive -> !standardDirectives.contains(directive)))
+            .print(schema)
+            .trim(),
+        "Generated schema SDL should match expected one");
   }
 
   /**
-   * Verifies that passed in schema:
-   *  - contains `_Service { sdl: String! }` type
-   *  - contains `_service: _Service` query
+   * Verifies that passed in schema: - contains `_Service { sdl: String! }` type - contains
+   * `_service: _Service` query
    *
    * @param schema schema to be verified
    */
   public static void verifySchemaContainsServiceFederationType(GraphQLSchema schema) {
-    final GraphQLFieldDefinition serviceField = schema.getQueryType().getFieldDefinition("_service");
+    final GraphQLFieldDefinition serviceField =
+        schema.getQueryType().getFieldDefinition("_service");
     assertNotNull(serviceField, "_service field present");
     final GraphQLType serviceType = schema.getType("_Service");
     assertNotNull(serviceType, "_Service type present");
     assertTrue(serviceType instanceof GraphQLObjectType, "_Service type is object type");
-    assertTrue(serviceField.getType() instanceof GraphQLNonNull, "_service returns non-nullable object");
+    assertTrue(
+        serviceField.getType() instanceof GraphQLNonNull, "_service returns non-nullable object");
     final GraphQLNonNull nonNullableServiceType = (GraphQLNonNull) serviceField.getType();
-    assertEquals(serviceType, nonNullableServiceType.getWrappedType(), "_service returns non-nullable _Service");
-    final GraphQLFieldDefinition sdlField = ((GraphQLObjectType) serviceType).getFieldDefinition("sdl");
+    assertEquals(
+        serviceType,
+        nonNullableServiceType.getWrappedType(),
+        "_service returns non-nullable _Service");
+    final GraphQLFieldDefinition sdlField =
+        ((GraphQLObjectType) serviceType).getFieldDefinition("sdl");
     assertNotNull(sdlField, "sdl field present");
-    assertTrue(GraphQLNonNull.nonNull(Scalars.GraphQLString).isEqualTo(sdlField.getType()), "sdl returns String!");
+    assertTrue(
+        GraphQLNonNull.nonNull(Scalars.GraphQLString).isEqualTo(sdlField.getType()),
+        "sdl returns String!");
   }
 
   /**

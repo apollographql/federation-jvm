@@ -12,7 +12,8 @@ public final class FileUtils {
   private static final String NEW_LINE_SEPARATOR = "\n";
 
   public static String readResource(String name) {
-    try (InputStream is = FederatedSchemaVerifier.class.getClassLoader().getResourceAsStream(name)) {
+    try (InputStream is =
+        FederatedSchemaVerifier.class.getClassLoader().getResourceAsStream(name)) {
       if (is == null) {
         throw new RuntimeException("Unable to locate the target file " + name);
       }

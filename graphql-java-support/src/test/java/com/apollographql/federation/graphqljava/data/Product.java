@@ -8,10 +8,11 @@ import org.jetbrains.annotations.NotNull;
 
 public class Product {
 
-  private static final Map<String, Product> PRODUCTS = Stream.of(
-    new Product("apollo-federation", "federation", "@apollo/federation", "OSS"),
-    new Product("apollo-studio", "studio", "", "platform")
-  ).collect(Collectors.toMap(Product::getId, product -> product));
+  private static final Map<String, Product> PRODUCTS =
+      Stream.of(
+              new Product("apollo-federation", "federation", "@apollo/federation", "OSS"),
+              new Product("apollo-studio", "studio", "", "platform"))
+          .collect(Collectors.toMap(Product::getId, product -> product));
 
   private final String id;
   private final String sku;
@@ -94,14 +95,16 @@ public class Product {
       if (reference.get("package") instanceof String) {
         final String productPackage = (String) reference.get("package");
         for (Product product : PRODUCTS.values()) {
-          if (product.getSku().equals(productSku) && product.getProductPackage().equals(productPackage)) {
+          if (product.getSku().equals(productSku)
+              && product.getProductPackage().equals(productPackage)) {
             return product;
           }
         }
       } else if (reference.get("variation") instanceof HashMap) {
         final HashMap productVariation = (HashMap) reference.get("variation");
         for (Product product : PRODUCTS.values()) {
-          if (product.getSku().equals(productSku) && product.getVariation().getId().equals(productVariation.get("id"))) {
+          if (product.getSku().equals(productSku)
+              && product.getVariation().getId().equals(productVariation.get("id"))) {
             return product;
           }
         }

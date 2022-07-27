@@ -2,8 +2,8 @@ package com.apollographql.federation.graphqljava;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -58,16 +58,16 @@ class FederationTest {
   public void verifyFederationTransformation_noEntityTypeResolver_throwsException() {
     final String schemaSDL = FileUtils.readResource("schemas/federationV2.graphql");
     assertThrows(
-      SchemaProblem.class,
-      () -> Federation.transform(schemaSDL).resolveEntityType(env -> null).build());
+        SchemaProblem.class,
+        () -> Federation.transform(schemaSDL).resolveEntityType(env -> null).build());
   }
 
   @Test
   public void verifyFederationTransformation_noEntitiesDataFetcher_throwsException() {
     final String schemaSDL = FileUtils.readResource("schemas/federationV2.graphql");
     assertThrows(
-      SchemaProblem.class,
-      () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+        SchemaProblem.class,
+        () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
   }
 
   @Test
@@ -75,40 +75,43 @@ class FederationTest {
     final String originalSDL = FileUtils.readResource("schemas/federationV2.graphql");
 
     @SuppressWarnings("rawtypes")
-    DataFetcher entityDataFetcher = env -> {
-      List<Map<String, Object>> representations = env.getArgument(_Entity.argumentName);
-      return representations.stream()
-        .map(reference -> {
-          if ("Product".equals(reference.get("__typename"))) {
-            return Product.resolveReference(reference);
+    DataFetcher entityDataFetcher =
+        env -> {
+          List<Map<String, Object>> representations = env.getArgument(_Entity.argumentName);
+          return representations.stream()
+              .map(
+                  reference -> {
+                    if ("Product".equals(reference.get("__typename"))) {
+                      return Product.resolveReference(reference);
+                    }
+                    return null;
+                  })
+              .collect(Collectors.toList());
+        };
+    TypeResolver entityTypeResolver =
+        env -> {
+          final Object src = env.getObject();
+          if (src instanceof Product) {
+            return env.getSchema().getObjectType("Product");
           }
           return null;
-        })
-        .collect(Collectors.toList());
-    };
-    TypeResolver entityTypeResolver = env -> {
-      final Object src = env.getObject();
-      if (src instanceof Product) {
-        return env.getSchema().getObjectType("Product");
-      }
-      return null;
-    };
+        };
 
-    final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring()
-      .codeRegistry(
-        GraphQLCodeRegistry.newCodeRegistry()
-          .dataFetcher(
-            FieldCoordinates.coordinates("Product", "package"),
-            PropertyDataFetcher.fetching("productPackage"))
-          .build()
-      )
-      .build();
+    final RuntimeWiring runtimeWiring =
+        RuntimeWiring.newRuntimeWiring()
+            .codeRegistry(
+                GraphQLCodeRegistry.newCodeRegistry()
+                    .dataFetcher(
+                        FieldCoordinates.coordinates("Product", "package"),
+                        PropertyDataFetcher.fetching("productPackage"))
+                    .build())
+            .build();
 
     final GraphQLSchema federatedSchema =
-      Federation.transform(originalSDL, runtimeWiring)
-        .resolveEntityType(entityTypeResolver)
-        .fetchEntities(entityDataFetcher)
-        .build();
+        Federation.transform(originalSDL, runtimeWiring)
+            .resolveEntityType(entityTypeResolver)
+            .fetchEntities(entityDataFetcher)
+            .build();
 
     final ExecutionResult result =
         FederatedSchemaVerifier.execute(
@@ -133,47 +136,59 @@ class FederationTest {
   public void verifyFederationTransformation_noGlobalState() {
     // https://github.com/apollographql/federation-jvm/issues/7
     final String sdl = FileUtils.readResource("schemas/federationV2.graphql");
-    final GraphQLSchema first = Federation.transform(sdl)
-      .resolveEntityType(env -> null)
-      .fetchEntities(environment -> null)
-      .build();
+    final GraphQLSchema first =
+        Federation.transform(sdl)
+            .resolveEntityType(env -> null)
+            .fetchEntities(environment -> null)
+            .build();
 
-    final GraphQLSchema second = Federation.transform(sdl)
-      .resolveEntityType(env -> null)
-      .fetchEntities(environment -> null)
-      .build();
+    final GraphQLSchema second =
+        Federation.transform(sdl)
+            .resolveEntityType(env -> null)
+            .fetchEntities(environment -> null)
+            .build();
 
-    assertNotEquals(first, second, "Federation transformation generates different objects for each transformation");
+    assertNotEquals(
+        first,
+        second,
+        "Federation transformation generates different objects for each transformation");
   }
 
   @Test
   public void verifyFederationV2Transformation_withInterfaces() {
-    final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring()
-      .type(TypeRuntimeWiring.newTypeWiring("Product").typeResolver(env -> null).build())
-      .build();
-    final GraphQLSchema federatedSchema = verifyFederationTransformation("schemas/polymorphicSubgraph.graphql", runtimeWiring, true);
-    final GraphQLUnionType entityType = (GraphQLUnionType) federatedSchema.getType(_Entity.typeName);
+    final RuntimeWiring runtimeWiring =
+        RuntimeWiring.newRuntimeWiring()
+            .type(TypeRuntimeWiring.newTypeWiring("Product").typeResolver(env -> null).build())
+            .build();
+    final GraphQLSchema federatedSchema =
+        verifyFederationTransformation("schemas/polymorphicSubgraph.graphql", runtimeWiring, true);
+    final GraphQLUnionType entityType =
+        (GraphQLUnionType) federatedSchema.getType(_Entity.typeName);
     assertNotNull(entityType, "Entity type should be defined");
 
-    final Iterable<String> unionTypes = entityType.getTypes()
-      .stream()
-      .map(GraphQLNamedType::getName)
-      .sorted()
-      .collect(Collectors.toList());
+    final Iterable<String> unionTypes =
+        entityType.getTypes().stream()
+            .map(GraphQLNamedType::getName)
+            .sorted()
+            .collect(Collectors.toList());
 
-    assertIterableEquals(Arrays.asList("Book", "Movie"), unionTypes, "Entity union contains all expected types");
+    assertIterableEquals(
+        Arrays.asList("Book", "Movie"), unionTypes, "Entity union contains all expected types");
   }
 
-  private GraphQLSchema verifyFederationTransformation(String schemaFileName, boolean isFederationV2) {
+  private GraphQLSchema verifyFederationTransformation(
+      String schemaFileName, boolean isFederationV2) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
     return verifyFederationTransformation(schemaFileName, runtimeWiring, isFederationV2);
   }
 
-  private GraphQLSchema verifyFederationTransformation(String schemaFileName, RuntimeWiring runtimeWiring, boolean isFederationV2) {
+  private GraphQLSchema verifyFederationTransformation(
+      String schemaFileName, RuntimeWiring runtimeWiring, boolean isFederationV2) {
     final String baseFileName = schemaFileName.substring(0, schemaFileName.indexOf(".graphql"));
 
     final String originalSDL = FileUtils.readResource(schemaFileName);
-    final String expectedFederatedSchemaSDL = FileUtils.readResource(baseFileName + "_federated.graphql");
+    final String expectedFederatedSchemaSDL =
+        FileUtils.readResource(baseFileName + "_federated.graphql");
     final String expectedServiceSDL;
     if (isFederationV2) {
       expectedServiceSDL = expectedFederatedSchemaSDL;
@@ -182,11 +197,12 @@ class FederationTest {
     }
 
     final GraphQLSchema federatedSchema =
-      Federation.transform(originalSDL, runtimeWiring)
-        .resolveEntityType(env -> null)
-        .fetchEntities(entityFetcher -> null)
-        .build();
-    FederatedSchemaVerifier.verifySchemaSDL(federatedSchema, expectedFederatedSchemaSDL, isFederationV2);
+        Federation.transform(originalSDL, runtimeWiring)
+            .resolveEntityType(env -> null)
+            .fetchEntities(entityFetcher -> null)
+            .build();
+    FederatedSchemaVerifier.verifySchemaSDL(
+        federatedSchema, expectedFederatedSchemaSDL, isFederationV2);
     FederatedSchemaVerifier.verifySchemaContainsServiceFederationType(federatedSchema);
     FederatedSchemaVerifier.verifyServiceSDL(federatedSchema, expectedServiceSDL);
     return federatedSchema;
