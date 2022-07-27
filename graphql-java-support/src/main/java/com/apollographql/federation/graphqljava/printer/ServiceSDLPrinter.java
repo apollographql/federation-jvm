@@ -21,6 +21,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
+/**
+ * graphql.schema.idl.SchemaPrinter wrapper that is used to generate SDL returned by the <code>
+ * _service { sdl }</code> query and is compatible with Federation v1 and v2 specs.
+ */
 public final class ServiceSDLPrinter {
 
   // Apollo Gateway will fail Federation v1 composition if it sees standard directive definitions.
@@ -31,6 +35,15 @@ public final class ServiceSDLPrinter {
     // hidden constructor as this is static utility class
   }
 
+  /**
+   * Generate service SDL compatible with Federation v1 specification.
+   *
+   * @param schema target schema
+   * @param queryTypeShouldBeEmpty boolean indicating whether query type contains "fake" query that
+   *     should be removed (at least a single query has to be present for graphql-java to consider
+   *     it as a valid schema)
+   * @return SDL compatible with Federation v1
+   */
   public static String generateServiceSDL(GraphQLSchema schema, boolean queryTypeShouldBeEmpty) {
     // Gather directive definitions to hide.
     final Set<String> hiddenDirectiveDefinitions = new HashSet<>();
@@ -95,6 +108,12 @@ public final class ServiceSDLPrinter {
     return new SchemaPrinter(options).print(schema).trim();
   }
 
+  /**
+   * Generate service SDL compatible with Federation v2 specification.
+   *
+   * @param schema target schema
+   * @return SDL compatible with Federation v2
+   */
   public static String generateServiceSDLV2(GraphQLSchema schema) {
     // federation v2 SDL does not need to filter federation directive definitions
     final Set<String> standardDirectives =
