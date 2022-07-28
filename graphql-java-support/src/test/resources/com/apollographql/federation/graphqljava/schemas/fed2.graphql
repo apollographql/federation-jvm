@@ -1,9 +1,0 @@
-extend schema
-    @link(url: "https://specs.apollo.dev/federation/v2.0",
-       import: ["@key", "@shareable", {name: "@tag" as :"@apollo_tag"}, "@override"])
-
-type Position @shareable @key(fields: "id", resolvable: false) {
- id: ID! @apollo_tag(name: "internal")
- x: Int! @override(from: "otherGraph")
- y: Int!
-}

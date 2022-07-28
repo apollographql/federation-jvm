@@ -1,0 +1,22 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key"])
+
+interface Product @key(fields: "id") {
+  id: ID!
+  name: String!
+}
+
+type Book implements Product {
+  id: ID!
+  name: String!
+  author: String!
+}
+
+type Movie implements Product {
+  id: ID!
+  name: String!
+  director: String!
+}
+
+type Query {
+    movie(id: ID!): Movie
+}

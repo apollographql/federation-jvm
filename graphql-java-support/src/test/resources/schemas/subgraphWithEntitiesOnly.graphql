@@ -1,0 +1,9 @@
+type Product @key(fields: "id") @extends {
+    id: ID!
+    reviews: [Review!]!
+}
+
+type Review {
+  id: ID!
+  text: String!
+}
