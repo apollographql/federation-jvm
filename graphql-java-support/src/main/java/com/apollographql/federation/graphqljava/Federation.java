@@ -1,8 +1,20 @@
 package com.apollographql.federation.graphqljava;
 
-import static graphql.util.TreeTransformerUtil.changeNode;
-
-import graphql.language.*;
+import graphql.language.Argument;
+import graphql.language.ArrayValue;
+import graphql.language.AstTransformer;
+import graphql.language.Directive;
+import graphql.language.DirectiveDefinition;
+import graphql.language.FieldDefinition;
+import graphql.language.ObjectField;
+import graphql.language.ObjectTypeDefinition;
+import graphql.language.ObjectValue;
+import graphql.language.SDLNamedDefinition;
+import graphql.language.ScalarTypeDefinition;
+import graphql.language.StringValue;
+import graphql.language.TypeDefinition;
+import graphql.language.TypeName;
+import graphql.language.Value;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
@@ -10,11 +22,16 @@ import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.TypeRuntimeWiring;
-import graphql.util.TraversalControl;
-import graphql.util.TraverserContext;
 import java.io.File;
 import java.io.Reader;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jetbrains.annotations.NotNull;
@@ -140,70 +157,10 @@ public final class Federation {
       List<SDLNamedDefinition> sdlNamedDefinition, Map<String, String> fed2Imports) {
     return sdlNamedDefinition.stream()
         .map(
-            definition -> {
-              SDLNamedDefinition newDefinition =
-                  (SDLNamedDefinition)
-                      new AstTransformer().transform(definition, new RenamingVisitor(fed2Imports));
-              return newDefinition;
-            });
-  }
-
-  private static String newName(String name, Map<String, String> fed2Imports, boolean isDirective) {
-    String key;
-    if (isDirective) {
-      key = "@" + name;
-    } else {
-      key = name;
-    }
-
-    if (key.equals("String")
-        || key.equals("Boolean")
-        || key.equals("Int")
-        || key.equals("Float")
-        || key.equals("ID")) {
-      // Do not rename builtin types
-      return name;
-    }
-
-    if (fed2Imports.containsKey(key)) {
-      String newName = fed2Imports.get(key);
-      if (isDirective) {
-        return newName.substring(1);
-      } else {
-        return newName;
-      }
-    } else {
-      return "federation__" + name;
-    }
-  }
-
-  static class RenamingVisitor extends NodeVisitorStub {
-    private Map<String, String> fed2Imports;
-
-    public RenamingVisitor(Map<String, String> fed2Imports) {
-      this.fed2Imports = fed2Imports;
-    }
-
-    @Override
-    protected TraversalControl visitNode(Node node, TraverserContext<Node> context) {
-      if (node instanceof NamedNode) {
-        Node newNode = null;
-        if (node instanceof TypeName) {
-          String newName = newName(((NamedNode<?>) node).getName(), fed2Imports, false);
-          newNode = ((TypeName) node).transform(builder -> builder.name(newName));
-        } else if (node instanceof ScalarTypeDefinition) {
-          String newName = newName(((NamedNode<?>) node).getName(), fed2Imports, false);
-          newNode = ((ScalarTypeDefinition) node).transform(builder -> builder.name(newName));
-        } else if (node instanceof DirectiveDefinition) {
-          String newName = newName(((NamedNode<?>) node).getName(), fed2Imports, true);
-          newNode = ((DirectiveDefinition) node).transform(builder -> builder.name(newName));
-        }
-        if (newNode != null) {
-          return changeNode(context, newNode);
-        }
-      }
-      return super.visitNode(node, context);
-    }
+            definition ->
+                (SDLNamedDefinition)
+                    new AstTransformer()
+                        .transform(definition, new LinkImportsRenamingVisitor(fed2Imports)));
   }
 
   private static RuntimeWiring ensureFederation2DirectiveDefinitionsExist(

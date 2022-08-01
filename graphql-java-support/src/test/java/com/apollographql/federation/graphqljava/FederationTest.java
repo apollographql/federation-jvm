@@ -176,6 +176,20 @@ class FederationTest {
         Arrays.asList("Book", "Movie"), unionTypes, "Entity union contains all expected types");
   }
 
+  @Test
+  public void verifyWeCannotRenameTagDirective() {
+    assertThrows(
+        FederationError.class,
+        () -> verifyFederationTransformation("schemas/renamedTagImport.graphql", true));
+  }
+
+  @Test
+  public void verifyWeCannotRenameInaccessibleDirective() {
+    assertThrows(
+        FederationError.class,
+        () -> verifyFederationTransformation("schemas/renamedInaccessibleImport.graphql", true));
+  }
+
   private GraphQLSchema verifyFederationTransformation(
       String schemaFileName, boolean isFederationV2) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
@@ -187,6 +201,12 @@ class FederationTest {
     final String baseFileName = schemaFileName.substring(0, schemaFileName.indexOf(".graphql"));
 
     final String originalSDL = FileUtils.readResource(schemaFileName);
+    final GraphQLSchema federatedSchema =
+        Federation.transform(originalSDL, runtimeWiring)
+            .resolveEntityType(env -> null)
+            .fetchEntities(entityFetcher -> null)
+            .build();
+
     final String expectedFederatedSchemaSDL =
         FileUtils.readResource(baseFileName + "_federated.graphql");
     final String expectedServiceSDL;
@@ -195,12 +215,6 @@ class FederationTest {
     } else {
       expectedServiceSDL = FileUtils.readResource(baseFileName + "_serviceSDL.graphql");
     }
-
-    final GraphQLSchema federatedSchema =
-        Federation.transform(originalSDL, runtimeWiring)
-            .resolveEntityType(env -> null)
-            .fetchEntities(entityFetcher -> null)
-            .build();
     FederatedSchemaVerifier.verifySchemaSDL(
         federatedSchema, expectedFederatedSchemaSDL, isFederationV2);
     FederatedSchemaVerifier.verifySchemaContainsServiceFederationType(federatedSchema);

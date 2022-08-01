@@ -1,0 +1,33 @@
+extend schema
+@link(url: "https://specs.apollo.dev/federation/v2.0",
+    import: ["@key", "@shareable", "@provides", "@external", { name: "@tag", as: "@mytag" }, "@extends", "@override", "@inaccessible"])
+
+type Product @key(fields: "id") @key(fields: "sku package") @key(fields: "sku variation { id }") {
+    id: ID!
+    sku: String
+    package: String
+    variation: ProductVariation
+    dimensions: ProductDimension
+    createdBy: User @provides(fields: "totalProductsCreated")
+    notes: String @mytag(name: "internal")
+}
+
+type ProductVariation {
+    id: ID!
+}
+
+type ProductDimension @shareable {
+    size: String
+    weight: Float
+    unit: String @inaccessible
+}
+
+type Query {
+    product(id: ID!): Product
+}
+
+type User @key(fields: "email") {
+    email: ID!
+    name: String @shareable @override(from: "users")
+    totalProductsCreated: Int @external
+}

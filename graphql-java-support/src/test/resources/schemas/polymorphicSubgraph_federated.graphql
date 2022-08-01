@@ -6,8 +6,6 @@ directive @federation__extends on OBJECT | INTERFACE
 
 directive @federation__external on OBJECT | FIELD_DEFINITION
 
-directive @federation__inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
-
 directive @federation__override(from: String!) on FIELD_DEFINITION
 
 directive @federation__provides(fields: federation__FieldSet!) on FIELD_DEFINITION
@@ -16,11 +14,13 @@ directive @federation__requires(fields: federation__FieldSet!) on FIELD_DEFINITI
 
 directive @federation__shareable on OBJECT | FIELD_DEFINITION
 
-directive @federation__tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+directive @inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
 directive @key(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
 
 directive @link(as: String, import: [federation__Import], url: String!) repeatable on SCHEMA
+
+directive @tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
 interface Product @key(fields : "id", resolvable : true) {
   id: ID!
