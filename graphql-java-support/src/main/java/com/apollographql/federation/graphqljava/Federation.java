@@ -373,7 +373,6 @@ public final class Federation {
                 Collectors.toMap(
                     Map.Entry::getKey, Map.Entry::getValue, (value1, value2) -> value2));
 
-    // Add hardcoded @link to avoid having federation__link all over the place
     imports.put("@link", "@link");
     return imports;
   }

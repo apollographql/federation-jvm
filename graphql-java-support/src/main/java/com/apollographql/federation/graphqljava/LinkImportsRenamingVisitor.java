@@ -78,6 +78,8 @@ class LinkImportsRenamingVisitor extends NodeVisitorStub {
     } else {
       if (name.equals("inaccessible") || name.equals("tag")) {
         return name;
+      } else if (name.equals("Import")) {
+        return "link__" + name;
       } else {
         // apply default namespace
         return "federation__" + name;

@@ -12,7 +12,7 @@ directive @inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINIT
 
 directive @key(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
 
-directive @link(as: String, import: [federation__Import], url: String!) repeatable on SCHEMA
+directive @link(as: String, import: [link__Import], url: String!) repeatable on SCHEMA
 
 directive @override(from: String!) on FIELD_DEFINITION
 
@@ -64,4 +64,4 @@ scalar _Any
 
 scalar federation__FieldSet
 
-scalar federation__Import
+scalar link__Import
