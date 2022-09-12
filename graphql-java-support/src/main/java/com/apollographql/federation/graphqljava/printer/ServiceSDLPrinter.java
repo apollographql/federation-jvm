@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * graphql.schema.idl.SchemaPrinter wrapper that is used to generate SDL returned by the <code>
@@ -57,36 +58,49 @@ public final class ServiceSDLPrinter {
     hiddenTypeDefinitions.add(_FieldSet.typeName);
     hiddenTypeDefinitions.add(_Service.typeName);
 
-    // Change field visibility for the query type if needed.
-    if (queryTypeShouldBeEmpty) {
-      final String queryTypeName = schema.getQueryType().getName();
-      final GraphqlFieldVisibility oldFieldVisibility =
-          schema.getCodeRegistry().getFieldVisibility();
-      final GraphqlFieldVisibility newFieldVisibility =
-          new GraphqlFieldVisibility() {
-            @Override
-            public List<GraphQLFieldDefinition> getFieldDefinitions(
-                GraphQLFieldsContainer fieldsContainer) {
-              return fieldsContainer.getName().equals(queryTypeName)
-                  ? Collections.emptyList()
-                  : oldFieldVisibility.getFieldDefinitions(fieldsContainer);
+    final String queryTypeName = schema.getQueryType().getName();
+    final GraphqlFieldVisibility oldFieldVisibility = schema.getCodeRegistry().getFieldVisibility();
+    final GraphqlFieldVisibility newFieldVisibility =
+        new GraphqlFieldVisibility() {
+          @Override
+          public List<GraphQLFieldDefinition> getFieldDefinitions(
+              GraphQLFieldsContainer fieldsContainer) {
+            if (fieldsContainer.getName().equals(queryTypeName)) {
+              if (queryTypeShouldBeEmpty) {
+                return Collections.emptyList();
+              } else {
+                return fieldsContainer.getFieldDefinitions().stream()
+                    .filter(
+                        (field) ->
+                            !"_service".equals(field.getName())
+                                && !"_entities".equals(field.getName()))
+                    .collect(Collectors.toList());
+              }
+            } else {
+              return oldFieldVisibility.getFieldDefinitions(fieldsContainer);
             }
+          }
 
-            @Override
-            public GraphQLFieldDefinition getFieldDefinition(
-                GraphQLFieldsContainer fieldsContainer, String fieldName) {
-              return fieldsContainer.getName().equals(queryTypeName)
-                  ? null
-                  : oldFieldVisibility.getFieldDefinition(fieldsContainer, fieldName);
+          @Override
+          public GraphQLFieldDefinition getFieldDefinition(
+              GraphQLFieldsContainer fieldsContainer, String fieldName) {
+            if (fieldsContainer.getName().equals(queryTypeName)
+                && (queryTypeShouldBeEmpty
+                    || "_service".equals(fieldName)
+                    || "_entities".equals(fieldName))) {
+              return null;
+            } else {
+              return oldFieldVisibility.getFieldDefinition(fieldsContainer, fieldName);
             }
-          };
-      final GraphQLCodeRegistry newCodeRegistry =
-          schema
-              .getCodeRegistry()
-              .transform(
-                  codeRegistryBuilder -> codeRegistryBuilder.fieldVisibility(newFieldVisibility));
-      schema = schema.transform(schemaBuilder -> schemaBuilder.codeRegistry(newCodeRegistry));
-    }
+          }
+        };
+    final GraphQLCodeRegistry newCodeRegistry =
+        schema
+            .getCodeRegistry()
+            .transform(
+                codeRegistryBuilder -> codeRegistryBuilder.fieldVisibility(newFieldVisibility));
+    final GraphQLSchema federatedSchema =
+        schema.transform(schemaBuilder -> schemaBuilder.codeRegistry(newCodeRegistry));
 
     final Predicate<GraphQLSchemaElement> excludeFedTypeDefinitions =
         element ->
@@ -105,7 +119,7 @@ public final class ServiceSDLPrinter {
                 element ->
                     excludeFedTypeDefinitions.test(element)
                         && excludeFedDirectiveDefinitions.test(element));
-    return new SchemaPrinter(options).print(schema).trim();
+    return new SchemaPrinter(options).print(federatedSchema).trim();
   }
 
   /**
