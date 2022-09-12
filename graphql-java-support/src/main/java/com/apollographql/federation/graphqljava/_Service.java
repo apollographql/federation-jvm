@@ -10,7 +10,7 @@ import graphql.schema.GraphQLObjectType;
 
 public final class _Service {
   public static final String typeName = "_Service";
-  static final String fieldName = "_service";
+  public static final String fieldName = "_service";
   static final String sdlFieldName = "sdl";
 
   static final GraphQLObjectType type =

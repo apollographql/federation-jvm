@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 public final class _Entity {
   public static final String argumentName = "representations";
   public static final String typeName = "_Entity";
-  static final String fieldName = "_entities";
+  public static final String fieldName = "_entities";
 
   private _Entity() {}
 

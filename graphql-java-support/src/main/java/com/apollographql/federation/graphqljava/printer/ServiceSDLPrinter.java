@@ -72,8 +72,8 @@ public final class ServiceSDLPrinter {
                 return fieldsContainer.getFieldDefinitions().stream()
                     .filter(
                         (field) ->
-                            !"_service".equals(field.getName())
-                                && !"_entities".equals(field.getName()))
+                            !_Service.fieldName.equals(field.getName())
+                                && !_Entity.fieldName.equals(field.getName()))
                     .collect(Collectors.toList());
               }
             } else {
@@ -86,8 +86,8 @@ public final class ServiceSDLPrinter {
               GraphQLFieldsContainer fieldsContainer, String fieldName) {
             if (fieldsContainer.getName().equals(queryTypeName)
                 && (queryTypeShouldBeEmpty
-                    || "_service".equals(fieldName)
-                    || "_entities".equals(fieldName))) {
+                    || _Service.fieldName.equals(fieldName)
+                    || _Entity.fieldName.equals(fieldName))) {
               return null;
             } else {
               return oldFieldVisibility.getFieldDefinition(fieldsContainer, fieldName);
