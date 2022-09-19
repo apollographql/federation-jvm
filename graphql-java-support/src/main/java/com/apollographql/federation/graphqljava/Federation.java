@@ -4,7 +4,6 @@ import graphql.language.Argument;
 import graphql.language.ArrayValue;
 import graphql.language.AstTransformer;
 import graphql.language.Directive;
-import graphql.language.DirectiveDefinition;
 import graphql.language.FieldDefinition;
 import graphql.language.ObjectField;
 import graphql.language.ObjectTypeDefinition;
@@ -21,7 +20,6 @@ import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
-import graphql.schema.idl.TypeRuntimeWiring;
 import java.io.File;
 import java.io.Reader;
 import java.util.AbstractMap;
@@ -70,7 +68,7 @@ public final class Federation {
 
     if (fed2Imports != null) {
       newRuntimeWiring =
-          ensureFederation2DirectiveDefinitionsExist(typeRegistry, runtimeWiring, fed2Imports);
+          ensureFederationV2DirectiveDefinitionsExist(typeRegistry, runtimeWiring, fed2Imports);
     } else {
       newRuntimeWiring = ensureFederationDirectiveDefinitionsExist(typeRegistry, runtimeWiring);
     }
@@ -163,14 +161,12 @@ public final class Federation {
                         .transform(definition, new LinkImportsRenamingVisitor(fed2Imports)));
   }
 
-  private static RuntimeWiring ensureFederation2DirectiveDefinitionsExist(
+  private static RuntimeWiring ensureFederationV2DirectiveDefinitionsExist(
       TypeDefinitionRegistry typeRegistry,
       RuntimeWiring runtimeWiring,
       @Nullable Map<String, String> fed2Imports) {
 
-    RuntimeWiring newRuntimeWiring = runtimeWiring;
-    HashSet<GraphQLScalarType> scalarTypesToAdd = new HashSet<GraphQLScalarType>();
-
+    HashSet<GraphQLScalarType> scalarTypesToAdd = new HashSet<>();
     Stream<SDLNamedDefinition> renamedDefinitions =
         renameDefinitions(FederationDirectives.federation2Definitions, fed2Imports);
 
@@ -189,17 +185,14 @@ public final class Federation {
                     .build());
           }
         });
-    return copyRuntimeWiring(newRuntimeWiring, scalarTypesToAdd);
+    return addScalarsToRuntimeWiring(runtimeWiring, scalarTypesToAdd);
   }
 
   private static RuntimeWiring ensureFederationDirectiveDefinitionsExist(
       TypeDefinitionRegistry typeRegistry, RuntimeWiring runtimeWiring) {
 
-    Set<DirectiveDefinition> directivesToAdd;
-    directivesToAdd = FederationDirectives.federation1DirectiveDefinitions;
-
     // Add Federation directives if they don't exist.
-    directivesToAdd.stream()
+    FederationDirectives.federation1DirectiveDefinitions.stream()
         .filter(def -> !typeRegistry.getDirectiveDefinition(def.getName()).isPresent())
         .forEachOrdered(typeRegistry::add);
 
@@ -209,59 +202,21 @@ public final class Federation {
     }
 
     // Also add the implementation for _FieldSet.
-    RuntimeWiring newRuntimeWiring = runtimeWiring;
+    final RuntimeWiring newRuntimeWiring;
     if (!runtimeWiring.getScalars().containsKey(_FieldSet.typeName)) {
-      newRuntimeWiring = copyRuntimeWiring(newRuntimeWiring, Collections.singleton(_FieldSet.type));
+      newRuntimeWiring =
+          addScalarsToRuntimeWiring(runtimeWiring, Collections.singleton(_FieldSet.type));
+    } else {
+      newRuntimeWiring = runtimeWiring;
     }
-
     return newRuntimeWiring;
   }
 
-  private static RuntimeWiring copyRuntimeWiring(
+  private static RuntimeWiring addScalarsToRuntimeWiring(
       RuntimeWiring runtimeWiring, Set<GraphQLScalarType> additionalScalars) {
-    // Annoyingly graphql-java doesn't have a copy constructor for RuntimeWiring.Builder.
-    RuntimeWiring.Builder builder = RuntimeWiring.newRuntimeWiring();
-
-    runtimeWiring.getDataFetchers().entrySet().stream()
-        .map(
-            entry -> {
-              String name = entry.getKey();
-              TypeRuntimeWiring.Builder typeWiring = TypeRuntimeWiring.newTypeWiring(name);
-              typeWiring.dataFetchers(entry.getValue());
-              if (runtimeWiring.getDefaultDataFetcherForType(name) != null) {
-                typeWiring.defaultDataFetcher(runtimeWiring.getDefaultDataFetcherForType(name));
-              }
-              if (runtimeWiring.getTypeResolvers().get(name) != null) {
-                typeWiring.typeResolver(runtimeWiring.getTypeResolvers().get(name));
-              }
-              if (runtimeWiring.getEnumValuesProviders().get(name) != null) {
-                typeWiring.enumValues(runtimeWiring.getEnumValuesProviders().get(name));
-              }
-              return typeWiring.build();
-            })
-        .forEach(builder::type);
-
-    if (runtimeWiring.getWiringFactory() != null) {
-      builder.wiringFactory(runtimeWiring.getWiringFactory());
-    }
-    if (runtimeWiring.getCodeRegistry() != null) {
-      builder.codeRegistry(runtimeWiring.getCodeRegistry());
-    }
-    runtimeWiring.getScalars().forEach((name, scalar) -> builder.scalar(scalar));
+    RuntimeWiring.Builder builder = RuntimeWiring.newRuntimeWiring(runtimeWiring);
     additionalScalars.forEach(builder::scalar);
-    if (runtimeWiring.getFieldVisibility() != null) {
-      builder.fieldVisibility(runtimeWiring.getFieldVisibility());
-    }
-    runtimeWiring.getRegisteredDirectiveWiring().forEach(builder::directive);
-    runtimeWiring.getDirectiveWiring().forEach(builder::directiveWiring);
-    builder.comparatorRegistry(runtimeWiring.getComparatorRegistry());
-    runtimeWiring.getSchemaGeneratorPostProcessings().forEach(builder::transformer);
-
-    RuntimeWiring runtimeWiringCopy = builder.build();
-    runtimeWiring
-        .getTypeResolvers()
-        .forEach((key, value) -> runtimeWiringCopy.getTypeResolvers().putIfAbsent(key, value));
-    return runtimeWiringCopy;
+    return builder.build();
   }
 
   /**
