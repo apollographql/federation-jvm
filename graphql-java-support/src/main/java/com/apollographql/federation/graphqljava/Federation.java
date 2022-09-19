@@ -229,23 +229,23 @@ public final class Federation {
    */
   private static @Nullable Map<String, String> fed2DirectiveImports(
       TypeDefinitionRegistry typeDefinitionRegistry) {
-    List<Directive> federationLinkDirectives = typeDefinitionRegistry.schemaDefinition()
-      .map(Federation::getFederationLinkDirective)
-      .map(Collections::singletonList)
-      .orElseGet(() -> typeDefinitionRegistry.getSchemaExtensionDefinitions()
-        .stream()
-        .map(Federation::getFederationLinkDirective)
-        .filter(Objects::nonNull)
-        .collect(Collectors.toList())
-      );
+    List<Directive> federationLinkDirectives =
+        typeDefinitionRegistry
+            .schemaDefinition()
+            .map(Federation::getFederationLinkDirective)
+            .map(Collections::singletonList)
+            .orElseGet(
+                () ->
+                    typeDefinitionRegistry.getSchemaExtensionDefinitions().stream()
+                        .map(Federation::getFederationLinkDirective)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList()));
 
     if (federationLinkDirectives.isEmpty()) {
       return null;
     } else {
       Map<String, String> imports = new HashMap<>();
-      federationLinkDirectives.forEach(
-        directive -> imports.putAll(parseLinkImports(directive))
-      );
+      federationLinkDirectives.forEach(directive -> imports.putAll(parseLinkImports(directive)));
 
       imports.put("@link", "@link");
       return imports;
@@ -253,19 +253,19 @@ public final class Federation {
   }
 
   private static @Nullable Directive getFederationLinkDirective(SchemaDefinition schemaDefinition) {
-    return schemaDefinition.getDirectives("link")
-      .stream()
-      .filter(directive -> {
-        Argument urlArgument = directive.getArgument("url");
-        if (urlArgument != null && urlArgument.getValue() instanceof StringValue) {
-          StringValue value = (StringValue) urlArgument.getValue();
-          return "https://specs.apollo.dev/federation/v2.0".equals(value.getValue());
-        } else {
-          return false;
-        }
-      })
-      .findAny()
-      .orElse(null);
+    return schemaDefinition.getDirectives("link").stream()
+        .filter(
+            directive -> {
+              Argument urlArgument = directive.getArgument("url");
+              if (urlArgument != null && urlArgument.getValue() instanceof StringValue) {
+                StringValue value = (StringValue) urlArgument.getValue();
+                return "https://specs.apollo.dev/federation/v2.0".equals(value.getValue());
+              } else {
+                return false;
+              }
+            })
+        .findAny()
+        .orElse(null);
   }
 
   private static Map<String, String> parseLinkImports(Directive linkDirective) {
@@ -284,13 +284,13 @@ public final class Federation {
           final ObjectValue importedObjectValue = (ObjectValue) importedDefinition;
 
           final Optional<ObjectField> nameField =
-            importedObjectValue.getObjectFields().stream()
-              .filter(field -> field.getName().equals("name"))
-              .findFirst();
+              importedObjectValue.getObjectFields().stream()
+                  .filter(field -> field.getName().equals("name"))
+                  .findFirst();
           final Optional<ObjectField> renameAsField =
-            importedObjectValue.getObjectFields().stream()
-              .filter(field -> field.getName().equals("as"))
-              .findFirst();
+              importedObjectValue.getObjectFields().stream()
+                  .filter(field -> field.getName().equals("as"))
+                  .findFirst();
 
           if (!nameField.isPresent() || !(nameField.get().getValue() instanceof StringValue)) {
             throw new UnsupportedLinkImportException(importedObjectValue);
