@@ -190,6 +190,16 @@ class FederationTest {
         () -> verifyFederationTransformation("schemas/renamedInaccessibleImport.graphql", true));
   }
 
+  @Test
+  public void verifyFederationV2Transformation_renames() {
+    verifyFederationTransformation("schemas/renamedImports.graphql", true);
+  }
+
+  @Test
+  public void verifyFederationV2Transformation_linkOnSchema() {
+    verifyFederationTransformation("schemas/schemaImport.graphql", true);
+  }
+
   private GraphQLSchema verifyFederationTransformation(
       String schemaFileName, boolean isFederationV2) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();

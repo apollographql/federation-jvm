@@ -1,5 +1,6 @@
 package com.apollographql.federation.graphqljava;
 
+import com.apollographql.federation.graphqljava.exceptions.UnsupportedLinkImportException;
 import graphql.language.Argument;
 import graphql.language.ArrayValue;
 import graphql.language.AstTransformer;
@@ -10,6 +11,7 @@ import graphql.language.ObjectTypeDefinition;
 import graphql.language.ObjectValue;
 import graphql.language.SDLNamedDefinition;
 import graphql.language.ScalarTypeDefinition;
+import graphql.language.SchemaDefinition;
 import graphql.language.StringValue;
 import graphql.language.TypeDefinition;
 import graphql.language.TypeName;
@@ -22,12 +24,12 @@ import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import java.io.File;
 import java.io.Reader;
-import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -220,115 +222,95 @@ public final class Federation {
   }
 
   /**
-   * Looks for an @link extension and gets the import from it
+   * Looks for a @link directive and parses imports information from it.
    *
    * @return - null if this typeDefinitionRegistry is not Fed2 - the list of imports and potential
    *     renames else
    */
   private static @Nullable Map<String, String> fed2DirectiveImports(
       TypeDefinitionRegistry typeDefinitionRegistry) {
-    List<Directive> linkDirectives =
-        typeDefinitionRegistry.getSchemaExtensionDefinitions().stream()
-            .flatMap(
-                schemaExtensionDefinition ->
-                    schemaExtensionDefinition.getDirectives().stream()
-                        .filter(directive -> directive.getName().equals("link")))
-            .filter(
-                directive -> {
-                  Optional<Argument> arg =
-                      directive.getArguments().stream()
-                          .filter(argument -> argument.getName().equals("url"))
-                          .findFirst();
+    List<Directive> federationLinkDirectives =
+        typeDefinitionRegistry
+            .schemaDefinition()
+            .map(Federation::getFederationLinkDirective)
+            .map(Collections::singletonList)
+            .orElseGet(
+                () ->
+                    typeDefinitionRegistry.getSchemaExtensionDefinitions().stream()
+                        .map(Federation::getFederationLinkDirective)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList()));
 
-                  if (!arg.isPresent()) {
-                    return false;
-                  }
-
-                  Value value = arg.get().getValue();
-                  if (!(value instanceof StringValue)) {
-                    return false;
-                  }
-
-                  StringValue stringValue = (StringValue) value;
-                  return stringValue.getValue().equals("https://specs.apollo.dev/federation/v2.0");
-                })
-            .collect(Collectors.toList());
-
-    if (linkDirectives.isEmpty()) {
+    if (federationLinkDirectives.isEmpty()) {
       return null;
+    } else {
+      Map<String, String> imports = new HashMap<>();
+      federationLinkDirectives.forEach(directive -> imports.putAll(parseLinkImports(directive)));
+
+      imports.put("@link", "@link");
+      return imports;
     }
+  }
 
-    Map<String, String> imports =
-        linkDirectives.stream()
-            .flatMap(
-                directive -> {
-                  Optional<Argument> arg =
-                      directive.getArguments().stream()
-                          .filter(argument -> argument.getName().equals("import"))
-                          .findFirst();
+  private static @Nullable Directive getFederationLinkDirective(SchemaDefinition schemaDefinition) {
+    return schemaDefinition.getDirectives("link").stream()
+        .filter(
+            directive -> {
+              Argument urlArgument = directive.getArgument("url");
+              if (urlArgument != null && urlArgument.getValue() instanceof StringValue) {
+                StringValue value = (StringValue) urlArgument.getValue();
+                return "https://specs.apollo.dev/federation/v2.0".equals(value.getValue());
+              } else {
+                return false;
+              }
+            })
+        .findAny()
+        .orElse(null);
+  }
 
-                  if (!arg.isPresent()) {
-                    return Stream.empty();
-                  }
+  private static Map<String, String> parseLinkImports(Directive linkDirective) {
+    final Map<String, String> imports = new HashMap<>();
 
-                  Value value = arg.get().getValue();
-                  if (!(value instanceof ArrayValue)) {
-                    return Stream.empty();
-                  }
+    final Argument importArgument = linkDirective.getArgument("import");
+    if (importArgument != null && importArgument.getValue() instanceof ArrayValue) {
+      final ArrayValue linkImports = (ArrayValue) importArgument.getValue();
+      for (Value importedDefinition : linkImports.getValues()) {
+        if (importedDefinition instanceof StringValue) {
+          // no rename
+          final String name = ((StringValue) importedDefinition).getValue();
+          imports.put(name, name);
+        } else if (importedDefinition instanceof ObjectValue) {
+          // renamed import
+          final ObjectValue importedObjectValue = (ObjectValue) importedDefinition;
 
-                  ArrayValue arrayValue = (ArrayValue) value;
+          final Optional<ObjectField> nameField =
+              importedObjectValue.getObjectFields().stream()
+                  .filter(field -> field.getName().equals("name"))
+                  .findFirst();
+          final Optional<ObjectField> renameAsField =
+              importedObjectValue.getObjectFields().stream()
+                  .filter(field -> field.getName().equals("as"))
+                  .findFirst();
 
-                  List<Map.Entry<String, String>> entries = new ArrayList<>();
+          if (!nameField.isPresent() || !(nameField.get().getValue() instanceof StringValue)) {
+            throw new UnsupportedLinkImportException(importedObjectValue);
+          }
+          final String name = ((StringValue) nameField.get().getValue()).getValue();
 
-                  for (Value imp : arrayValue.getValues()) {
-                    if (imp instanceof StringValue) {
-                      String name = ((StringValue) imp).getValue();
-                      entries.add(new AbstractMap.SimpleEntry(name, name));
-                    } else if (imp instanceof ObjectValue) {
-                      ObjectValue objectValue = (ObjectValue) imp;
-                      Optional<ObjectField> nameField =
-                          objectValue.getObjectFields().stream()
-                              .filter(field -> field.getName().equals("name"))
-                              .findFirst();
-                      Optional<ObjectField> asField =
-                          objectValue.getObjectFields().stream()
-                              .filter(field -> field.getName().equals("as"))
-                              .findFirst();
-
-                      if (!nameField.isPresent()) {
-                        throw new RuntimeException("Unsupported import: " + imp);
-                      }
-
-                      Value nameValue = nameField.get().getValue();
-                      if (!(nameValue instanceof StringValue)) {
-                        throw new RuntimeException("Unsupported import: " + imp);
-                      }
-
-                      String as;
-                      if (!asField.isPresent()) {
-                        as = null;
-                      } else {
-                        Value asValue = asField.get().getValue();
-                        if (!(asValue instanceof StringValue)) {
-                          throw new RuntimeException("Unsupported import: " + imp);
-                        }
-                        as = ((StringValue) asValue).getValue();
-                      }
-
-                      entries.add(
-                          new AbstractMap.SimpleEntry(((StringValue) nameValue).getValue(), as));
-                    } else {
-                      throw new RuntimeException("Unsupported import: " + imp.toString());
-                    }
-                  }
-
-                  return entries.stream();
-                })
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey, Map.Entry::getValue, (value1, value2) -> value2));
-
-    imports.put("@link", "@link");
+          if (!renameAsField.isPresent()) {
+            imports.put(name, name);
+          } else {
+            final Value renamedAsValue = renameAsField.get().getValue();
+            if (!(renamedAsValue instanceof StringValue)) {
+              throw new UnsupportedLinkImportException(importedObjectValue);
+            }
+            imports.put(name, ((StringValue) renamedAsValue).getValue());
+          }
+        } else {
+          throw new UnsupportedLinkImportException(importedDefinition);
+        }
+      }
+    }
     return imports;
   }
 }
