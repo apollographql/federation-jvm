@@ -1,7 +1,8 @@
-package com.apollographql.federation.graphqljava;
+package com.apollographql.federation.graphqljava.directives;
 
 import static graphql.util.TreeTransformerUtil.changeNode;
 
+import com.apollographql.federation.graphqljava.exceptions.UnsupportedRenameException;
 import graphql.language.DirectiveDefinition;
 import graphql.language.NamedNode;
 import graphql.language.Node;
@@ -66,8 +67,7 @@ class LinkImportsRenamingVisitor extends NodeVisitorStub {
     if (fed2Imports.containsKey(key)) {
       String newName = fed2Imports.get(key);
       if (("@tag".equals(key) || "@inaccessible".equals(key)) && !newName.equals(key)) {
-        throw new FederationError(
-            "Current version of Apollo Federation does not allow renaming " + key + " directive.");
+        throw new UnsupportedRenameException(key);
       }
 
       if (isDirective) {

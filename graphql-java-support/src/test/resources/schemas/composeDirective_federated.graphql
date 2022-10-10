@@ -1,0 +1,53 @@
+schema @composeDirective(name : "@myDirective") @composeDirective(name : "@hello") @link(import : ["@key", "@composeDirective"], url : "https://specs.apollo.dev/federation/v2.1") @link(import : ["@myDirective", {name : "@anotherDirective", as : "@hello"}], url : "https://myspecs.dev/myDirective/v1.0"){
+  query: Query
+}
+
+directive @composeDirective(name: String!) repeatable on SCHEMA
+
+directive @federation__extends on OBJECT | INTERFACE
+
+directive @federation__external on OBJECT | FIELD_DEFINITION
+
+directive @federation__override(from: String!) on FIELD_DEFINITION
+
+directive @federation__provides(fields: federation__FieldSet!) on FIELD_DEFINITION
+
+directive @federation__requires(fields: federation__FieldSet!) on FIELD_DEFINITION
+
+directive @federation__shareable on OBJECT | FIELD_DEFINITION
+
+directive @hello on FIELD_DEFINITION
+
+directive @inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+
+directive @key(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
+
+directive @link(as: String, import: [link__Import], url: String!) repeatable on SCHEMA
+
+directive @myDirective(foo: String!) on FIELD_DEFINITION
+
+directive @tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+
+union _Entity = Product
+
+type Product @key(fields : "id", resolvable : true) {
+  custom: String @myDirective(foo : "bar")
+  id: ID!
+  name: String! @hello
+}
+
+type Query {
+  _entities(representations: [_Any!]!): [_Entity]!
+  _service: _Service!
+  product(id: ID!): Product
+}
+
+type _Service {
+  sdl: String!
+}
+
+scalar _Any
+
+scalar federation__FieldSet
+
+scalar link__Import

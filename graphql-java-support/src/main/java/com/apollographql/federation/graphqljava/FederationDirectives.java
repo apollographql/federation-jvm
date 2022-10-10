@@ -1,12 +1,17 @@
 package com.apollographql.federation.graphqljava;
 
-import static graphql.introspection.Introspection.DirectiveLocation.*;
+import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_0;
+import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_1;
+import static graphql.introspection.Introspection.DirectiveLocation.FIELD_DEFINITION;
+import static graphql.introspection.Introspection.DirectiveLocation.INTERFACE;
+import static graphql.introspection.Introspection.DirectiveLocation.OBJECT;
 import static graphql.language.DirectiveDefinition.newDirectiveDefinition;
 import static graphql.language.DirectiveLocation.newDirectiveLocation;
 import static graphql.language.InputValueDefinition.newInputValueDefinition;
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLDirective.newDirective;
 
+import com.apollographql.federation.graphqljava.exceptions.UnsupportedFederationVersionException;
 import graphql.PublicApi;
 import graphql.language.*;
 import graphql.parser.Parser;
@@ -150,28 +155,13 @@ public final class FederationDirectives {
   public static final Set<String> allNames;
   public static final Set<GraphQLDirective> allDirectives;
   public static final Set<DirectiveDefinition> allDefinitions;
-  static final List<SDLNamedDefinition> federation2Definitions;
+
+  // use #loadFederationSpecDefinitions(string) instead
+  @Deprecated
+  static final List<SDLNamedDefinition> federation2Definitions =
+      loadFederationSpecDefinitions(FEDERATION_SPEC_V2_0);
+
   public static final Set<DirectiveDefinition> federation1DirectiveDefinitions;
-
-  private static List<SDLNamedDefinition> fed2Definitions() {
-    InputStream inputStream =
-        FederationDirectives.class.getClassLoader().getResourceAsStream("fed2directives.graphqls");
-    BufferedReader reader =
-        new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-    try {
-      Document document = new Parser().parseDocument(reader);
-
-      return document.getDefinitionsOfType(SDLNamedDefinition.class).stream()
-          .sorted(Comparator.comparing(SDLNamedDefinition::getName))
-          .collect(Collectors.toList());
-    } finally {
-      try {
-        reader.close();
-      } catch (IOException e) {
-        // close silently
-      }
-    }
-  }
 
   static {
     // We need to maintain sorted order here for tests, since SchemaPrinter doesn't sort
@@ -203,7 +193,37 @@ public final class FederationDirectives {
                 extendsDefinition)
             .sorted(Comparator.comparing(DirectiveDefinition::getName))
             .collect(Collectors.toCollection(LinkedHashSet::new));
+  }
 
-    federation2Definitions = fed2Definitions();
+  public static List<SDLNamedDefinition> loadFederationSpecDefinitions(String federationSpec) {
+    switch (federationSpec) {
+      case FEDERATION_SPEC_V2_0:
+        return loadFed2Definitions("definitions_fed2_0.graphqls");
+      case FEDERATION_SPEC_V2_1:
+        return loadFed2Definitions("definitions_fed2_1.graphqls");
+      default:
+        throw new UnsupportedFederationVersionException(federationSpec);
+    }
+  }
+
+  private static List<SDLNamedDefinition> loadFed2Definitions(String fileName) {
+    InputStream inputStream =
+        FederationDirectives.class.getClassLoader().getResourceAsStream(fileName);
+    if (inputStream != null) {
+      try (BufferedReader reader =
+          new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+        Document document = new Parser().parseDocument(reader);
+
+        return document.getDefinitionsOfType(SDLNamedDefinition.class).stream()
+            .sorted(Comparator.comparing(SDLNamedDefinition::getName))
+            .collect(Collectors.toList());
+      } catch (IOException e) {
+        throw new RuntimeException(
+            "Unable to load federation directive definitions from " + fileName);
+      }
+    } else {
+      throw new RuntimeException(
+          "Unable to load federation directive definitions from " + fileName);
+    }
   }
 }

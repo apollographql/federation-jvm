@@ -1,5 +1,6 @@
-# Fed2 directives taken from https://github.com/apollographql/federation/blob/c68e501b4c02bd65f6b0bbbabf1b2aa4a2ab3c47/subgraph-js/src/federation-atlas.ts
-# 
+#
+# https://specs.apollo.dev/federation/v2.0/federation-v2.0.graphql
+#
 
 directive @key(fields: FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
 directive @requires(fields: FieldSet!) on FIELD_DEFINITION
@@ -8,8 +9,19 @@ directive @external on OBJECT | FIELD_DEFINITION
 directive @shareable on FIELD_DEFINITION | OBJECT
 directive @extends on OBJECT | INTERFACE
 directive @override(from: String!) on FIELD_DEFINITION
-
-directive @tag(name: String!) repeatable on FIELD_DEFINITION
+directive @inaccessible on
+    | FIELD_DEFINITION
+    | OBJECT
+    | INTERFACE
+    | UNION
+    | ENUM
+    | ENUM_VALUE
+    | SCALAR
+    | INPUT_OBJECT
+    | INPUT_FIELD_DEFINITION
+    | ARGUMENT_DEFINITION
+directive @tag(name: String!) repeatable on
+    | FIELD_DEFINITION
     | INTERFACE
     | OBJECT
     | UNION
@@ -19,11 +31,16 @@ directive @tag(name: String!) repeatable on FIELD_DEFINITION
     | ENUM_VALUE
     | INPUT_OBJECT
     | INPUT_FIELD_DEFINITION
-
-directive @inaccessible on FIELD_DEFINITION | INTERFACE | OBJECT | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
-
 scalar FieldSet
 
-directive @link(url: String!, as: String, import: [Import]) repeatable on SCHEMA
+#
+# https://specs.apollo.dev/link/v1.0/link-v1.0.graphql
+#
+
+directive @link(
+    url: String!,
+    as: String,
+    import: [Import])
+repeatable on SCHEMA
 
 scalar Import
