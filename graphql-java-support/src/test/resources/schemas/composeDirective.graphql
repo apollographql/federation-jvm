@@ -1,0 +1,19 @@
+extend schema
+@link(url: "https://specs.apollo.dev/federation/v2.1",
+    import: ["@key", "@composeDirective"])
+@link(url: "https://myspecs.dev/myDirective/v1.0", import: ["@myDirective", { name: "@anotherDirective", as: "@hello" }])
+@composeDirective(name: "@myDirective")
+@composeDirective(name: "@hello")
+
+directive @myDirective(foo: String!) on FIELD_DEFINITION
+directive @hello on FIELD_DEFINITION
+
+type Product @key(fields: "id") {
+    id: ID!
+    name: String! @hello
+    custom: String @myDirective(foo: "bar")
+}
+
+type Query {
+    product(id: ID!): Product
+}

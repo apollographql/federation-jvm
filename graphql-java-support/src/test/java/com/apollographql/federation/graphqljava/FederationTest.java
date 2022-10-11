@@ -8,6 +8,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.apollographql.federation.graphqljava.data.Product;
+import com.apollographql.federation.graphqljava.exceptions.MultipleFederationLinksException;
+import com.apollographql.federation.graphqljava.exceptions.UnsupportedFederationVersionException;
+import com.apollographql.federation.graphqljava.exceptions.UnsupportedLinkImportException;
+import com.apollographql.federation.graphqljava.exceptions.UnsupportedRenameException;
 import graphql.ExecutionResult;
 import graphql.schema.DataFetcher;
 import graphql.schema.FieldCoordinates;
@@ -179,14 +183,14 @@ class FederationTest {
   @Test
   public void verifyWeCannotRenameTagDirective() {
     assertThrows(
-        FederationError.class,
+        UnsupportedRenameException.class,
         () -> verifyFederationTransformation("schemas/renamedTagImport.graphql", true));
   }
 
   @Test
   public void verifyWeCannotRenameInaccessibleDirective() {
     assertThrows(
-        FederationError.class,
+        UnsupportedRenameException.class,
         () -> verifyFederationTransformation("schemas/renamedInaccessibleImport.graphql", true));
   }
 
@@ -198,6 +202,37 @@ class FederationTest {
   @Test
   public void verifyFederationV2Transformation_linkOnSchema() {
     verifyFederationTransformation("schemas/schemaImport.graphql", true);
+  }
+
+  @Test
+  public void verifyFederationTransformation_composeDirective() {
+    verifyFederationTransformation("schemas/composeDirective.graphql", true);
+  }
+
+  @Test
+  public void
+      verifyFederationV2Transformation_composeDirectiveFromUnsupportedVersion_throwsException() {
+    final String schemaSDL =
+        FileUtils.readResource("schemas/composeDirectiveUnsupportedSpecVersion.graphql");
+    assertThrows(
+        UnsupportedLinkImportException.class,
+        () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+  }
+
+  @Test
+  public void verifyFederationV2Transformation_unknownVersion_throwsException() {
+    final String schemaSDL = FileUtils.readResource("schemas/unsupportedSpecVersion.graphql");
+    assertThrows(
+        UnsupportedFederationVersionException.class,
+        () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+  }
+
+  @Test
+  public void verifyFederationV2Transformation_multipleFedLinks_throwsException() {
+    final String schemaSDL = FileUtils.readResource("schemas/multipleLinks.graphql");
+    assertThrows(
+        MultipleFederationLinksException.class,
+        () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
   }
 
   private GraphQLSchema verifyFederationTransformation(

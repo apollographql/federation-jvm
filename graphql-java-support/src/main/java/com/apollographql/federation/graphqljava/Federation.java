@@ -1,21 +1,14 @@
 package com.apollographql.federation.graphqljava;
 
-import com.apollographql.federation.graphqljava.exceptions.UnsupportedLinkImportException;
-import graphql.language.Argument;
-import graphql.language.ArrayValue;
-import graphql.language.AstTransformer;
-import graphql.language.Directive;
+import static com.apollographql.federation.graphqljava.directives.LinkDirectiveProcessor.loadFederationImportedDefinitions;
+
+import graphql.language.DirectiveDefinition;
 import graphql.language.FieldDefinition;
-import graphql.language.ObjectField;
 import graphql.language.ObjectTypeDefinition;
-import graphql.language.ObjectValue;
 import graphql.language.SDLNamedDefinition;
 import graphql.language.ScalarTypeDefinition;
-import graphql.language.SchemaDefinition;
-import graphql.language.StringValue;
 import graphql.language.TypeDefinition;
 import graphql.language.TypeName;
-import graphql.language.Value;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
@@ -24,20 +17,17 @@ import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import java.io.File;
 import java.io.Reader;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public final class Federation {
+
+  public static final String FEDERATION_SPEC_V2_0 = "https://specs.apollo.dev/federation/v2.0";
+  public static final String FEDERATION_SPEC_V2_1 = "https://specs.apollo.dev/federation/v2.1";
+
   private static final SchemaGenerator.Options generatorOptions =
       SchemaGenerator.Options.defaultOptions();
 
@@ -65,19 +55,21 @@ public final class Federation {
       final TypeDefinitionRegistry typeRegistry, final RuntimeWiring runtimeWiring) {
     final boolean queryTypeShouldBeEmpty = ensureQueryTypeExists(typeRegistry);
 
-    @Nullable Map<String, String> fed2Imports = fed2DirectiveImports(typeRegistry);
-    RuntimeWiring newRuntimeWiring;
-
-    if (fed2Imports != null) {
-      newRuntimeWiring =
-          ensureFederationV2DirectiveDefinitionsExist(typeRegistry, runtimeWiring, fed2Imports);
+    RuntimeWiring federatedRuntimeWiring;
+    Stream<SDLNamedDefinition> importedDefinitions =
+        loadFederationImportedDefinitions(typeRegistry);
+    if (importedDefinitions != null) {
+      federatedRuntimeWiring =
+          ensureFederationV2DirectiveDefinitionsExist(
+              typeRegistry, runtimeWiring, importedDefinitions);
     } else {
-      newRuntimeWiring = ensureFederationDirectiveDefinitionsExist(typeRegistry, runtimeWiring);
+      federatedRuntimeWiring =
+          ensureFederationDirectiveDefinitionsExist(typeRegistry, runtimeWiring);
     }
-    final GraphQLSchema original =
+    final GraphQLSchema schema =
         new SchemaGenerator()
-            .makeExecutableSchema(generatorOptions, typeRegistry, newRuntimeWiring);
-    return transform(original, queryTypeShouldBeEmpty).setFederation2(fed2Imports != null);
+            .makeExecutableSchema(generatorOptions, typeRegistry, federatedRuntimeWiring);
+    return transform(schema, queryTypeShouldBeEmpty).setFederation2(importedDefinitions != null);
   }
 
   public static SchemaTransformer transform(final TypeDefinitionRegistry typeRegistry) {
@@ -153,32 +145,21 @@ public final class Federation {
     return addDummyField;
   }
 
-  private static Stream<SDLNamedDefinition> renameDefinitions(
-      List<SDLNamedDefinition> sdlNamedDefinition, Map<String, String> fed2Imports) {
-    return sdlNamedDefinition.stream()
-        .map(
-            definition ->
-                (SDLNamedDefinition)
-                    new AstTransformer()
-                        .transform(definition, new LinkImportsRenamingVisitor(fed2Imports)));
-  }
-
   private static RuntimeWiring ensureFederationV2DirectiveDefinitionsExist(
       TypeDefinitionRegistry typeRegistry,
       RuntimeWiring runtimeWiring,
-      @Nullable Map<String, String> fed2Imports) {
+      Stream<SDLNamedDefinition> importedDefinitions) {
 
-    HashSet<GraphQLScalarType> scalarTypesToAdd = new HashSet<>();
-    Stream<SDLNamedDefinition> renamedDefinitions =
-        renameDefinitions(FederationDirectives.federation2Definitions, fed2Imports);
-
-    renamedDefinitions.forEach(
+    final HashSet<GraphQLScalarType> scalarTypesToAdd = new HashSet<>();
+    importedDefinitions.forEach(
         def -> {
-          if (!typeRegistry.getDirectiveDefinition(def.getName()).isPresent()) {
+          if (def instanceof DirectiveDefinition
+              && !typeRegistry.getDirectiveDefinition(def.getName()).isPresent()) {
             typeRegistry.add(def);
           }
           if (def instanceof ScalarTypeDefinition
               && !runtimeWiring.getScalars().containsKey(def.getName())) {
+            typeRegistry.add(def);
             scalarTypesToAdd.add(
                 GraphQLScalarType.newScalar()
                     .name(def.getName())
@@ -187,7 +168,12 @@ public final class Federation {
                     .build());
           }
         });
-    return addScalarsToRuntimeWiring(runtimeWiring, scalarTypesToAdd);
+
+    if (!scalarTypesToAdd.isEmpty()) {
+      return runtimeWiring.transform((wiring) -> scalarTypesToAdd.forEach(wiring::scalar));
+    } else {
+      return runtimeWiring;
+    }
   }
 
   private static RuntimeWiring ensureFederationDirectiveDefinitionsExist(
@@ -204,113 +190,10 @@ public final class Federation {
     }
 
     // Also add the implementation for _FieldSet.
-    final RuntimeWiring newRuntimeWiring;
     if (!runtimeWiring.getScalars().containsKey(_FieldSet.typeName)) {
-      newRuntimeWiring =
-          addScalarsToRuntimeWiring(runtimeWiring, Collections.singleton(_FieldSet.type));
+      return runtimeWiring.transform((wiring) -> wiring.scalar(_FieldSet.type));
     } else {
-      newRuntimeWiring = runtimeWiring;
+      return runtimeWiring;
     }
-    return newRuntimeWiring;
-  }
-
-  private static RuntimeWiring addScalarsToRuntimeWiring(
-      RuntimeWiring runtimeWiring, Set<GraphQLScalarType> additionalScalars) {
-    RuntimeWiring.Builder builder = RuntimeWiring.newRuntimeWiring(runtimeWiring);
-    additionalScalars.forEach(builder::scalar);
-    return builder.build();
-  }
-
-  /**
-   * Looks for a @link directive and parses imports information from it.
-   *
-   * @return - null if this typeDefinitionRegistry is not Fed2 - the list of imports and potential
-   *     renames else
-   */
-  private static @Nullable Map<String, String> fed2DirectiveImports(
-      TypeDefinitionRegistry typeDefinitionRegistry) {
-    List<Directive> federationLinkDirectives =
-        typeDefinitionRegistry
-            .schemaDefinition()
-            .map(Federation::getFederationLinkDirective)
-            .map(Collections::singletonList)
-            .orElseGet(
-                () ->
-                    typeDefinitionRegistry.getSchemaExtensionDefinitions().stream()
-                        .map(Federation::getFederationLinkDirective)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList()));
-
-    if (federationLinkDirectives.isEmpty()) {
-      return null;
-    } else {
-      Map<String, String> imports = new HashMap<>();
-      federationLinkDirectives.forEach(directive -> imports.putAll(parseLinkImports(directive)));
-
-      imports.put("@link", "@link");
-      return imports;
-    }
-  }
-
-  private static @Nullable Directive getFederationLinkDirective(SchemaDefinition schemaDefinition) {
-    return schemaDefinition.getDirectives("link").stream()
-        .filter(
-            directive -> {
-              Argument urlArgument = directive.getArgument("url");
-              if (urlArgument != null && urlArgument.getValue() instanceof StringValue) {
-                StringValue value = (StringValue) urlArgument.getValue();
-                return "https://specs.apollo.dev/federation/v2.0".equals(value.getValue());
-              } else {
-                return false;
-              }
-            })
-        .findAny()
-        .orElse(null);
-  }
-
-  private static Map<String, String> parseLinkImports(Directive linkDirective) {
-    final Map<String, String> imports = new HashMap<>();
-
-    final Argument importArgument = linkDirective.getArgument("import");
-    if (importArgument != null && importArgument.getValue() instanceof ArrayValue) {
-      final ArrayValue linkImports = (ArrayValue) importArgument.getValue();
-      for (Value importedDefinition : linkImports.getValues()) {
-        if (importedDefinition instanceof StringValue) {
-          // no rename
-          final String name = ((StringValue) importedDefinition).getValue();
-          imports.put(name, name);
-        } else if (importedDefinition instanceof ObjectValue) {
-          // renamed import
-          final ObjectValue importedObjectValue = (ObjectValue) importedDefinition;
-
-          final Optional<ObjectField> nameField =
-              importedObjectValue.getObjectFields().stream()
-                  .filter(field -> field.getName().equals("name"))
-                  .findFirst();
-          final Optional<ObjectField> renameAsField =
-              importedObjectValue.getObjectFields().stream()
-                  .filter(field -> field.getName().equals("as"))
-                  .findFirst();
-
-          if (!nameField.isPresent() || !(nameField.get().getValue() instanceof StringValue)) {
-            throw new UnsupportedLinkImportException(importedObjectValue);
-          }
-          final String name = ((StringValue) nameField.get().getValue()).getValue();
-
-          if (!renameAsField.isPresent()) {
-            imports.put(name, name);
-          } else {
-            final Value renamedAsValue = renameAsField.get().getValue();
-            if (!(renamedAsValue instanceof StringValue)) {
-              throw new UnsupportedLinkImportException(importedObjectValue);
-            }
-            imports.put(name, ((StringValue) renamedAsValue).getValue());
-          }
-        } else {
-          throw new UnsupportedLinkImportException(importedDefinition);
-        }
-      }
-    }
-    return imports;
   }
 }
