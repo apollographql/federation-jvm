@@ -235,6 +235,20 @@ class FederationTest {
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
   }
 
+  @Test
+  public void verifySchemaCanBeExtended() {
+    verifyFederationTransformation("schemas/extendSchema.graphql", true);
+  }
+
+  @Test
+  public void
+      verifyFederationV2Transformation_multipleFedLinksSchemaAndExtension_throwsException() {
+    final String schemaSDL = FileUtils.readResource("schemas/multipleSchemaLinks.graphql");
+    assertThrows(
+        MultipleFederationLinksException.class,
+        () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+  }
+
   private GraphQLSchema verifyFederationTransformation(
       String schemaFileName, boolean isFederationV2) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
