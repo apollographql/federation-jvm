@@ -1,0 +1,14 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key"])
+
+schema @link(url: "https://specs.apollo.dev/federation/v2.1", import: ["@tag"]) {
+  query: Query
+}
+
+type Product @key(fields: "id") {
+    id: ID!
+    name: String! @tag(name: "example")
+}
+
+type Query {
+    product(id: ID!): Product
+}

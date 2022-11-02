@@ -38,15 +38,19 @@ public final class LinkDirectiveProcessor {
    */
   public static @Nullable Stream<SDLNamedDefinition> loadFederationImportedDefinitions(
       TypeDefinitionRegistry typeDefinitionRegistry) {
-    List<Directive> federationLinkDirectives =
+
+    Stream<Directive> schemaLinkDirectives =
         typeDefinitionRegistry
             .schemaDefinition()
             .map(LinkDirectiveProcessor::getFederationLinkDirectives)
-            .orElseGet(
-                () ->
-                    typeDefinitionRegistry.getSchemaExtensionDefinitions().stream()
-                        .flatMap(LinkDirectiveProcessor::getFederationLinkDirectives))
-            .collect(Collectors.toList());
+            .orElse(Stream.empty());
+
+    Stream<Directive> extensionLinkDirectives =
+        typeDefinitionRegistry.getSchemaExtensionDefinitions().stream()
+            .flatMap(LinkDirectiveProcessor::getFederationLinkDirectives);
+
+    List<Directive> federationLinkDirectives =
+        Stream.concat(schemaLinkDirectives, extensionLinkDirectives).collect(Collectors.toList());
 
     if (federationLinkDirectives.isEmpty()) {
       return null;
