@@ -7,7 +7,6 @@ plugins {
 
 val annotationsVersion: String by project
 val graphQLJavaVersion: String by project
-val junitVersion: String by project
 val protobufVersion: String by project
 val slf4jVersion: String by project
 dependencies {
