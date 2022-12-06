@@ -27,6 +27,11 @@ jobs:
       - name: Build app with Gradle
         run: ./gradlew bootJar
 
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
       - name: Compatibility Test
         run:  npx --yes @apollo/federation-subgraph-compatibility docker --debug --compose docker-compose.yaml --schema src/main/resources/graphql/schema.graphqls
 
