@@ -12,3 +12,7 @@ out/
 
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !gradle-wrapper.jar
+
+# compatibility tests ignore
+results.md
+supergraph*
