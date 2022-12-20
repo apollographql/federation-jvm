@@ -185,7 +185,7 @@ class FederatedTracingInstrumentationTest {
     assertEquals(1, trace.getRoot().getErrorCount());
     Reports.Trace.Error error = trace.getRoot().getError(0);
     assertEquals(
-        "Invalid Syntax : offending token '<EOF>' at line 1 column 18", error.getMessage());
+        "Invalid syntax with offending token '<EOF>' at line 1 column 18", error.getMessage());
     assertEquals(1, error.getLocation(0).getLine());
     assertEquals(18, error.getLocation(0).getColumn());
   }
