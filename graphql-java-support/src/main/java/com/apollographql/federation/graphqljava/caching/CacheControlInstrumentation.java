@@ -6,6 +6,7 @@ import graphql.GraphQLContext;
 import graphql.execution.instrumentation.InstrumentationContext;
 import graphql.execution.instrumentation.InstrumentationState;
 import graphql.execution.instrumentation.SimpleInstrumentation;
+import graphql.execution.instrumentation.parameters.InstrumentationCreateStateParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldParameters;
 import graphql.schema.*;
@@ -49,23 +50,23 @@ public class CacheControlInstrumentation extends SimpleInstrumentation {
   }
 
   @Override
-  public InstrumentationState createState() {
+  public InstrumentationState createState(InstrumentationCreateStateParameters parameters) {
     return new CacheControlState();
   }
 
   @Override
   public InstrumentationContext<ExecutionResult> beginExecution(
-      InstrumentationExecutionParameters parameters) {
+      InstrumentationExecutionParameters parameters, InstrumentationState state) {
     return new InstrumentationContext<ExecutionResult>() {
       @Override
       public void onDispatched(CompletableFuture<ExecutionResult> completableFuture) {}
 
       @Override
       public void onCompleted(ExecutionResult executionResult, Throwable throwable) {
-        CacheControlState state = parameters.getInstrumentationState();
+        CacheControlState cacheControlState = (CacheControlState) state;
 
         // Attach the policy to the context object
-        state
+        cacheControlState
             .overallPolicy
             .maybeAsString()
             .ifPresent(s -> parameters.getGraphQLContext().put(CONTEXT_KEY, s));
@@ -75,8 +76,8 @@ public class CacheControlInstrumentation extends SimpleInstrumentation {
 
   @Override
   public InstrumentationContext<ExecutionResult> beginField(
-      InstrumentationFieldParameters parameters) {
-    CacheControlState state = parameters.getInstrumentationState();
+      InstrumentationFieldParameters parameters, InstrumentationState state) {
+    CacheControlState cacheControlState = (CacheControlState) state;
     CacheControlPolicy fieldPolicy = new CacheControlPolicy();
     boolean inheritMaxAge = false;
 
@@ -160,9 +161,9 @@ public class CacheControlInstrumentation extends SimpleInstrumentation {
       fieldPolicy.restrict(defaultMaxAge);
     }
 
-    state.overallPolicy.restrict(fieldPolicy);
+    cacheControlState.overallPolicy.restrict(fieldPolicy);
 
-    return super.beginField(parameters);
+    return super.beginField(parameters, state);
   }
 
   enum CacheControlScope {

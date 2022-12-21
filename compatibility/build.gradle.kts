@@ -10,6 +10,7 @@ repositories {
 
 dependencies {
     implementation("com.apollographql.federation", "federation-graphql-java-support")
+    implementation("com.graphql-java", "graphql-java", "20.0")
     implementation("org.jetbrains", "annotations", "23.0.0")
     implementation("org.springframework.boot", "spring-boot-starter-actuator")
     implementation("org.springframework.boot", "spring-boot-starter-graphql")

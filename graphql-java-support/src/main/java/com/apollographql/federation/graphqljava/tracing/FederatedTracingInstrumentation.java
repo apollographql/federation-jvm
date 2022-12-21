@@ -71,14 +71,16 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
   }
 
   @Override
-  public CompletableFuture<ExecutionResult> instrumentExecutionResult(
-      ExecutionResult executionResult, InstrumentationExecutionParameters parameters) {
-    final @Nullable FederatedTracingState state = parameters.getInstrumentationState();
-    if (state == null) {
-      return super.instrumentExecutionResult(executionResult, parameters);
+  public @NotNull CompletableFuture<ExecutionResult> instrumentExecutionResult(
+      ExecutionResult executionResult,
+      InstrumentationExecutionParameters parameters,
+      InstrumentationState state) {
+    final @Nullable FederatedTracingState federatedTracingState = (FederatedTracingState) state;
+    if (federatedTracingState == null) {
+      return super.instrumentExecutionResult(executionResult, parameters, null);
     }
 
-    Reports.Trace trace = state.toProto();
+    Reports.Trace trace = federatedTracingState.toProto();
 
     if (options.isDebuggingEnabled()) {
       logger.debug(trace.toString());
@@ -93,10 +95,10 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
   @Override
   public InstrumentationContext<Object> beginFieldFetch(
-      InstrumentationFieldFetchParameters parameters) {
-    FederatedTracingState state = parameters.getInstrumentationState();
-    if (state == null) {
-      return super.beginFieldFetch(parameters);
+      InstrumentationFieldFetchParameters parameters, InstrumentationState state) {
+    final @Nullable FederatedTracingState federatedTracingState = (FederatedTracingState) state;
+    if (federatedTracingState == null) {
+      return super.beginFieldFetch(parameters, null);
     }
 
     SourceLocation fieldLocation = parameters.getEnvironment().getField().getSourceLocation();
@@ -107,12 +109,12 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
           long endNanos = System.nanoTime();
 
           ExecutionStepInfo executionStepInfo = parameters.getEnvironment().getExecutionStepInfo();
-          state.addFieldFetchData(
+          federatedTracingState.addFieldFetchData(
               executionStepInfo,
               // relative to the trace's start_time, in ns
-              startNanos - state.getStartRequestNanos(),
+              startNanos - federatedTracingState.getStartRequestNanos(),
               // relative to the trace's start_time, in ns
-              endNanos - state.getStartRequestNanos(),
+              endNanos - federatedTracingState.getStartRequestNanos(),
               convertErrors(throwable, result),
               fieldLocation);
         });
@@ -120,36 +122,36 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
 
   @Override
   public InstrumentationContext<Document> beginParse(
-      InstrumentationExecutionParameters parameters) {
-    FederatedTracingState state = parameters.getInstrumentationState();
-    if (state == null) {
-      return super.beginParse(parameters);
+      InstrumentationExecutionParameters parameters, InstrumentationState state) {
+    final @Nullable FederatedTracingState federatedTracingState = (FederatedTracingState) state;
+    if (federatedTracingState == null) {
+      return super.beginParse(parameters, null);
     }
 
     return whenCompleted(
         (document, throwable) -> {
           for (GraphQLError error : convertErrors(throwable, null)) {
-            state.addRootError(error);
+            federatedTracingState.addRootError(error);
           }
         });
   }
 
   @Override
   public InstrumentationContext<List<ValidationError>> beginValidation(
-      InstrumentationValidationParameters parameters) {
-    FederatedTracingState state = parameters.getInstrumentationState();
-    if (state == null) {
-      return super.beginValidation(parameters);
+      InstrumentationValidationParameters parameters, InstrumentationState state) {
+    final @Nullable FederatedTracingState federatedTracingState = (FederatedTracingState) state;
+    if (federatedTracingState == null) {
+      return super.beginValidation(parameters, null);
     }
 
     return whenCompleted(
         (validationErrors, throwable) -> {
           for (GraphQLError error : convertErrors(throwable, null)) {
-            state.addRootError(error);
+            federatedTracingState.addRootError(error);
           }
 
           for (ValidationError error : validationErrors) {
-            state.addRootError(error);
+            federatedTracingState.addRootError(error);
           }
         });
   }
