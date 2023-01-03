@@ -270,6 +270,26 @@ class FederationTest {
         "The directive 'shareable' on the 'GraphQLObjectType' called 'Position' is a non repeatable directive but has been applied 2 times");
   }
 
+  @Test
+  public void verifyFederationV2Transformation_interfaceObject() {
+    verifyFederationTransformation("schemas/interfaceObject.graphql", true);
+  }
+
+  @Test
+  public void
+      verifyFederationV2Transformation_interfaceObjectFromUnsupportedVersion_throwsException() {
+    final String schemaSDL =
+        FileUtils.readResource("schemas/interfaceObjectUnsupportedVersion.graphql");
+    assertThrows(
+        UnsupportedLinkImportException.class,
+        () ->
+            Federation.transform(schemaSDL)
+                .fetchEntities(env -> null)
+                .resolveEntityType(env -> null)
+                .build(),
+        "foo");
+  }
+
   private GraphQLSchema verifyFederationTransformation(
       String schemaFileName, boolean isFederationV2) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();

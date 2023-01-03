@@ -18,6 +18,7 @@ public class UnsupportedLinkImportException extends RuntimeException {
   }
 
   public UnsupportedLinkImportException(String importedDefinition) {
-    super("Unsupported federation import: " + importedDefinition);
+    super(
+        "New Federation feature " + importedDefinition + " imported using old Federation version");
   }
 }

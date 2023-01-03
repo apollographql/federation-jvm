@@ -1,6 +1,7 @@
 package com.apollographql.federation.graphqljava.directives;
 
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_1;
+import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_3;
 import static com.apollographql.federation.graphqljava.FederationDirectives.loadFederationSpecDefinitions;
 
 import com.apollographql.federation.graphqljava.exceptions.MultipleFederationLinksException;
@@ -67,9 +68,14 @@ public final class LinkDirectiveProcessor {
     final Argument urlArgument = linkDirective.getArgument("url");
     final String specLink = ((StringValue) urlArgument.getValue()).getValue();
     final boolean allowComposeableDirective = FEDERATION_SPEC_V2_1.equals(specLink);
+    final boolean allowInterfaceObjectDirective = FEDERATION_SPEC_V2_3.equals(specLink);
 
     if (!allowComposeableDirective && imports.containsKey("@composeDirective")) {
       throw new UnsupportedLinkImportException("@composeDirective");
+    }
+
+    if (!allowInterfaceObjectDirective && imports.containsKey("@interfaceObject")) {
+      throw new UnsupportedLinkImportException("@interfaceObject");
     }
 
     return loadFederationSpecDefinitions(specLink).stream()
