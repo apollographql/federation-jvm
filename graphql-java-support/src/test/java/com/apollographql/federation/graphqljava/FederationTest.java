@@ -24,6 +24,7 @@ import graphql.schema.TypeResolver;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.TypeRuntimeWiring;
 import graphql.schema.idl.errors.SchemaProblem;
+import graphql.schema.validation.InvalidSchemaException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -205,7 +206,7 @@ class FederationTest {
   }
 
   @Test
-  public void verifyFederationTransformation_composeDirective() {
+  public void verifyFederationV2Transformation_composeDirective() {
     verifyFederationTransformation("schemas/composeDirective.graphql", true);
   }
 
@@ -247,6 +248,26 @@ class FederationTest {
     assertThrows(
         MultipleFederationLinksException.class,
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+  }
+
+  @Test
+  public void verifyFederationV2Transformation_repeatableShareable() {
+    verifyFederationTransformation("schemas/repeatableShareable.graphql", true);
+  }
+
+  @Test
+  public void
+      verifyFederationV2Transformation_repeatableShareableFromUnsupportedVersion_throwsException() {
+    final String schemaSDL =
+        FileUtils.readResource("schemas/repeatableShareableUnsupportedVersion.graphql");
+    assertThrows(
+        InvalidSchemaException.class,
+        () ->
+            Federation.transform(schemaSDL)
+                .fetchEntities(env -> null)
+                .resolveEntityType(env -> null)
+                .build(),
+        "The directive 'shareable' on the 'GraphQLObjectType' called 'Position' is a non repeatable directive but has been applied 2 times");
   }
 
   private GraphQLSchema verifyFederationTransformation(
