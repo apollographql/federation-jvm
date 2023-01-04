@@ -2,10 +2,9 @@ name: Federation Compatibility
 
 on:
   workflow_call:
-
-permissions:
-  pull-requests: write
-  issues: write
+    secrets:
+      token:
+        required: true
 
 jobs:
   compatibility:
@@ -39,4 +38,4 @@ jobs:
           compose: 'compatibility/docker-compose.yaml'
           schema: 'compatibility/src/main/resources/graphql/schema.graphqls'
           debug: true
-          token: ${{ secrets.PAT }}
+          token: ${{ secrets.token }}
