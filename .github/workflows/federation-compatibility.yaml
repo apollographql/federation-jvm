@@ -22,7 +22,9 @@ jobs:
         with:
           java-version: 17
           distribution: 'temurin'
-          cache: 'gradle'
+
+      - name: Set up Gradle cache
+        uses: gradle/gradle-build-action@v2
 
       - name: Build app with Gradle
         run: ./gradlew bootJar
