@@ -1,7 +1,7 @@
 name: Pull Request Check
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - master
     paths-ignore:
@@ -14,3 +14,5 @@ jobs:
   integration:
     needs: build
     uses: ./.github/workflows/federation-compatibility.yaml
+    secrets:
+      token: ${{ secrets.PAT }}

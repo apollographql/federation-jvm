@@ -1,5 +1,7 @@
+import java.util.Properties
+
 plugins {
-    id("org.springframework.boot") version "3.0.0"
+    id("org.springframework.boot") version "3.0.1"
     id("io.spring.dependency-management") version "1.1.0"
     java
 }
@@ -8,9 +10,16 @@ repositories {
     mavenCentral()
 }
 
+val properties = Properties()
+properties.load(File(rootDir.parent, "gradle.properties").inputStream())
+for ((key, value) in properties) {
+    project.ext[key.toString()] = value
+}
+
+val annotationsVersion: String by project
 dependencies {
     implementation("com.apollographql.federation", "federation-graphql-java-support")
-    implementation("org.jetbrains", "annotations", "23.0.0")
+    implementation("org.jetbrains", "annotations", annotationsVersion)
     implementation("org.springframework.boot", "spring-boot-starter-actuator")
     implementation("org.springframework.boot", "spring-boot-starter-graphql")
     implementation("org.springframework.boot", "spring-boot-starter-web")

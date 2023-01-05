@@ -2,12 +2,11 @@ package com.apollographql.federation.graphqljava;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.apollographql.federation.graphqljava.data.Product;
+import com.apollographql.federation.graphqljava.exceptions.MissingKeyException;
 import com.apollographql.federation.graphqljava.exceptions.MultipleFederationLinksException;
 import com.apollographql.federation.graphqljava.exceptions.UnsupportedFederationVersionException;
 import com.apollographql.federation.graphqljava.exceptions.UnsupportedLinkImportException;
@@ -16,15 +15,13 @@ import graphql.ExecutionResult;
 import graphql.schema.DataFetcher;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLCodeRegistry;
-import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLSchema;
-import graphql.schema.GraphQLUnionType;
 import graphql.schema.PropertyDataFetcher;
 import graphql.schema.TypeResolver;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.TypeRuntimeWiring;
 import graphql.schema.idl.errors.SchemaProblem;
-import java.util.Arrays;
+import graphql.schema.validation.InvalidSchemaException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -159,25 +156,16 @@ class FederationTest {
   }
 
   @Test
-  public void verifyFederationV2Transformation_withInterfaces() {
+  public void verifyFederationV2Transformation_polymorphicTypesMissingKey_throwsException() {
     final RuntimeWiring runtimeWiring =
         RuntimeWiring.newRuntimeWiring()
             .type(TypeRuntimeWiring.newTypeWiring("Product").typeResolver(env -> null).build())
             .build();
-    final GraphQLSchema federatedSchema =
-        verifyFederationTransformation("schemas/polymorphicSubgraph.graphql", runtimeWiring, true);
-    final GraphQLUnionType entityType =
-        (GraphQLUnionType) federatedSchema.getType(_Entity.typeName);
-    assertNotNull(entityType, "Entity type should be defined");
-
-    final Iterable<String> unionTypes =
-        entityType.getTypes().stream()
-            .map(GraphQLNamedType::getName)
-            .sorted()
-            .collect(Collectors.toList());
-
-    assertIterableEquals(
-        Arrays.asList("Book", "Movie"), unionTypes, "Entity union contains all expected types");
+    assertThrows(
+        MissingKeyException.class,
+        () ->
+            verifyFederationTransformation(
+                "schemas/polymorphicSubgraphMissingKeys.graphql", runtimeWiring, true));
   }
 
   @Test
@@ -205,7 +193,7 @@ class FederationTest {
   }
 
   @Test
-  public void verifyFederationTransformation_composeDirective() {
+  public void verifyFederationV2Transformation_composeDirective() {
     verifyFederationTransformation("schemas/composeDirective.graphql", true);
   }
 
@@ -247,6 +235,55 @@ class FederationTest {
     assertThrows(
         MultipleFederationLinksException.class,
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+  }
+
+  @Test
+  public void verifyFederationV2Transformation_repeatableShareable() {
+    verifyFederationTransformation("schemas/repeatableShareable.graphql", true);
+  }
+
+  @Test
+  public void
+      verifyFederationV2Transformation_repeatableShareableFromUnsupportedVersion_throwsException() {
+    final String schemaSDL =
+        FileUtils.readResource("schemas/repeatableShareableUnsupportedVersion.graphql");
+    assertThrows(
+        InvalidSchemaException.class,
+        () ->
+            Federation.transform(schemaSDL)
+                .fetchEntities(env -> null)
+                .resolveEntityType(env -> null)
+                .build());
+  }
+
+  @Test
+  public void verifyFederationV2Transformation_interfaceObject() {
+    verifyFederationTransformation("schemas/interfaceObject.graphql", true);
+  }
+
+  @Test
+  public void
+      verifyFederationV2Transformation_interfaceObjectFromUnsupportedVersion_throwsException() {
+    final String schemaSDL =
+        FileUtils.readResource("schemas/interfaceObjectUnsupportedVersion.graphql");
+    assertThrows(
+        UnsupportedLinkImportException.class,
+        () ->
+            Federation.transform(schemaSDL)
+                .fetchEntities(env -> null)
+                .resolveEntityType(env -> null)
+                .build(),
+        "foo");
+  }
+
+  @Test
+  public void verifyFederationV2Transformation_interfaceEntity() {
+    final RuntimeWiring runtimeWiring =
+        RuntimeWiring.newRuntimeWiring()
+            .type(TypeRuntimeWiring.newTypeWiring("Product").typeResolver(env -> null).build())
+            .build();
+
+    verifyFederationTransformation("schemas/interfaceEntity.graphql", runtimeWiring, true);
   }
 
   private GraphQLSchema verifyFederationTransformation(

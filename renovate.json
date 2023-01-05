@@ -15,6 +15,12 @@
       "labels": ["type: build"]
     },
     {
+      "groupName": "Gradle version updates",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["gradle"],
+      "labels": ["type: build"]
+    },
+    {
       "groupName": "Protobuf",
       "matchPackagePrefixes": ["com.google.protobuf:"]
     }

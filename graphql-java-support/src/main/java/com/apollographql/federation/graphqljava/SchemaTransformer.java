@@ -3,13 +3,16 @@ package com.apollographql.federation.graphqljava;
 import static com.apollographql.federation.graphqljava.printer.ServiceSDLPrinter.generateServiceSDL;
 import static com.apollographql.federation.graphqljava.printer.ServiceSDLPrinter.generateServiceSDLV2;
 
+import com.apollographql.federation.graphqljava.exceptions.MissingKeyException;
 import graphql.GraphQLError;
+import graphql.language.StringValue;
 import graphql.schema.Coercing;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetcherFactory;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLDirectiveContainer;
+import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
@@ -17,6 +20,7 @@ import graphql.schema.GraphQLType;
 import graphql.schema.TypeResolver;
 import graphql.schema.idl.errors.SchemaProblem;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -144,21 +148,45 @@ public final class SchemaTransformer {
    * @return Set containing all federated entity type names.
    */
   Set<String> getFederatedEntities() {
-    final Set<String> entitiesWithExplicitKeys =
-        originalSchema.getAllTypesAsList().stream()
-            .filter(entityPredicate())
-            .map(GraphQLNamedType::getName)
-            .collect(Collectors.toSet());
+    final Set<String> entities = new HashSet<>();
+    final Set<GraphQLInterfaceType> interfaceEntities = new HashSet<>();
 
-    return originalSchema.getAllTypesAsList().stream()
-        .filter(entityObjectPredicate(entitiesWithExplicitKeys))
-        .map(GraphQLNamedType::getName)
-        .collect(Collectors.toSet());
+    originalSchema.getAllTypesAsList().stream()
+        .filter(entityPredicate())
+        .forEach(
+            type -> {
+              if (type instanceof GraphQLObjectType) {
+                entities.add(type.getName());
+              } else if (type instanceof GraphQLInterfaceType) {
+                interfaceEntities.add((GraphQLInterfaceType) type);
+              }
+            });
+
+    // verify all types specify same @keys as their interfaces
+    originalSchema.getAllTypesAsList().stream()
+        .filter(type -> type instanceof GraphQLObjectType)
+        .map(type -> (GraphQLObjectType) type)
+        .forEach(
+            type ->
+                type.getInterfaces().stream()
+                    .forEach(
+                        intf -> {
+                          if (interfaceEntities.contains(intf)) {
+                            GraphQLInterfaceType interfaceEntity = (GraphQLInterfaceType) intf;
+                            Set<String> interfaceFieldSets = retrieveFieldSets(interfaceEntity);
+                            Set<String> typeFieldSets = retrieveFieldSets(type);
+
+                            if (!typeFieldSets.containsAll(interfaceFieldSets)) {
+                              throw new MissingKeyException(type.getName(), intf.getName());
+                            }
+                          }
+                        }));
+
+    return entities;
   }
 
   /**
-   * Check against GraphQLNamedType to determine whether it is a Federated entity type (including
-   * interfaces).
+   * Check against GraphQLNamedType to determine whether it is a Federated entity type.
    *
    * @return true <em>iff</em> type contains `@key` directive
    */
@@ -176,23 +204,24 @@ public final class SchemaTransformer {
     };
   }
 
-  /**
-   * Check whether GraphQLObjectType specifies `@key` directive OR implements an interface that
-   * specifies `@key` directive.
-   *
-   * @return true <em>iff</em> GraphQL object is federated entity type.
-   */
-  private Predicate<GraphQLNamedType> entityObjectPredicate(Set<String> entityNames) {
-    return type -> {
-      if (type instanceof GraphQLObjectType) {
-        GraphQLObjectType objectType = (GraphQLObjectType) type;
-        return entityNames.contains(objectType.getName())
-            || objectType.getInterfaces().stream()
-                .anyMatch(interfaceType -> entityNames.contains(interfaceType.getName()));
-      } else {
-        return false;
-      }
-    };
+  private Set<String> retrieveFieldSets(GraphQLDirectiveContainer type) {
+    final Set<String> fieldSets =
+        type.getAppliedDirectives(FederationDirectives.keyName).stream()
+            .map(directive -> directive.getArgument(FederationDirectives.fieldsArgumentName))
+            .map(arg -> arg.getArgumentValue().getValue())
+            .map(value -> (StringValue) value)
+            .map(value -> value.getValue())
+            .collect(Collectors.toSet());
+
+    fieldSets.addAll(
+        type.getDirectives(FederationDirectives.keyName).stream()
+            .map(directive -> directive.getArgument(FederationDirectives.fieldsArgumentName))
+            .map(arg -> arg.getArgumentValue().getValue())
+            .map(value -> (StringValue) value)
+            .map(value -> value.getValue())
+            .collect(Collectors.toSet()));
+
+    return fieldSets;
   }
 
   /**

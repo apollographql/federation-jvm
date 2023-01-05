@@ -1,10 +1,14 @@
-schema @link(import : ["@key"], url : "https://specs.apollo.dev/federation/v2.0"){
+schema @link(import : ["@key"], url : "https://specs.apollo.dev/federation/v2.3"){
   query: Query
 }
+
+directive @federation__composeDirective(name: String!) repeatable on SCHEMA
 
 directive @federation__extends on OBJECT | INTERFACE
 
 directive @federation__external on OBJECT | FIELD_DEFINITION
+
+directive @federation__interfaceObject on OBJECT
 
 directive @federation__override(from: String!) on FIELD_DEFINITION
 
@@ -12,7 +16,7 @@ directive @federation__provides(fields: federation__FieldSet!) on FIELD_DEFINITI
 
 directive @federation__requires(fields: federation__FieldSet!) on FIELD_DEFINITION
 
-directive @federation__shareable on OBJECT | FIELD_DEFINITION
+directive @federation__shareable repeatable on OBJECT | FIELD_DEFINITION
 
 directive @inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
@@ -23,28 +27,31 @@ directive @link(as: String, import: [link__Import], url: String!) repeatable on 
 directive @tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
 interface Product @key(fields : "id", resolvable : true) {
+  description: String
   id: ID!
-  name: String!
+  price: Float
 }
 
 union _Entity = Book | Movie
 
-type Book implements Product {
-  author: String!
+type Book implements Product @key(fields : "id", resolvable : true) {
+  description: String
   id: ID!
-  name: String!
+  pages: Int
+  price: Float
 }
 
-type Movie implements Product {
-  director: String!
+type Movie implements Product @key(fields : "id", resolvable : true) {
+  description: String
+  duration: Int
   id: ID!
-  name: String!
+  price: Float
 }
 
 type Query {
   _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service!
-  movie(id: ID!): Movie
+  products: [Product!]!
 }
 
 type _Service {

@@ -2,6 +2,8 @@ package com.apollographql.federation.graphqljava;
 
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_0;
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_1;
+import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_2;
+import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_3;
 import static graphql.introspection.Introspection.DirectiveLocation.FIELD_DEFINITION;
 import static graphql.introspection.Introspection.DirectiveLocation.INTERFACE;
 import static graphql.introspection.Introspection.DirectiveLocation.OBJECT;
@@ -40,9 +42,9 @@ public final class FederationDirectives {
       newDirectiveLocation().name("FIELD_DEFINITION").build();
 
   /* fields: _FieldSet */
-
+  public static final String fieldsArgumentName = "fields";
   private static final GraphQLArgument fieldsArgument =
-      newArgument().name("fields").type(new GraphQLNonNull(_FieldSet.type)).build();
+      newArgument().name(fieldsArgumentName).type(new GraphQLNonNull(_FieldSet.type)).build();
 
   private static GraphQLArgument fieldsArgument(String value) {
     return newArgument(fieldsArgument).value(value).build();
@@ -50,7 +52,7 @@ public final class FederationDirectives {
 
   private static final InputValueDefinition fieldsDefinition =
       newInputValueDefinition()
-          .name("fields")
+          .name(fieldsArgumentName)
           .type(new NonNullType(new TypeName(_FieldSet.typeName)))
           .build();
 
@@ -201,6 +203,10 @@ public final class FederationDirectives {
         return loadFed2Definitions("definitions_fed2_0.graphqls");
       case FEDERATION_SPEC_V2_1:
         return loadFed2Definitions("definitions_fed2_1.graphqls");
+      case FEDERATION_SPEC_V2_2:
+        return loadFed2Definitions("definitions_fed2_2.graphqls");
+      case FEDERATION_SPEC_V2_3:
+        return loadFed2Definitions("definitions_fed2_3.graphqls");
       default:
         throw new UnsupportedFederationVersionException(federationSpec);
     }
