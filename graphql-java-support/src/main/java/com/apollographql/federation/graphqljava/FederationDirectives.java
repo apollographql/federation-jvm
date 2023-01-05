@@ -42,9 +42,9 @@ public final class FederationDirectives {
       newDirectiveLocation().name("FIELD_DEFINITION").build();
 
   /* fields: _FieldSet */
-
+  public static final String fieldsArgumentName = "fields";
   private static final GraphQLArgument fieldsArgument =
-      newArgument().name("fields").type(new GraphQLNonNull(_FieldSet.type)).build();
+      newArgument().name(fieldsArgumentName).type(new GraphQLNonNull(_FieldSet.type)).build();
 
   private static GraphQLArgument fieldsArgument(String value) {
     return newArgument(fieldsArgument).value(value).build();
@@ -52,7 +52,7 @@ public final class FederationDirectives {
 
   private static final InputValueDefinition fieldsDefinition =
       newInputValueDefinition()
-          .name("fields")
+          .name(fieldsArgumentName)
           .type(new NonNullType(new TypeName(_FieldSet.typeName)))
           .build();
 
