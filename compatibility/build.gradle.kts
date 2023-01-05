@@ -13,7 +13,7 @@ repositories {
 val properties = Properties()
 properties.load(File(rootDir.parent, "gradle.properties").inputStream())
 for ((key, value) in properties) {
-    this.ext[key.toString()] = value
+    project.ext[key.toString()] = value
 }
 
 val annotationsVersion: String by project
