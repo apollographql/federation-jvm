@@ -1,5 +1,6 @@
 services:
   products:
-    build: ./
+    # must match path from project root dir
+    build: compatibility
     ports:
       - 4001:4001

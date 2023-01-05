@@ -2,6 +2,9 @@ name: Federation Compatibility
 
 on:
   workflow_call:
+    secrets:
+      token:
+        required: true
 
 jobs:
   compatibility:
@@ -29,15 +32,10 @@ jobs:
       - name: Build app with Gradle
         run: ./gradlew bootJar
 
-      - name: Set up Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
       - name: Compatibility Test
-        run:  npx --yes @apollo/federation-subgraph-compatibility docker --debug --compose docker-compose.yaml --schema src/main/resources/graphql/schema.graphqls
-
-      - name: Generate Results Summary
-        run: |
-          cat results.md
-          cat results.md >> $GITHUB_STEP_SUMMARY
+        uses: apollographql/federation-subgraph-compatibility@v1
+        with:
+          compose: 'compatibility/docker-compose.yaml'
+          schema: 'compatibility/src/main/resources/graphql/schema.graphqls'
+          debug: true
+          token: ${{ secrets.token }}

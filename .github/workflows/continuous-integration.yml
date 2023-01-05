@@ -14,6 +14,8 @@ jobs:
   integration:
     needs: build
     uses: ./.github/workflows/federation-compatibility.yaml
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
 
   release-notes:
     timeout-minutes: 10
