@@ -1,0 +1,15 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
+
+type Product {
+  id: ID!
+  description: String!
+  createdBy: User
+}
+
+type Query {
+  product(id: ID!): Product
+}
+
+type User @key(fields: "email", resolvable: false) {
+  email: ID!
+}
