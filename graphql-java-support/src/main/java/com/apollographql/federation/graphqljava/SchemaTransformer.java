@@ -247,41 +247,41 @@ public final class SchemaTransformer {
 
   private boolean resolvableEntitiesExist(Set<String> entityNames) {
     return entityNames.stream()
-      .anyMatch(
-        entity -> {
-          GraphQLObjectType entityObject = (GraphQLObjectType) originalSchema.getType(entity);
-          boolean isResolvable =
-            entityObject.getAppliedDirectives(FederationDirectives.keyName).stream()
-              .anyMatch(
-                key -> {
-                  GraphQLAppliedDirectiveArgument resolvable =
-                    key.getArgument("resolvable");
-                  if (resolvable != null) {
-                    BooleanValue resolvableValue =
-                      (BooleanValue) resolvable.getArgumentValue().getValue();
-                    return resolvableValue == null || resolvableValue.isValue();
-                  } else {
-                    return true;
-                  }
-                });
+        .anyMatch(
+            entity -> {
+              GraphQLObjectType entityObject = (GraphQLObjectType) originalSchema.getType(entity);
+              boolean isResolvable =
+                  entityObject.getAppliedDirectives(FederationDirectives.keyName).stream()
+                      .anyMatch(
+                          key -> {
+                            GraphQLAppliedDirectiveArgument resolvable =
+                                key.getArgument("resolvable");
+                            if (resolvable != null) {
+                              BooleanValue resolvableValue =
+                                  (BooleanValue) resolvable.getArgumentValue().getValue();
+                              return resolvableValue == null || resolvableValue.isValue();
+                            } else {
+                              return true;
+                            }
+                          });
 
-          if (!isResolvable) {
-            // fallback to also verify old directive definitions
-            return entityObject.getDirectives(FederationDirectives.keyName).stream()
-              .anyMatch(
-                key -> {
-                  GraphQLArgument resolvable = key.getArgument("resolvable");
-                  if (resolvable != null) {
-                    BooleanValue resolvableValue =
-                      (BooleanValue) resolvable.getArgumentValue().getValue();
-                    return resolvableValue == null || resolvableValue.isValue();
-                  }
-                  return true;
-                });
-          } else {
-            return true;
-          }
-        });
+              if (!isResolvable) {
+                // fallback to also verify old directive definitions
+                return entityObject.getDirectives(FederationDirectives.keyName).stream()
+                    .anyMatch(
+                        key -> {
+                          GraphQLArgument resolvable = key.getArgument("resolvable");
+                          if (resolvable != null) {
+                            BooleanValue resolvableValue =
+                                (BooleanValue) resolvable.getArgumentValue().getValue();
+                            return resolvableValue == null || resolvableValue.isValue();
+                          }
+                          return true;
+                        });
+              } else {
+                return true;
+              }
+            });
   }
 
   /**
