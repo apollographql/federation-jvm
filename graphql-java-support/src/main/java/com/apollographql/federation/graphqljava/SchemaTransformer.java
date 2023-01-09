@@ -5,11 +5,14 @@ import static com.apollographql.federation.graphqljava.printer.ServiceSDLPrinter
 
 import com.apollographql.federation.graphqljava.exceptions.MissingKeyException;
 import graphql.GraphQLError;
+import graphql.language.BooleanValue;
 import graphql.language.StringValue;
 import graphql.schema.Coercing;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetcherFactory;
 import graphql.schema.FieldCoordinates;
+import graphql.schema.GraphQLAppliedDirectiveArgument;
+import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLDirectiveContainer;
 import graphql.schema.GraphQLInterfaceType;
@@ -73,9 +76,7 @@ public final class SchemaTransformer {
   }
 
   @NotNull
-  public final GraphQLSchema build() throws SchemaProblem {
-    final List<GraphQLError> errors = new ArrayList<>();
-
+  public GraphQLSchema build() throws SchemaProblem {
     // Make new Schema
     final GraphQLSchema.Builder newSchema = GraphQLSchema.newSchema(originalSchema);
 
@@ -98,31 +99,7 @@ public final class SchemaTransformer {
     newSchema.query(newQueryType.build());
 
     final GraphQLCodeRegistry.Builder newCodeRegistry =
-        GraphQLCodeRegistry.newCodeRegistry(originalSchema.getCodeRegistry());
-
-    if (!entityTypeNames.isEmpty()) {
-      if (entityTypeResolver != null) {
-        newCodeRegistry.typeResolver(_Entity.typeName, entityTypeResolver);
-      } else {
-        if (!newCodeRegistry.hasTypeResolver(_Entity.typeName)) {
-          errors.add(new FederationError("Missing a type resolver for _Entity"));
-        }
-      }
-
-      final FieldCoordinates _entities =
-          FieldCoordinates.coordinates(originalQueryType.getName(), _Entity.fieldName);
-      if (entitiesDataFetcher != null) {
-        newCodeRegistry.dataFetcher(_entities, entitiesDataFetcher);
-      } else if (entitiesDataFetcherFactory != null) {
-        newCodeRegistry.dataFetcher(_entities, entitiesDataFetcherFactory);
-      } else if (!newCodeRegistry.hasDataFetcher(_entities)) {
-        errors.add(new FederationError("Missing a data fetcher for _entities"));
-      }
-    }
-
-    if (!errors.isEmpty()) {
-      throw new SchemaProblem(errors);
-    }
+        updateCodeRegistryWithEntityResolvers(entityTypeNames);
 
     // expose the schema as _service.sdl
     newCodeRegistry.dataFetcher(
@@ -168,7 +145,7 @@ public final class SchemaTransformer {
         .map(type -> (GraphQLObjectType) type)
         .forEach(
             type ->
-                type.getInterfaces().stream()
+                type.getInterfaces()
                     .forEach(
                         intf -> {
                           if (interfaceEntities.contains(intf)) {
@@ -222,6 +199,89 @@ public final class SchemaTransformer {
             .collect(Collectors.toSet()));
 
     return fieldSets;
+  }
+
+  private GraphQLCodeRegistry.Builder updateCodeRegistryWithEntityResolvers(
+      Set<String> entityTypeNames) {
+    final List<GraphQLError> errors = new ArrayList<>();
+    final GraphQLCodeRegistry.Builder newCodeRegistry =
+        GraphQLCodeRegistry.newCodeRegistry(originalSchema.getCodeRegistry());
+
+    if (!entityTypeNames.isEmpty()) {
+      final boolean areEntitiesResolvable = resolvableEntitiesExist(entityTypeNames);
+      if (entityTypeResolver != null) {
+        newCodeRegistry.typeResolver(_Entity.typeName, entityTypeResolver);
+      } else if (!areEntitiesResolvable) {
+        // add fake entity union resolver as this type will never be resolved locally
+        newCodeRegistry.typeResolver(
+            _Entity.typeName,
+            env -> {
+              throw new IllegalStateException(
+                  "_Entity type resolver should never be called on non-resolvable entities");
+            });
+      } else if (!newCodeRegistry.hasTypeResolver(_Entity.typeName)) {
+        errors.add(new FederationError("Missing a type resolver for _Entity"));
+      }
+
+      if (areEntitiesResolvable) {
+        // need _entities resolver
+        final FieldCoordinates _entities =
+            FieldCoordinates.coordinates(
+                originalSchema.getQueryType().getName(), _Entity.fieldName);
+        if (entitiesDataFetcher != null) {
+          newCodeRegistry.dataFetcher(_entities, entitiesDataFetcher);
+        } else if (entitiesDataFetcherFactory != null) {
+          newCodeRegistry.dataFetcher(_entities, entitiesDataFetcherFactory);
+        } else if (!newCodeRegistry.hasDataFetcher(_entities)) {
+          errors.add(new FederationError("Missing a data fetcher for _entities"));
+        }
+      }
+    }
+
+    if (!errors.isEmpty()) {
+      throw new SchemaProblem(errors);
+    }
+
+    return newCodeRegistry;
+  }
+
+  private boolean resolvableEntitiesExist(Set<String> entityNames) {
+    return entityNames.stream()
+        .anyMatch(
+            entity -> {
+              GraphQLObjectType entityObject = (GraphQLObjectType) originalSchema.getType(entity);
+              boolean isResolvable =
+                  entityObject.getAppliedDirectives(FederationDirectives.keyName).stream()
+                      .anyMatch(
+                          key -> {
+                            GraphQLAppliedDirectiveArgument resolvable =
+                                key.getArgument("resolvable");
+                            if (resolvable != null) {
+                              BooleanValue resolvableValue =
+                                  (BooleanValue) resolvable.getArgumentValue().getValue();
+                              return resolvableValue == null || resolvableValue.isValue();
+                            } else {
+                              return true;
+                            }
+                          });
+
+              if (!isResolvable) {
+                // fallback to also verify old directive definitions
+                return entityObject.getDirectives(FederationDirectives.keyName).stream()
+                    .anyMatch(
+                        key -> {
+                          GraphQLArgument resolvable = key.getArgument("resolvable");
+                          if (resolvable != null) {
+                            BooleanValue resolvableValue =
+                                (BooleanValue) resolvable.getArgumentValue().getValue();
+                            return resolvableValue == null || resolvableValue.isValue();
+                          }
+                          return true;
+                        });
+              } else {
+                return true;
+              }
+            });
   }
 
   /**

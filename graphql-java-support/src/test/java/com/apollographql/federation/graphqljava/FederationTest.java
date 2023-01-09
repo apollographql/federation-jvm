@@ -286,6 +286,19 @@ class FederationTest {
     verifyFederationTransformation("schemas/interfaceEntity.graphql", runtimeWiring, true);
   }
 
+  @Test
+  public void verifyFederationV2Transformation_nonResolvableKey_doesNotRequireResolvers() {
+    final String originalSDL = FileUtils.readResource("schemas/nonResolvableKey.graphql");
+    final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
+    final GraphQLSchema federatedSchema = Federation.transform(originalSDL, runtimeWiring).build();
+
+    final String expectedFederatedSchemaSDL =
+        FileUtils.readResource("schemas/nonResolvableKey_federated.graphql");
+    FederatedSchemaVerifier.verifySchemaSDL(federatedSchema, expectedFederatedSchemaSDL, true);
+    FederatedSchemaVerifier.verifySchemaContainsServiceFederationType(federatedSchema);
+    FederatedSchemaVerifier.verifyServiceSDL(federatedSchema, expectedFederatedSchemaSDL);
+  }
+
   private GraphQLSchema verifyFederationTransformation(
       String schemaFileName, boolean isFederationV2) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
