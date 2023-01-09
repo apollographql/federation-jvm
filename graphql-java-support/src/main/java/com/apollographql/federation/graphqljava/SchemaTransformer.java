@@ -219,10 +219,8 @@ public final class SchemaTransformer {
               throw new IllegalStateException(
                   "_Entity type resolver should never be called on non-resolvable entities");
             });
-      } else {
-        if (!newCodeRegistry.hasTypeResolver(_Entity.typeName)) {
-          errors.add(new FederationError("Missing a type resolver for _Entity"));
-        }
+      } else if (!newCodeRegistry.hasTypeResolver(_Entity.typeName)) {
+        errors.add(new FederationError("Missing a type resolver for _Entity"));
       }
 
       if (areEntitiesResolvable) {
