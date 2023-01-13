@@ -39,3 +39,5 @@ jobs:
           schema: 'compatibility/src/main/resources/graphql/schema.graphqls'
           debug: true
           token: ${{ secrets.token }}
+          failOnWarning: true
+          failOnRequired: true
