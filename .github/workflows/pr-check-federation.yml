@@ -1,4 +1,4 @@
-name: Pull Request Check
+name: Pull Request Federation Compatibility Check
 
 on:
   pull_request_target:
