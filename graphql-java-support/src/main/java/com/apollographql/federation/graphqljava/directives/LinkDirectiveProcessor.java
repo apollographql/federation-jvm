@@ -1,10 +1,9 @@
 package com.apollographql.federation.graphqljava.directives;
 
-import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_1;
-import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_3;
 import static com.apollographql.federation.graphqljava.FederationDirectives.loadFederationSpecDefinitions;
 
 import com.apollographql.federation.graphqljava.exceptions.MultipleFederationLinksException;
+import com.apollographql.federation.graphqljava.exceptions.UnsupportedFederationVersionException;
 import com.apollographql.federation.graphqljava.exceptions.UnsupportedLinkImportException;
 import graphql.language.Argument;
 import graphql.language.ArrayValue;
@@ -67,14 +66,14 @@ public final class LinkDirectiveProcessor {
 
     final Argument urlArgument = linkDirective.getArgument("url");
     final String specLink = ((StringValue) urlArgument.getValue()).getValue();
-    final boolean allowComposeableDirective = FEDERATION_SPEC_V2_1.equals(specLink);
-    final boolean allowInterfaceObjectDirective = FEDERATION_SPEC_V2_3.equals(specLink);
 
-    if (!allowComposeableDirective && imports.containsKey("@composeDirective")) {
+    final int federationVersion = parseFederationVersion(specLink);
+    if (imports.containsKey("@composeDirective")
+        && !isComposeDirectiveSupported(federationVersion)) {
       throw new UnsupportedLinkImportException("@composeDirective");
     }
 
-    if (!allowInterfaceObjectDirective && imports.containsKey("@interfaceObject")) {
+    if (imports.containsKey("@interfaceObject") && !isInterfaceObjectSupported(federationVersion)) {
       throw new UnsupportedLinkImportException("@interfaceObject");
     }
 
@@ -84,6 +83,23 @@ public final class LinkDirectiveProcessor {
                 (SDLNamedDefinition)
                     new AstTransformer()
                         .transform(definition, new LinkImportsRenamingVisitor(imports)));
+  }
+
+  private static int parseFederationVersion(String specLink) {
+    final String versionString = specLink.substring(specLink.length() - 3);
+    try {
+      return Math.round(Float.parseFloat(versionString) * 10);
+    } catch (Exception e) {
+      throw new UnsupportedFederationVersionException(specLink);
+    }
+  }
+
+  private static boolean isComposeDirectiveSupported(int federationVersion) {
+    return federationVersion >= 21;
+  }
+
+  private static boolean isInterfaceObjectSupported(int federationVersion) {
+    return federationVersion >= 23;
   }
 
   private static Stream<Directive> getFederationLinkDirectives(SchemaDefinition schemaDefinition) {
