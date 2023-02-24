@@ -20,10 +20,10 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        if: ${{ inputs.fork == 'false' }}
+        if: ${{ inputs.fork }} == 'false'
         uses: actions/checkout@v3
       - name: Checkout Repository (fork mode)
-        if: ${{ inputs.fork == 'true' }}
+        if: ${{ inputs.fork }} == 'true'
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
