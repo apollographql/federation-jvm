@@ -43,7 +43,6 @@ jobs:
         with:
           compose: 'docker-compose.yaml'
           schema: 'src/main/resources/graphql/schema.graphqls'
-          debug: true
           failOnWarning: true
           failOnRequired: true
           workingDirectory: 'compatibility'
