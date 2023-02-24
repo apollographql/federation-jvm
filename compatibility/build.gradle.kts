@@ -10,6 +10,7 @@ repositories {
     mavenCentral()
 }
 
+// test PR
 val properties = Properties()
 properties.load(File(rootDir.parent, "gradle.properties").inputStream())
 for ((key, value) in properties) {
