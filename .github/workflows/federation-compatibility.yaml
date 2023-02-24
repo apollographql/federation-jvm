@@ -46,9 +46,10 @@ jobs:
       - name: Compatibility Test
         uses: apollographql/federation-subgraph-compatibility@v1
         with:
-          compose: 'compatibility/docker-compose.yaml'
-          schema: 'compatibility/src/main/resources/graphql/schema.graphqls'
+          compose: 'docker-compose.yaml'
+          schema: 'src/main/resources/graphql/schema.graphqls'
           debug: true
           token: ${{ secrets.token }}
           failOnWarning: true
           failOnRequired: true
+          workingDirectory: 'compatibility'
