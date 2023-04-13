@@ -1,4 +1,4 @@
-FROM gradle:8.0.2-jdk17
+FROM gradle:8.1.0-jdk17
 
 EXPOSE 4001
 RUN mkdir /app
