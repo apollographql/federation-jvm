@@ -37,7 +37,7 @@ public final class SchemaTransformer {
   private TypeResolver entityTypeResolver = null;
   private DataFetcher entitiesDataFetcher = null;
   private DataFetcherFactory entitiesDataFetcherFactory = null;
-  private Coercing coercingForAny = _Any.defaultCoercing;
+  private Coercing coercingForAny = _Any.type.getCoercing();
   private boolean isFederation2 = false;
 
   SchemaTransformer(GraphQLSchema originalSchema, boolean queryTypeShouldBeEmpty) {
@@ -93,7 +93,7 @@ public final class SchemaTransformer {
 
       final GraphQLType originalAnyType = originalSchema.getType(_Any.typeName);
       if (originalAnyType == null) {
-        newSchema.additionalType(_Any.type(coercingForAny));
+        newSchema.additionalType(_Any.type.transform((it) -> it.coercing(coercingForAny)));
       }
     }
     newSchema.query(newQueryType.build());
