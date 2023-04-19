@@ -5,7 +5,7 @@ import graphql.ExecutionResult;
 import graphql.GraphQLContext;
 import graphql.execution.instrumentation.InstrumentationContext;
 import graphql.execution.instrumentation.InstrumentationState;
-import graphql.execution.instrumentation.SimpleInstrumentation;
+import graphql.execution.instrumentation.SimplePerformantInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationCreateStateParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldParameters;
@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  * implementation at
  * https://github.com/apollographql/apollo-server/blob/main/packages/apollo-server-core/src/plugin/cacheControl/index.ts
  */
-public class CacheControlInstrumentation extends SimpleInstrumentation {
+public class CacheControlInstrumentation extends SimplePerformantInstrumentation {
   private final int defaultMaxAge;
 
   private static final Object CONTEXT_KEY = new Object();
