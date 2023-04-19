@@ -168,7 +168,7 @@ public final class Federation {
                 GraphQLScalarType.newScalar()
                     .name(def.getName())
                     .description(null)
-                    .coercing(_Any.defaultCoercing)
+                    .coercing(_Any.type.getCoercing())
                     .build());
           }
         });

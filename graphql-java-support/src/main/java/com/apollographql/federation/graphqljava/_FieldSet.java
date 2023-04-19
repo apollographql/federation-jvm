@@ -16,4 +16,8 @@ public final class _FieldSet {
 
   public static final ScalarTypeDefinition definition =
       ScalarTypeDefinition.newScalarTypeDefinition().name(typeName).build();
+
+  private _FieldSet() {
+    // hidden constructor
+  }
 }
