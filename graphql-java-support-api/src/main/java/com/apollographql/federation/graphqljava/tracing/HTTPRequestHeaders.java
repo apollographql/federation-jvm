@@ -6,7 +6,11 @@ import org.jetbrains.annotations.Nullable;
  * If the context object on your GraphQL ExecutionInput implements this interface,
  * FederationTracingInstrumentation will generate traces only when requested to by the gateway in
  * front of it.
+ *
+ * @deprecated HTTPRequestHeaders relies on old deprecated GraphQL context mechanism. Migrate to use
+ * new generic context map mechanism which should include ftv1 entry.
  */
+@Deprecated
 public interface HTTPRequestHeaders {
   /**
    * Return the value of the given HTTP header from the request, or null if the header is not
