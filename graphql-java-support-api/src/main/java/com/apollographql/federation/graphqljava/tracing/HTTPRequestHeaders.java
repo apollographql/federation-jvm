@@ -8,7 +8,7 @@ import org.jetbrains.annotations.Nullable;
  * front of it.
  *
  * @deprecated HTTPRequestHeaders relies on old deprecated GraphQL context mechanism. Migrate to use
- * new generic context map mechanism which should include ftv1 entry.
+ *     new generic context map mechanism which should include ftv1 entry.
  */
 @Deprecated
 public interface HTTPRequestHeaders {
