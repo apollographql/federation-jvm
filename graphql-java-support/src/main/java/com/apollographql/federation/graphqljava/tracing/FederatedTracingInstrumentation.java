@@ -14,7 +14,7 @@ import graphql.execution.ExecutionStepInfo;
 import graphql.execution.ResultPath;
 import graphql.execution.instrumentation.InstrumentationContext;
 import graphql.execution.instrumentation.InstrumentationState;
-import graphql.execution.instrumentation.SimpleInstrumentation;
+import graphql.execution.instrumentation.SimplePerformantInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationCreateStateParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters;
@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FederatedTracingInstrumentation extends SimpleInstrumentation {
+public class FederatedTracingInstrumentation extends SimplePerformantInstrumentation {
   public static final String FEDERATED_TRACING_HEADER_NAME = "apollo-federation-include-trace";
   public static final String FEDERATED_TRACING_HEADER_VALUE = "ftv1";
 
