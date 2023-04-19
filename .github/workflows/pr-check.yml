@@ -10,3 +10,11 @@ on:
 jobs:
   build:
     uses: ./.github/workflows/build.yaml
+
+  integration:
+    needs: build
+    permissions:
+      pull-requests: write
+    uses: ./.github/workflows/compatibility.yml
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
