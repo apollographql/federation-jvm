@@ -1,14 +1,13 @@
 name: Pull Request Federation Compatibility Check
 
 on:
-  pull_request_target:
-    branches:
-      - master
-    paths-ignore:
-      - '*.md'
+  workflow_call:
+    secrets:
+      token:
+        required: false
 
 jobs:
-  integration:
+  compatibility:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     defaults:
@@ -18,8 +17,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@v1
@@ -41,8 +38,7 @@ jobs:
         with:
           compose: 'docker-compose.yaml'
           schema: 'src/main/resources/graphql/schema.graphqls'
-          debug: true
-          token: ${{ secrets.PAT }}
           failOnWarning: true
           failOnRequired: true
           workingDirectory: 'compatibility'
+          token: ${{ secrets.token }}
