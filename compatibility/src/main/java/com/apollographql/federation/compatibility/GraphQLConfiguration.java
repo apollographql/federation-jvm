@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.springframework.boot.autoconfigure.graphql.GraphQlSourceBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.graphql.execution.ClassNameTypeResolver;
 
 @Configuration
 public class GraphQLConfiguration {
@@ -40,22 +41,7 @@ public class GraphQLConfiguration {
             };
           }).collect(Collectors.toList())
         )
-        .resolveEntityType(env -> {
-          final Object src = env.getObject();
-          if (src instanceof DeprecatedProduct) {
-            return env.getSchema().getObjectType("DeprecatedProduct");
-          } else if (src instanceof Product) {
-            return env.getSchema().getObjectType("Product");
-          } else if (src instanceof ProductResearch) {
-            return env.getSchema().getObjectType("ProductResearch");
-          } else if (src instanceof User) {
-            return env.getSchema().getObjectType("User");
-          } else if (src instanceof Inventory) {
-            return env.getSchema().getObjectType("Inventory");
-          } else {
-            return null;
-          }
-        })
+        .resolveEntityType(new ClassNameTypeResolver())
         .build()
     );
   }
