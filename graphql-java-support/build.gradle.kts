@@ -2,7 +2,7 @@ description = "GraphQL Java server support for Apollo Federation"
 
 plugins {
     id("com.apollographql.federation.java-conventions")
-    id("com.google.protobuf") version "0.9.2"
+    id("com.google.protobuf") version "0.9.4"
 }
 
 val annotationsVersion: String by project
@@ -20,6 +20,6 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.22.3"
+        artifact = "com.google.protobuf:protoc:3.23.4"
     }
 }
