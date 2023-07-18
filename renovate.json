@@ -11,8 +11,7 @@
     },
     {
       "groupName": "Gradle version updates",
-      "matchDatasources": ["docker"],
-      "matchFileNames": ["gradle/gradle-wrapper.properties", "compatibility/Dockerfile"],
+      "matchDatasources": ["docker", "gradle-wrapper"],
       "matchPackageNames": ["gradle"],
       "labels": ["type: build"]
     },
