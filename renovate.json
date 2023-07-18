@@ -11,17 +11,13 @@
     },
     {
       "groupName": "Gradle version updates",
-      "matchPaths": ["gradle-wrapper.properties"],
-      "labels": ["type: build"]
-    },
-    {
-      "groupName": "Gradle version updates",
       "matchDatasources": ["docker"],
+      "matchFileNames": ["gradle/gradle-wrapper.properties", "compatibility/Dockerfile"],
       "matchPackageNames": ["gradle"],
       "labels": ["type: build"]
     },
     {
-      "groupName": "Protobuf",
+      "groupName": "Protobuf version updates",
       "matchPackagePrefixes": ["com.google.protobuf:"]
     }
   ]
