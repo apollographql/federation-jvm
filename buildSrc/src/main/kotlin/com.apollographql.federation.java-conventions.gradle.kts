@@ -23,8 +23,8 @@ dependencies {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 
     if (!version.toString().endsWith("SNAPSHOT")) {
         withJavadocJar()
@@ -83,8 +83,7 @@ spotless {
     java {
         importOrder()
         removeUnusedImports()
-        // Note that later versions use a bytecode target incompatible with Java SE 8
-        googleJavaFormat("1.7")
+        googleJavaFormat("1.17.0")
         // exclude generated proto
         targetExclude("build/generated/**/*.java")
     }
