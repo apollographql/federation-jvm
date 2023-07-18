@@ -1,7 +1,5 @@
-rootProject.name = "federation-parent"
+rootProject.name = "federation-jvm"
 
 include(":federation-graphql-java-support")
-include(":federation-graphql-java-support-api")
 
 project(":federation-graphql-java-support").projectDir = file("graphql-java-support")
-project(":federation-graphql-java-support-api").projectDir = file("graphql-java-support-api")

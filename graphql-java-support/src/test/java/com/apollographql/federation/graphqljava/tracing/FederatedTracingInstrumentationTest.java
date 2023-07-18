@@ -218,31 +218,6 @@ class FederatedTracingInstrumentationTest {
   }
 
   @Test
-  void testHTTPHeaders() {
-    Map<String, String> headers = new HashMap<>();
-    HTTPRequestHeaders context = headers::get;
-    ExecutionInput input =
-        ExecutionInput.newExecutionInput("{widgets {foo}}").context(context).build();
-
-    // Because the context implements HTTPRequestHeaders but the special header isn't there,
-    // we don't get the trace extension (or any extensions).
-    Map<String, Object> result = graphql.execute(input).toSpecification();
-    assertNull(result.get("extensions"));
-
-    // Try again with the header having the wrong value.
-    headers.put("apollo-federation-include-trace", "bla");
-    result = graphql.execute(input).toSpecification();
-    assertNull(result.get("extensions"));
-
-    // Now with the right value.
-    headers.put("apollo-federation-include-trace", "ftv1");
-    result = graphql.execute(input).toSpecification();
-    Object extensions = result.get("extensions");
-    assertTrue(extensions instanceof Map);
-    assertTrue(((Map) extensions).containsKey("ftv1"));
-  }
-
-  @Test
   void testBringYourOwnContextSignalsToTracePredicate() {
     // Create instrumentation which has explicit custom evaluation predicate defined.
     Options options =
@@ -266,9 +241,6 @@ class FederatedTracingInstrumentationTest {
     Map<String, String> context = new HashMap<>();
     ExecutionInput input =
         ExecutionInput.newExecutionInput("{widgets {foo}}").context(context).build();
-
-    // Our context object is just a Map, and should not implement HTTPRequestHeaders.
-    assertFalse(input.getContext() instanceof HTTPRequestHeaders);
 
     // Because the special header isn't there, we don't get the trace extension.
     Map<String, Object> result = graphql.execute(input).toSpecification();

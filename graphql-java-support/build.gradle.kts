@@ -11,7 +11,6 @@ val protobufVersion: String by project
 val slf4jVersion: String by project
 dependencies {
     compileOnly("org.jetbrains:annotations:$annotationsVersion")
-    api(project(":federation-graphql-java-support-api"))
     api("com.graphql-java:graphql-java:$graphQLJavaVersion")
     api("org.slf4j:slf4j-api:$slf4jVersion")
     api("com.google.protobuf:protobuf-java:$protobufVersion")
