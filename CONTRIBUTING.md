@@ -82,7 +82,7 @@ A maintainer will need to sign off on your pull request before it can be merged.
 In order to [release a new version](https://github.com/apollographql/federation-jvm/releases) we need to draft a new release
 and tag the commit. Releases are following [semantic versioning](https://semver.org/) and specify major, minor and patch version.
 
-Once release is published it will trigger corresponding [Github Action](https://github.com/apollographql/federation-jvm/blob/master/.github/workflows/release.yml)
+Once release is published it will trigger corresponding [Github Action](https://github.com/apollographql/federation-jvm/blob/main/.github/workflows/release.yml)
 based on the published release event. Release workflow will then proceed to build and publish all library artifacts to [Maven Central](https://central.sonatype.org/).
 
 ### Release requirements
