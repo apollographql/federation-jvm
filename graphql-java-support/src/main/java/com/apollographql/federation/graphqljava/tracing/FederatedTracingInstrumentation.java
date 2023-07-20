@@ -496,21 +496,10 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
         return shouldTracePredicate.test(executionInput);
       }
 
-      if (executionInput != null) {
-        // Default/null implementation as described in the javadoc for the Options constructor.
-        if (executionInput.getGraphQLContext().hasKey(FEDERATED_TRACING_HEADER_NAME)) {
-          return FEDERATED_TRACING_HEADER_VALUE.equals(
-              executionInput.getGraphQLContext().get(FEDERATED_TRACING_HEADER_NAME));
-        } else if (executionInput.getContext() != null) {
-          // ExecutionInput#getContext which returns arbitrary object is deprecated
-          // usage should be replaced by ExecutionInput#getGraphQLContext which returns a map
-          Object context = executionInput.getContext();
-          if (context instanceof HTTPRequestHeaders) {
-            String header =
-                ((HTTPRequestHeaders) context).getHTTPRequestHeader(FEDERATED_TRACING_HEADER_NAME);
-            return FEDERATED_TRACING_HEADER_VALUE.equals(header);
-          }
-        }
+      if (executionInput != null
+          && executionInput.getGraphQLContext().hasKey(FEDERATED_TRACING_HEADER_NAME)) {
+        return FEDERATED_TRACING_HEADER_VALUE.equals(
+            executionInput.getGraphQLContext().get(FEDERATED_TRACING_HEADER_NAME));
       }
       return true;
     }
