@@ -27,10 +27,10 @@ public final class Federation {
 
   public static final String FEDERATION_SPEC_V2_0 = "https://specs.apollo.dev/federation/v2.0";
   public static final String FEDERATION_SPEC_V2_1 = "https://specs.apollo.dev/federation/v2.1";
-
   public static final String FEDERATION_SPEC_V2_2 = "https://specs.apollo.dev/federation/v2.2";
-
   public static final String FEDERATION_SPEC_V2_3 = "https://specs.apollo.dev/federation/v2.3";
+  public static final String FEDERATION_SPEC_V2_4 = "https://specs.apollo.dev/federation/v2.4";
+  public static final String FEDERATION_SPEC_V2_5 = "https://specs.apollo.dev/federation/v2.5";
 
   private static final SchemaGenerator.Options generatorOptions =
       SchemaGenerator.Options.defaultOptions();

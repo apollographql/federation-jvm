@@ -1,0 +1,11 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.5", import: ["@authenticated", "@key", "@requiresScopes", "Scope", "FieldSet"])
+
+type Product @key(fields: "id") {
+    id: ID!
+    name: String!
+    supplier: String @requiresScopes(scopes: [["scopeA"]])
+}
+
+type Query {
+    product(id: ID!): Product @authenticated
+}

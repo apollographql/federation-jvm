@@ -299,6 +299,16 @@ class FederationTest {
     FederatedSchemaVerifier.verifyServiceSDL(federatedSchema, expectedFederatedSchemaSDL);
   }
 
+  @Test
+  public void verifyFederationV2Transformation_authorization() {
+    verifyFederationTransformation("schemas/authorization.graphql", true);
+  }
+
+  @Test
+  public void verifyFederationV2Transformation_customAuthenticated() {
+    verifyFederationTransformation("schemas/customAuthenticated.graphql", true);
+  }
+
   private GraphQLSchema verifyFederationTransformation(
       String schemaFileName, boolean isFederationV2) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
