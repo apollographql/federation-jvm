@@ -5,6 +5,11 @@
   "labels": ["type: dependencies"],
   "packageRules": [
     {
+      "groupName": "all non-major dependencies",
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupSlug": "all-minor-patch",
+    },
+    {
       "groupName": "GraphQL Java (ignoring snapshot builds)",
       "matchPackagePrefixes": ["com.graphql-java:"],
       "allowedVersions": "/^[0-9]+\\.[0-9]+(\\.[0-9]+)?$/"
