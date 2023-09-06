@@ -4,6 +4,8 @@ import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPE
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_1;
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_2;
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_3;
+import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_4;
+import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_5;
 import static graphql.introspection.Introspection.DirectiveLocation.FIELD_DEFINITION;
 import static graphql.introspection.Introspection.DirectiveLocation.INTERFACE;
 import static graphql.introspection.Introspection.DirectiveLocation.OBJECT;
@@ -15,7 +17,13 @@ import static graphql.schema.GraphQLDirective.newDirective;
 
 import com.apollographql.federation.graphqljava.exceptions.UnsupportedFederationVersionException;
 import graphql.PublicApi;
-import graphql.language.*;
+import graphql.language.DirectiveDefinition;
+import graphql.language.DirectiveLocation;
+import graphql.language.Document;
+import graphql.language.InputValueDefinition;
+import graphql.language.NonNullType;
+import graphql.language.SDLNamedDefinition;
+import graphql.language.TypeName;
 import graphql.parser.Parser;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
@@ -25,7 +33,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -206,7 +219,10 @@ public final class FederationDirectives {
       case FEDERATION_SPEC_V2_2:
         return loadFed2Definitions("definitions_fed2_2.graphqls");
       case FEDERATION_SPEC_V2_3:
+      case FEDERATION_SPEC_V2_4:
         return loadFed2Definitions("definitions_fed2_3.graphqls");
+      case FEDERATION_SPEC_V2_5:
+        return loadFed2Definitions("definitions_fed2_5.graphqls");
       default:
         throw new UnsupportedFederationVersionException(federationSpec);
     }
