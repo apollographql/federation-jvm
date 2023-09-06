@@ -1,0 +1,13 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.5", import: ["@key"])
+
+directive @authenticated(role: [String!]!) on FIELD_DEFINITION
+
+type Product @key(fields: "id") {
+    id: ID!
+    name: String!
+    supplier: String @authenticated(role: ["manager"])
+}
+
+type Query {
+    product(id: ID!): Product
+}
