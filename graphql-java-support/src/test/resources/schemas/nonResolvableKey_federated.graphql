@@ -22,7 +22,7 @@ directive @inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINIT
 
 directive @key(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
 
-directive @link(as: String, import: [link__Import], url: String!) repeatable on SCHEMA
+directive @link(as: String, for: link__Purpose, import: [link__Import], url: String!) repeatable on SCHEMA
 
 directive @tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
@@ -46,6 +46,11 @@ type User @key(fields : "email", resolvable : false) {
 
 type _Service {
   sdl: String!
+}
+
+enum link__Purpose {
+  EXECUTION
+  SECURITY
 }
 
 scalar _Any

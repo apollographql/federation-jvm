@@ -3,6 +3,7 @@ package com.apollographql.federation.graphqljava;
 import static com.apollographql.federation.graphqljava.directives.LinkDirectiveProcessor.loadFederationImportedDefinitions;
 
 import graphql.language.DirectiveDefinition;
+import graphql.language.EnumTypeDefinition;
 import graphql.language.FieldDefinition;
 import graphql.language.ObjectTypeDefinition;
 import graphql.language.SDLNamedDefinition;
@@ -160,9 +161,8 @@ public final class Federation {
           if (def instanceof DirectiveDefinition
               && !typeRegistry.getDirectiveDefinition(def.getName()).isPresent()) {
             typeRegistry.add(def);
-          }
-          if (def instanceof ScalarTypeDefinition
-              && !runtimeWiring.getScalars().containsKey(def.getName())) {
+          } else if (def instanceof ScalarTypeDefinition
+              && !typeRegistry.scalars().containsKey(def.getName())) {
             typeRegistry.add(def);
             scalarTypesToAdd.add(
                 GraphQLScalarType.newScalar()
@@ -170,6 +170,9 @@ public final class Federation {
                     .description(null)
                     .coercing(_Any.defaultCoercing)
                     .build());
+          } else if (def instanceof EnumTypeDefinition
+              && !typeRegistry.types().containsKey(def.getName())) {
+            typeRegistry.add(def);
           }
         });
 
