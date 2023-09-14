@@ -33,22 +33,28 @@ directive @tag(name: String!) repeatable on
 scalar FieldSet
 
 #
-# federation-v2.1
-#
-
-directive @composeDirective(name: String!) repeatable on SCHEMA
-
-#
 # https://specs.apollo.dev/link/v1.0/link-v1.0.graphql
 #
 
 directive @link(
     url: String!,
     as: String,
-    import: [Import])
+    import: [Import],
+    for: Purpose)
 repeatable on SCHEMA
 
 scalar Import
+
+enum Purpose {
+  SECURITY
+  EXECUTION
+}
+
+#
+# federation-v2.1
+#
+
+directive @composeDirective(name: String!) repeatable on SCHEMA
 
 #
 # federation-v2.2

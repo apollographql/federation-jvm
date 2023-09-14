@@ -10,7 +10,7 @@ directive @federation__requires(fields: federation__FieldSet!) on FIELD_DEFINITI
 
 directive @inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
-directive @link(as: String, import: [link__Import], url: String!) repeatable on SCHEMA
+directive @link(as: String, for: link__Purpose, import: [link__Import], url: String!) repeatable on SCHEMA
 
 directive @myKey(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
 
@@ -55,6 +55,11 @@ type User @myKey(fields : "email", resolvable : true) {
 
 type _Service {
   sdl: String!
+}
+
+enum link__Purpose {
+  EXECUTION
+  SECURITY
 }
 
 scalar federation__FieldSet

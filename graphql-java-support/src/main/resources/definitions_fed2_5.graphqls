@@ -39,10 +39,16 @@ scalar FieldSet
 directive @link(
     url: String!,
     as: String,
-    import: [Import])
+    import: [Import],
+    for: Purpose)
 repeatable on SCHEMA
 
 scalar Import
+
+enum Purpose {
+  SECURITY
+  EXECUTION
+}
 
 #
 # federation-v2.1
