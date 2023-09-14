@@ -18,7 +18,7 @@ directive @inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINIT
 
 directive @key(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
 
-directive @link(as: String, import: [link__Import], url: String!) repeatable on SCHEMA
+directive @link(as: String, for: link__Purpose, import: [link__Import], url: String!) repeatable on SCHEMA
 
 directive @shareable repeatable on OBJECT | FIELD_DEFINITION
 
@@ -46,6 +46,11 @@ type Query {
 
 type _Service {
   sdl: String!
+}
+
+enum link__Purpose {
+  EXECUTION
+  SECURITY
 }
 
 scalar _Any

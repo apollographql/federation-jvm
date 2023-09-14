@@ -4,6 +4,7 @@ import static graphql.util.TreeTransformerUtil.changeNode;
 
 import com.apollographql.federation.graphqljava.exceptions.UnsupportedRenameException;
 import graphql.language.DirectiveDefinition;
+import graphql.language.EnumTypeDefinition;
 import graphql.language.NamedNode;
 import graphql.language.Node;
 import graphql.language.NodeVisitorStub;
@@ -43,6 +44,9 @@ class LinkImportsRenamingVisitor extends NodeVisitorStub {
       } else if (node instanceof DirectiveDefinition) {
         String newName = newName(((NamedNode<?>) node).getName(), fed2Imports, true);
         newNode = ((DirectiveDefinition) node).transform(builder -> builder.name(newName));
+      } else if (node instanceof EnumTypeDefinition) {
+        String newName = newName(((NamedNode<?>) node).getName(), fed2Imports, true);
+        newNode = ((EnumTypeDefinition) node).transform(builder -> builder.name(newName));
       }
       if (newNode != null) {
         return changeNode(context, newNode);
@@ -78,7 +82,7 @@ class LinkImportsRenamingVisitor extends NodeVisitorStub {
     } else {
       if (name.equals("inaccessible") || name.equals("tag")) {
         return name;
-      } else if (name.equals("Import")) {
+      } else if (name.equals("Import") || name.equals("Purpose")) {
         return "link__" + name;
       } else {
         // apply default namespace
