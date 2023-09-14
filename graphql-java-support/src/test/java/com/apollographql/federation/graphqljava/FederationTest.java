@@ -309,6 +309,25 @@ class FederationTest {
     verifyFederationTransformation("schemas/customAuthenticated.graphql", true);
   }
 
+  @Test
+  public void verifyFederationV2Transformation_authorizedFromUnsupportedVersion_throwsException() {
+    final String schemaSDL =
+        FileUtils.readResource("schemas/authenticatedUnsupportedSpecVersion.graphql");
+    assertThrows(
+        UnsupportedLinkImportException.class,
+        () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+  }
+
+  @Test
+  public void
+      verifyFederationV2Transformation_requiresScopesFromUnsupportedVersion_throwsException() {
+    final String schemaSDL =
+        FileUtils.readResource("schemas/requiresScopesUnsupportedSpecVersion.graphql");
+    assertThrows(
+        UnsupportedLinkImportException.class,
+        () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+  }
+
   private GraphQLSchema verifyFederationTransformation(
       String schemaFileName, boolean isFederationV2) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();

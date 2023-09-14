@@ -77,6 +77,14 @@ public final class LinkDirectiveProcessor {
       throw new UnsupportedLinkImportException("@interfaceObject");
     }
 
+    if (imports.containsKey("@authenticated") && !isAuthorizationSupported(federationVersion)) {
+      throw new UnsupportedLinkImportException("@authenticated");
+    }
+
+    if (imports.containsKey("@requiresScopes") && !isAuthorizationSupported(federationVersion)) {
+      throw new UnsupportedLinkImportException("@requiresScopes");
+    }
+
     return loadFederationSpecDefinitions(specLink).stream()
         .map(
             definition ->
@@ -100,6 +108,10 @@ public final class LinkDirectiveProcessor {
 
   private static boolean isInterfaceObjectSupported(int federationVersion) {
     return federationVersion >= 23;
+  }
+
+  private static boolean isAuthorizationSupported(int federationVersion) {
+    return federationVersion >= 25;
   }
 
   private static Stream<Directive> getFederationLinkDirectives(SchemaDefinition schemaDefinition) {
