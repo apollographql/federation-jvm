@@ -2,7 +2,7 @@ package com.apollographql.subscription.message;
 
 import java.util.Map;
 
-public record CallbackMessageNext(String id, String verifier, Map<String, Object> data) implements SubscritionCallbackMessage {
+public record CallbackMessageNext(String id, String verifier, Map<String, Object> payload) implements SubscritionCallbackMessage {
 
   @Override
   public String getKind() {
@@ -25,6 +25,6 @@ public record CallbackMessageNext(String id, String verifier, Map<String, Object
   }
 
   public Map<String, Object> getPayload() {
-    return Map.of("data", data);
+    return payload;
   }
 }
