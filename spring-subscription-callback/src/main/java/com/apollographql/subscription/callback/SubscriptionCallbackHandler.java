@@ -16,7 +16,6 @@ import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import org.springframework.graphql.server.WebGraphQlHandler;
 import org.springframework.graphql.server.WebGraphQlRequest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -24,6 +23,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
+/** GraphQL subscription handler implementing Apollo HTTP callback protocol. */
 public class SubscriptionCallbackHandler {
   private static final Log logger = LogFactory.getLog(SubscriptionCallbackHandler.class);
 
@@ -43,7 +43,7 @@ public class SubscriptionCallbackHandler {
   }
 
   @NotNull
-  public Mono<Boolean> handleCallback(
+  public Mono<Boolean> handleSubscriptionUsingCallback(
       @NotNull WebGraphQlRequest graphQlRequest, @NotNull SubscriptionCallback callback) {
     if (logger.isDebugEnabled()) {
       logger.debug("Starting subscription callback: " + callback);
@@ -65,7 +65,7 @@ public class SubscriptionCallbackHandler {
               var subscriptionProtocol =
                   checkResponse.headers().header(SUBSCRIPTION_PROTOCOL_HEADER);
 
-              if (HttpStatus.NO_CONTENT.equals(responseStatusCode)) {
+              if (responseStatusCode.is2xxSuccessful()) {
                 //            && !subscriptionProtocol.isEmpty() &&
                 // "callback".equals(subscriptionProtocol.get(0)))
                 Flux<SubscritionCallbackMessage> subscription =

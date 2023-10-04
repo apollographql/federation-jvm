@@ -2,13 +2,15 @@ package com.apollographql.subscription.message;
 
 import java.util.Map;
 
+/**
+ * <code>next</code> message contains emitted GraphQL subscription data.
+ *
+ * @param id unique subscription ID
+ * @param verifier value provided by Router that is used to validate requests
+ * @param payload emitted GraphQL subscription data
+ */
 public record CallbackMessageNext(String id, String verifier, Map<String, Object> payload)
     implements SubscritionCallbackMessage {
-
-  @Override
-  public String getKind() {
-    return "subscription";
-  }
 
   @Override
   public CallbackMessageAction getAction() {

@@ -18,6 +18,8 @@ public record SubscriptionCallback(
     @NotNull String callback_url, @NotNull String subscription_id, @NotNull String verifier) {
 
   /**
+   * Parse subscription callback information from GraphQL request extension.
+   *
    * @param extensions GraphQL request extensions element
    * @return Mono containing parsed `SubscriptionCallback` extension data or an exception if
    *     extension is not specified or is malformed.

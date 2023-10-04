@@ -31,7 +31,15 @@ import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 import reactor.core.publisher.Mono;
 
-/** Copy of org.springframework.graphql.server.webmvc.GraphQlHttpHandler */
+/**
+ * Functional GraphQL handler for WebMVC applications that supports Apollo Subscription Callback
+ * Protocol.
+ *
+ * @see <a
+ *     href="https://www.apollographql.com/docs/router/executing-operations/subscription-callback-protocol">Subscription
+ *     Callback Protocol</a>
+ * @see org.springframework.graphql.server.webmvc.GraphQlHttpHandler
+ */
 public class CallbackGraphQlHttpHandler extends GraphQlHttpHandler {
 
   private static final Log logger = LogFactory.getLog(GraphQlHttpHandler.class);
@@ -90,7 +98,7 @@ public class CallbackGraphQlHttpHandler extends GraphQlHttpHandler {
               .flatMap(
                   (callback) ->
                       this.subscriptionCallbackHandler
-                          .handleCallback(graphQlRequest, callback)
+                          .handleSubscriptionUsingCallback(graphQlRequest, callback)
                           .map(
                               success -> {
                                 if (success) {
