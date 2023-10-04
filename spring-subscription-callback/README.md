@@ -117,3 +117,16 @@ public class GraphQLConfiguration {
     }
 }
 ```
+
+By default, subscription and heartbeat stream will be executed in non-blocking way on [bounded elastic](https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html#boundedElastic--)
+scheduler. If you need more granular control over the underlying scheduler, you can configure callback handler to run on
+your provided scheduler.
+
+```java
+@Bean
+public GraphQlHttpHandler graphQlHttpHandler(WebGraphQlHandler webGraphQlHandler) {
+    Scheduler customScheduler = <provide your custom scheduler>;
+    SubscriptionCallbackHandler subscriptionHandler = new SubscriptionCallbackHandler(webGraphQlHandler, customScheduler);
+    return new CallbackGraphQlHttpHandler(webGraphQlHandler, subscriptionHandler);
+}
+```

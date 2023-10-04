@@ -86,24 +86,28 @@ public class CallbackGraphQlHttpHandler extends GraphQlHttpHandler {
               if (graphQlRequest.getDocument().startsWith("subscription")) {
                 return parseSubscriptionCallbackExtension(graphQlRequest.getExtensions())
                     .flatMap(
-                        callback ->
-                            this.subscriptionCallbackHandler
-                                .handleSubscriptionUsingCallback(graphQlRequest, callback)
-                                .flatMap(
-                                    success -> {
-                                      if (success) {
-                                        var emptyResponse =
-                                            ExecutionResult.newExecutionResult().data(null).build();
-                                        var builder = ServerResponse.ok();
-                                        builder.header(
-                                            SUBSCRIPTION_PROTOCOL_HEADER,
-                                            SUBSCRIPTION_PROTOCOL_HEADER_VALUE);
-                                        builder.contentType(selectResponseMediaType(serverRequest));
-                                        return builder.bodyValue(emptyResponse.toSpecification());
-                                      } else {
-                                        return ServerResponse.badRequest().build();
-                                      }
-                                    }))
+                        callback -> {
+                          if (logger.isDebugEnabled()) {
+                            logger.debug("Starting subscription using callback: " + callback);
+                          }
+                          return this.subscriptionCallbackHandler
+                            .handleSubscriptionUsingCallback(graphQlRequest, callback)
+                            .flatMap(
+                              success -> {
+                                if (success) {
+                                  var emptyResponse =
+                                    ExecutionResult.newExecutionResult().data(null).build();
+                                  var builder = ServerResponse.ok();
+                                  builder.header(
+                                    SUBSCRIPTION_PROTOCOL_HEADER,
+                                    SUBSCRIPTION_PROTOCOL_HEADER_VALUE);
+                                  builder.contentType(selectResponseMediaType(serverRequest));
+                                  return builder.bodyValue(emptyResponse.toSpecification());
+                                } else {
+                                  return ServerResponse.badRequest().build();
+                                }
+                              });
+                        })
                     .onErrorResume(
                         (error) -> {
                           if (logger.isErrorEnabled()) {

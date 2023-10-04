@@ -68,12 +68,19 @@ public class SubscriptionCallbackHandler {
               if (responseStatusCode.is2xxSuccessful()) {
                 //            && !subscriptionProtocol.isEmpty() &&
                 // "callback".equals(subscriptionProtocol.get(0)))
+                if (logger.isDebugEnabled()) {
+                  logger.debug("Subscription callback init successful: " + callback);
+                }
+
                 Flux<SubscritionCallbackMessage> subscription =
                     startSubscription(client, graphQlRequest, callback);
                 return Mono.just(true)
                     .publishOn(scheduler)
                     .doOnSubscribe((subscribed) -> subscription.subscribe());
               } else {
+                if (logger.isWarnEnabled()) {
+                  logger.warn("Subscription callback failed initialization: " + callback + ", server responded with: " + responseStatusCode.value());
+                }
                 return Mono.just(false);
               }
             })
@@ -85,12 +92,12 @@ public class SubscriptionCallbackHandler {
       @NotNull WebClient callbackClient,
       @NotNull WebGraphQlRequest graphQlRequest,
       @NotNull SubscriptionCallback callback) {
-    // start heartbeat
+    // infinite heartbeat flux
     var checkMessage = new CallbackMessageCheck(callback.subscription_id(), callback.verifier());
     Flux<SubscritionCallbackMessage> heartbeatFlux =
         heartbeatFlux(callbackClient, checkMessage, callback);
 
-    // start subscription
+    // subscription data flux
     Flux<SubscritionCallbackMessage> subscriptionFlux =
         this.graphQlHandler
             .handleRequest(graphQlRequest)
@@ -144,9 +151,16 @@ public class SubscriptionCallbackHandler {
                                 return Mono.error(new InactiveSubscriptionException(callback));
                               }
                             }))
+            .doOnError((e) -> {
+              if (logger.isErrorEnabled()) {
+                logger.error("Subscription terminated abnormally due to exception", e);
+              }
+            })
             .publish()
             .refCount(2);
 
+    // merging subscription data and heartbeat streams
+    // heartbeat stream will automatically cancel once subscription data completes
     return Flux.merge(
         subscriptionFlux, heartbeatFlux.takeUntilOther(subscriptionFlux.ignoreElements()));
   }
@@ -166,8 +180,14 @@ public class SubscriptionCallbackHandler {
                     .exchangeToFlux(
                         (heartBeatResponse) -> {
                           if (heartBeatResponse.statusCode().is2xxSuccessful()) {
+                            if (logger.isDebugEnabled()) {
+                              logger.debug("Subscription callback heartbeat successful: " + callback);
+                            }
                             return heartbeatFlux(client, heartbeat, callback);
                           } else {
+                            if (logger.isWarnEnabled()) {
+                              logger.warn("Subscription callback heartbeat failed: " + callback);
+                            }
                             return Flux.error(new InactiveSubscriptionException(callback));
                           }
                         }));
