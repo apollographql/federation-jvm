@@ -101,22 +101,22 @@ public class CallbackGraphQlHttpHandler extends GraphQlHttpHandler {
                       logger.debug("Starting subscription using callback: " + callback);
                     }
                     return this.subscriptionCallbackHandler
-                      .handleSubscriptionUsingCallback(graphQlRequest, callback)
-                      .map(
-                        success -> {
-                          if (success) {
-                            var emptyResponse =
-                              ExecutionResult.newExecutionResult().data(null).build();
-                            var builder = ServerResponse.ok();
-                            builder.header(
-                              SUBSCRIPTION_PROTOCOL_HEADER,
-                              SUBSCRIPTION_PROTOCOL_HEADER_VALUE);
-                            builder.contentType(selectResponseMediaType(serverRequest));
-                            return builder.body(emptyResponse.toSpecification());
-                          } else {
-                            return ServerResponse.badRequest().build();
-                          }
-                        });
+                        .handleSubscriptionUsingCallback(graphQlRequest, callback)
+                        .map(
+                            success -> {
+                              if (success) {
+                                var emptyResponse =
+                                    ExecutionResult.newExecutionResult().data(null).build();
+                                var builder = ServerResponse.ok();
+                                builder.header(
+                                    SUBSCRIPTION_PROTOCOL_HEADER,
+                                    SUBSCRIPTION_PROTOCOL_HEADER_VALUE);
+                                builder.contentType(selectResponseMediaType(serverRequest));
+                                return builder.body(emptyResponse.toSpecification());
+                              } else {
+                                return ServerResponse.badRequest().build();
+                              }
+                            });
                   })
               .onErrorResume(
                   (error) -> {

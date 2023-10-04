@@ -79,7 +79,11 @@ public class SubscriptionCallbackHandler {
                     .doOnSubscribe((subscribed) -> subscription.subscribe());
               } else {
                 if (logger.isWarnEnabled()) {
-                  logger.warn("Subscription callback failed initialization: " + callback + ", server responded with: " + responseStatusCode.value());
+                  logger.warn(
+                      "Subscription callback failed initialization: "
+                          + callback
+                          + ", server responded with: "
+                          + responseStatusCode.value());
                 }
                 return Mono.just(false);
               }
@@ -151,11 +155,12 @@ public class SubscriptionCallbackHandler {
                                 return Mono.error(new InactiveSubscriptionException(callback));
                               }
                             }))
-            .doOnError((e) -> {
-              if (logger.isErrorEnabled()) {
-                logger.error("Subscription terminated abnormally due to exception", e);
-              }
-            })
+            .doOnError(
+                (e) -> {
+                  if (logger.isErrorEnabled()) {
+                    logger.error("Subscription terminated abnormally due to exception", e);
+                  }
+                })
             .publish()
             .refCount(2);
 
@@ -181,7 +186,8 @@ public class SubscriptionCallbackHandler {
                         (heartBeatResponse) -> {
                           if (heartBeatResponse.statusCode().is2xxSuccessful()) {
                             if (logger.isDebugEnabled()) {
-                              logger.debug("Subscription callback heartbeat successful: " + callback);
+                              logger.debug(
+                                  "Subscription callback heartbeat successful: " + callback);
                             }
                             return heartbeatFlux(client, heartbeat, callback);
                           } else {
