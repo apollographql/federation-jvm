@@ -1,13 +1,13 @@
 package com.apollographql.subscription.message;
 
 import graphql.GraphQLError;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public record CallbackMessageComplete(String id, String verifier, List<GraphQLError> errors) implements SubscritionCallbackMessage {
+public record CallbackMessageComplete(String id, String verifier, List<GraphQLError> errors)
+    implements SubscritionCallbackMessage {
 
   public CallbackMessageComplete(String id, String verifier) {
     this(id, verifier, Collections.emptyList());
@@ -34,8 +34,6 @@ public record CallbackMessageComplete(String id, String verifier, List<GraphQLEr
   }
 
   public List<Map<String, Object>> getErrors() {
-    return errors.stream()
-      .map(GraphQLError::toSpecification)
-      .collect(Collectors.toList());
+    return errors.stream().map(GraphQLError::toSpecification).collect(Collectors.toList());
   }
 }

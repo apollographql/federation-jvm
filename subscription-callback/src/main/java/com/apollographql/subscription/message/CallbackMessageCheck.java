@@ -1,6 +1,7 @@
 package com.apollographql.subscription.message;
 
-public record CallbackMessageCheck(String id, String verifier) implements SubscritionCallbackMessage {
+public record CallbackMessageCheck(String id, String verifier)
+    implements SubscritionCallbackMessage {
 
   @Override
   public String getKind() {

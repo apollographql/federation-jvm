@@ -1,5 +1,7 @@
 package com.apollographql.subscription.message;
-public sealed interface SubscritionCallbackMessage permits CallbackMessageCheck, CallbackMessageNext, CallbackMessageComplete {
+
+public sealed interface SubscritionCallbackMessage
+    permits CallbackMessageCheck, CallbackMessageNext, CallbackMessageComplete {
   String getKind(); //  default "subscription";
 
   CallbackMessageAction getAction();
@@ -8,4 +10,3 @@ public sealed interface SubscritionCallbackMessage permits CallbackMessageCheck,
 
   String getVerifier();
 }
-
