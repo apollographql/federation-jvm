@@ -1,0 +1,33 @@
+cors:
+  # allow_credentials: true
+  allow_any_origin: true
+
+health_check:
+  listen: 0.0.0.0:8088
+  enabled: true
+
+homepage:
+  enabled: false
+
+sandbox:
+  enabled: true
+
+supergraph:
+  listen: 0.0.0.0:3000
+  introspection: true
+
+include_subgraph_errors:
+  all: true
+
+subscription:
+  enabled: true
+  mode:
+#    passthrough:
+#      all: # The router uses these subscription settings UNLESS overridden per-subgraph
+#        path: /graphql # The URL path to use for subgraph subscription endpoints (Default: /ws)
+    preview_callback:
+      public_url: http://localhost:4000
+      listen: 0.0.0.0:4000
+      path: /callback
+      subgraphs:
+        - reviews
