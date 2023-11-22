@@ -86,7 +86,7 @@ public class SubscriptionCallbackHandlerTest {
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
       var verifier = "junit";
-      var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier);
+      var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier, 5000);
 
       var graphQLRequest = stubWebGraphQLRequest(subscriptionId, callbackUrl);
       var subscription = handler.handleSubscriptionUsingCallback(graphQLRequest, callback);
@@ -137,7 +137,7 @@ public class SubscriptionCallbackHandlerTest {
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
       var verifier = "junit";
-      var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier);
+      var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier, 5000);
 
       var graphQLRequest = stubWebGraphQLRequest(subscriptionId, callbackUrl);
       var subscription = handler.handleSubscriptionUsingCallback(graphQLRequest, callback);
@@ -176,7 +176,7 @@ public class SubscriptionCallbackHandlerTest {
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
       var verifier = "junit";
-      var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier);
+      var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier, 5000);
       var client = WebClient.builder().baseUrl(callback.callback_url()).build();
 
       var graphQLRequest = stubWebGraphQLRequest(subscriptionId, callbackUrl);
@@ -241,7 +241,7 @@ public class SubscriptionCallbackHandlerTest {
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
       var verifier = "junit";
-      var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier);
+      var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier, 5000);
       var client = WebClient.builder().baseUrl(callback.callback_url()).build();
 
       var graphQLRequest = stubWebGraphQLRequest(subscriptionId, callbackUrl);
@@ -285,7 +285,36 @@ public class SubscriptionCallbackHandlerTest {
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
       var verifier = "junit";
-      var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier);
+      var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier, 5000);
+      var client = WebClient.builder().baseUrl(callback.callback_url()).build();
+
+      var graphQLRequest = stubWebGraphQLRequest(subscriptionId, callbackUrl);
+      var subscription = handler.startSubscription(client, graphQLRequest, callback);
+      StepVerifier.create(subscription)
+          .expectNext(nextMessage(subscriptionId, verifier, 1))
+          .expectNext(nextMessage(subscriptionId, verifier, 2))
+          .expectNext(new CallbackMessageComplete(subscriptionId, verifier))
+          .verifyComplete();
+    } catch (IOException e) {
+      // failed to close the server
+    }
+  }
+
+  @Test
+  public void subscription_success_without_heartbeats() {
+    try (var server = new MockWebServer()) {
+      mockServerResponses(server, HttpStatus.OK, HttpStatus.OK, HttpStatus.ACCEPTED);
+
+      var data =
+          Flux.just(1, 2)
+              .delayElements(Duration.ofMillis(50))
+              .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build());
+      var handler = new SubscriptionCallbackHandler(new MockWebHandler(data));
+
+      var subscriptionId = UUID.randomUUID().toString();
+      var callbackUrl = server.url("/callback/" + subscriptionId).toString();
+      var verifier = "junit";
+      var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier, 0);
       var client = WebClient.builder().baseUrl(callback.callback_url()).build();
 
       var graphQLRequest = stubWebGraphQLRequest(subscriptionId, callbackUrl);
@@ -315,7 +344,7 @@ public class SubscriptionCallbackHandlerTest {
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
       var verifier = "junit";
-      var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier);
+      var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier, 5000);
       var client = WebClient.builder().baseUrl(callback.callback_url()).build();
 
       var graphQLRequest = stubWebGraphQLRequest(subscriptionId, callbackUrl);

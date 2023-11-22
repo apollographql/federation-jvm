@@ -10,6 +10,7 @@ public class CallbackTestUtils {
     subscriptionExtension.put("callback_url", callbackUrl);
     subscriptionExtension.put("subscription_id", subscriptionId);
     subscriptionExtension.put("verifier", "junit");
+    subscriptionExtension.put("heartbeat_interval_ms", 5000);
     return Map.of(
         "query",
         "subscription { counter }",

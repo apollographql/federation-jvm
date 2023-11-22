@@ -96,10 +96,14 @@ public class SubscriptionCallbackHandler {
       @NotNull WebClient callbackClient,
       @NotNull WebGraphQlRequest graphQlRequest,
       @NotNull SubscriptionCallback callback) {
-    // infinite heartbeat flux
-    var checkMessage = new CallbackMessageCheck(callback.subscription_id(), callback.verifier());
-    Flux<SubscritionCallbackMessage> heartbeatFlux =
-        heartbeatFlux(callbackClient, checkMessage, callback);
+    // infinite heartbeat flux OR no heartbeat
+    Flux<SubscritionCallbackMessage> heartbeatFlux;
+    if (callback.heartbeatIntervalMs() > 0) {
+      var checkMessage = new CallbackMessageCheck(callback.subscription_id(), callback.verifier());
+      heartbeatFlux = heartbeatFlux(callbackClient, checkMessage, callback);
+    } else {
+      heartbeatFlux = Flux.empty();
+    }
 
     // subscription data flux
     Flux<SubscritionCallbackMessage> subscriptionFlux =
@@ -173,7 +177,7 @@ public class SubscriptionCallbackHandler {
   private Flux<SubscritionCallbackMessage> heartbeatFlux(
       WebClient client, CallbackMessageCheck check, SubscriptionCallback callback) {
     return Flux.just(check)
-        .delayElements(Duration.ofMillis(5000))
+        .delayElements(Duration.ofMillis(callback.heartbeatIntervalMs()))
         .publishOn(scheduler)
         .concatMap(
             (heartbeat) ->

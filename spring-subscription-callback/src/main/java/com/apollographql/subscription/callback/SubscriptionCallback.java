@@ -15,7 +15,10 @@ import reactor.core.publisher.Mono;
  *     identity
  */
 public record SubscriptionCallback(
-    @NotNull String callback_url, @NotNull String subscription_id, @NotNull String verifier) {
+    @NotNull String callback_url,
+    @NotNull String subscription_id,
+    @NotNull String verifier,
+    int heartbeatIntervalMs) {
 
   /**
    * Parse subscription callback information from GraphQL request extension.
@@ -33,15 +36,27 @@ public record SubscriptionCallback(
       var callback_url = subscription.get("callback_url");
       var subscription_id = subscription.get("subscription_id");
       var verifier = subscription.get("verifier");
+      var heartbeatMs = parseHeartbeats(subscription.get("heartbeat_interval_ms"));
 
-      if (callback_url != null && subscription_id != null && verifier != null) {
+      if (callback_url != null && subscription_id != null && verifier != null && heartbeatMs >= 0) {
         return Mono.just(
             new SubscriptionCallback(
-                (String) callback_url, (String) subscription_id, (String) verifier));
+                (String) callback_url, (String) subscription_id, (String) verifier, heartbeatMs));
       } else {
         return Mono.error(new InvalidCallbackExtensionException(subscription));
       }
     }
     return Mono.error(new CallbackExtensionNotSpecifiedException());
+  }
+
+  private static int parseHeartbeats(Object heartbeatMs) {
+    if (heartbeatMs != null) {
+      try {
+        return (Integer) heartbeatMs;
+      } catch (ClassCastException e) {
+        // heartbeat_interval_ms is not an integer
+      }
+    }
+    return -1;
   }
 }
