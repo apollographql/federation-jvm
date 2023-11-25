@@ -41,7 +41,7 @@ public class SubscriptionCallbackHandlerTest {
 
   static class MockWebHandler implements WebGraphQlHandler {
 
-    private Flux subscriptionFlux;
+    private final Flux subscriptionFlux;
 
     public MockWebHandler(Flux subscriptionFlux) {
       this.subscriptionFlux = subscriptionFlux;
@@ -53,7 +53,7 @@ public class SubscriptionCallbackHandlerTest {
     }
 
     @Override
-    public Mono<WebGraphQlResponse> handleRequest(WebGraphQlRequest request) {
+    public @NotNull Mono<WebGraphQlResponse> handleRequest(@NotNull WebGraphQlRequest request) {
       var executionResult = ExecutionResult.newExecutionResult().data(subscriptionFlux).build();
       var executionResponse =
           new DefaultExecutionGraphQlResponse(request.toExecutionInput(), executionResult);

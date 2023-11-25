@@ -20,6 +20,19 @@ public record SubscriptionCallback(
     @NotNull String verifier,
     int heartbeatIntervalMs) {
 
+  public static String SUBSCRIPTION_EXTENSION = "subscription";
+  public static String CALLBACK_URL = "callbackUrl";
+  public static String SUBSCRIPTION_ID = "subscriptionId";
+  public static String VERIFIER = "verifier";
+  public static String HEARTBEAT_INTERVAL_MS = "heartbeatIntervalMs";
+
+  // added for backwards compatibility with non GA callback protocol
+  // will be removed in next major release
+  @Deprecated private static int DEFAULT_HEARTBEAT_INTERVAL_MS = 5000;
+  @Deprecated private static String DEPRECATED_CALLBACK_URL = "callback_url";
+  @Deprecated private static String DEPRECATED_SUBSCRIPTION_ID = "subscription_id";
+  @Deprecated private static String DEPRECATED_HEARTBEAT_INTERVAL_MS = "heartbeat_interval_ms";
+
   /**
    * Parse subscription callback information from GraphQL request extension.
    *
@@ -31,12 +44,22 @@ public record SubscriptionCallback(
   @NotNull
   public static Mono<SubscriptionCallback> parseSubscriptionCallbackExtension(
       @NotNull Map<String, Object> extensions) {
-    var subscription_extension = extensions.get("subscription");
+    var subscription_extension = extensions.get(SUBSCRIPTION_EXTENSION);
     if (subscription_extension instanceof Map subscription) {
-      var callback_url = subscription.get("callback_url");
-      var subscription_id = subscription.get("subscription_id");
-      var verifier = subscription.get("verifier");
-      var heartbeatMs = parseHeartbeats(subscription.get("heartbeat_interval_ms"));
+      var callback_url = subscription.get(CALLBACK_URL);
+      if (callback_url == null) {
+        callback_url = subscription.get(DEPRECATED_CALLBACK_URL);
+      }
+      var subscription_id = subscription.get(SUBSCRIPTION_ID);
+      if (subscription_id == null) {
+        subscription_id = subscription.get(DEPRECATED_SUBSCRIPTION_ID);
+      }
+      var verifier = subscription.get(VERIFIER);
+      var rawHeartbeatMs = subscription.get(HEARTBEAT_INTERVAL_MS);
+      if (rawHeartbeatMs == null) {
+        rawHeartbeatMs = subscription.get(DEPRECATED_HEARTBEAT_INTERVAL_MS);
+      }
+      var heartbeatMs = parseHeartbeats(rawHeartbeatMs);
 
       if (callback_url != null && subscription_id != null && verifier != null && heartbeatMs >= 0) {
         return Mono.just(
@@ -55,8 +78,9 @@ public record SubscriptionCallback(
         return (Integer) heartbeatMs;
       } catch (ClassCastException e) {
         // heartbeat_interval_ms is not an integer
+        return -1;
       }
     }
-    return -1;
+    return DEFAULT_HEARTBEAT_INTERVAL_MS;
   }
 }
