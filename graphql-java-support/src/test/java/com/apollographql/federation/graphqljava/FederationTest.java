@@ -328,6 +328,11 @@ class FederationTest {
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
   }
 
+  @Test
+  public void verifyFederationV2Transformation_progressiveOverride() {
+    verifyFederationTransformation("schemas/progressiveOverride.graphql", true);
+  }
+
   private GraphQLSchema verifyFederationTransformation(
       String schemaFileName, boolean isFederationV2) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
