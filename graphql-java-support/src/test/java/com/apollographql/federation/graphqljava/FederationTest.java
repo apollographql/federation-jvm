@@ -335,12 +335,12 @@ class FederationTest {
 
   @Test
   public void
-  verifyFederationV2Transformation_progressiveOverrideFromUnsupportedVersion_throwsException() {
+      verifyFederationV2Transformation_progressiveOverrideFromUnsupportedVersion_throwsException() {
     final String schemaSDL =
-      FileUtils.readResource("schemas/progressiveOverrideUnsupportedSpecVersion.graphql");
+        FileUtils.readResource("schemas/progressiveOverrideUnsupportedSpecVersion.graphql");
     assertThrows(
-      SchemaProblem.class,
-      () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+        SchemaProblem.class,
+        () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
   }
 
   private GraphQLSchema verifyFederationTransformation(
