@@ -333,6 +333,16 @@ class FederationTest {
     verifyFederationTransformation("schemas/progressiveOverride.graphql", true);
   }
 
+  @Test
+  public void
+  verifyFederationV2Transformation_progressiveOverrideFromUnsupportedVersion_throwsException() {
+    final String schemaSDL =
+      FileUtils.readResource("schemas/progressiveOverrideUnsupportedSpecVersion.graphql");
+    assertThrows(
+      SchemaProblem.class,
+      () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+  }
+
   private GraphQLSchema verifyFederationTransformation(
       String schemaFileName, boolean isFederationV2) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();

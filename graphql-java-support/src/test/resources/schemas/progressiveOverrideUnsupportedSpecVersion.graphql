@@ -1,0 +1,29 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.6", import: [
+  "@authenticated",
+  "@composeDirective",
+  "@extends",
+  "@external",
+  "@inaccessible",
+  "@interfaceObject",
+  "@key",
+  "@override",
+  "@policy",
+  "@provides",
+  "@requires",
+  "@requiresScopes",
+  "@shareable",
+  "@tag",
+  "FieldSet",
+  "Import",
+  "Policy",
+  "Scope"
+])
+
+type Product @key(fields: "id") {
+    id: ID!
+    name: String! @override(from: "old-product-service", label: "percent(5)")
+}
+
+type Query {
+    product(id: ID!): Product
+}
