@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Assertions;
 
 final class FederatedSchemaVerifier {
   public static final Set<String> standardDirectives =
-      new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
+      new HashSet<>(Arrays.asList("deprecated", "include", "oneOf", "skip", "specifiedBy"));
 
   private FederatedSchemaVerifier() {}
 
