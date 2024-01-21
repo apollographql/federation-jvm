@@ -30,7 +30,7 @@ public final class ServiceSDLPrinter {
 
   // Apollo Gateway will fail Federation v1 composition if it sees standard directive definitions.
   private static final Set<String> STANDARD_DIRECTIVES =
-      new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
+      new HashSet<>(Arrays.asList("deprecated", "include", "oneOf", "skip", "specifiedBy"));
 
   private ServiceSDLPrinter() {
     // hidden constructor as this is static utility class
@@ -130,13 +130,11 @@ public final class ServiceSDLPrinter {
    */
   public static String generateServiceSDLV2(GraphQLSchema schema) {
     // federation v2 SDL does not need to filter federation directive definitions
-    final Set<String> standardDirectives =
-        new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
     return new SchemaPrinter(
             SchemaPrinter.Options.defaultOptions()
                 .includeSchemaDefinition(true)
                 .includeScalarTypes(true)
-                .includeDirectives(def -> !standardDirectives.contains(def)))
+                .includeDirectives(def -> !STANDARD_DIRECTIVES.contains(def)))
         .print(schema)
         .trim();
   }
