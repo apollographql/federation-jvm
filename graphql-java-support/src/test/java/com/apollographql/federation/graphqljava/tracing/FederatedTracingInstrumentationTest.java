@@ -85,7 +85,9 @@ class FederatedTracingInstrumentationTest {
   void testTracing() throws InvalidProtocolBufferException {
     Map<String, Object> result =
         graphql
-            .execute(createExecutionInput("{ widgets { foo, baz: bar }, listOfLists { foo }, listOfScalars }"))
+            .execute(
+                createExecutionInput(
+                    "{ widgets { foo, baz: bar }, listOfLists { foo }, listOfScalars }"))
             .toSpecification();
 
     Object extensions = result.get("extensions");
@@ -173,7 +175,8 @@ class FederatedTracingInstrumentationTest {
 
   @Test
   void testTracingParseErrors() throws InvalidProtocolBufferException {
-    Map<String, Object> result = graphql.execute(createExecutionInput("{ widgets { foo }")).toSpecification();
+    Map<String, Object> result =
+        graphql.execute(createExecutionInput("{ widgets { foo }")).toSpecification();
 
     Object extensions = result.get("extensions");
     assertTrue(extensions instanceof Map);
@@ -192,7 +195,8 @@ class FederatedTracingInstrumentationTest {
 
   @Test
   void testTracingValidationErrors() throws InvalidProtocolBufferException {
-    Map<String, Object> result = graphql.execute(createExecutionInput("{ widgets { notARealThing } }")).toSpecification();
+    Map<String, Object> result =
+        graphql.execute(createExecutionInput("{ widgets { notARealThing } }")).toSpecification();
 
     Object extensions = result.get("extensions");
     assertTrue(extensions instanceof Map);
@@ -265,7 +269,8 @@ class FederatedTracingInstrumentationTest {
 
     Map<String, Object> result = graphql.execute(input).toSpecification();
     Object extensions = result.get("extensions");
-    // Because the special header isn't there, we fallback to the default behavior of not generating ftv1
+    // Because the special header isn't there, we fallback to the default behavior of not generating
+    // ftv1
     assertNull(extensions);
 
     // Try again with the header having the wrong value.
@@ -287,7 +292,7 @@ class FederatedTracingInstrumentationTest {
 
   private static ExecutionInput createExecutionInput(String query) {
     return ExecutionInput.newExecutionInput(query)
-      .graphQLContext(Map.of(FEDERATED_TRACING_HEADER_NAME, FEDERATED_TRACING_HEADER_VALUE))
-      .build();
+        .graphQLContext(Map.of(FEDERATED_TRACING_HEADER_NAME, FEDERATED_TRACING_HEADER_VALUE))
+        .build();
   }
 }
