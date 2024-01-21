@@ -510,7 +510,7 @@ public class FederatedTracingInstrumentation extends SimpleInstrumentation {
           }
         }
       }
-      return true;
+      return false;
     }
   }
 }
