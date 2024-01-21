@@ -499,7 +499,7 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
         return FEDERATED_TRACING_HEADER_VALUE.equals(
             executionInput.getGraphQLContext().get(FEDERATED_TRACING_HEADER_NAME));
       }
-      return true;
+      return false;
     }
   }
 }
