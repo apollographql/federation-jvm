@@ -1,4 +1,4 @@
-FROM openjdk:17
+FROM openjdk:17.0.2
 
 EXPOSE 4001
 RUN mkdir /app
