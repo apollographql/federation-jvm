@@ -1,22 +1,6 @@
 extend schema @link(url: "https://specs.apollo.dev/federation/v2.6", import: [
-  "@authenticated",
-  "@composeDirective",
-  "@extends",
-  "@external",
-  "@inaccessible",
-  "@interfaceObject",
   "@key",
-  "@override",
-  "@policy",
-  "@provides",
-  "@requires",
-  "@requiresScopes",
-  "@shareable",
-  "@tag",
-  "FieldSet",
-  "Import",
-  "Policy",
-  "Scope"
+  "@override"
 ])
 
 type Product @key(fields: "id") {
