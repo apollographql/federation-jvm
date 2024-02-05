@@ -26,6 +26,14 @@ import org.jetbrains.annotations.Nullable;
 
 public final class LinkDirectiveProcessor {
 
+  private static final Map<String, Integer> DIRECTIVES_BY_MIN_SUPPORTED_VERSION =
+      Map.of(
+          "@composeDirective", 21,
+          "@interfaceObject", 23,
+          "@authenticated", 25,
+          "@requiresScopes", 25,
+          "@policy", 26);
+
   private LinkDirectiveProcessor() {}
 
   /**
@@ -68,21 +76,10 @@ public final class LinkDirectiveProcessor {
     final String specLink = ((StringValue) urlArgument.getValue()).getValue();
 
     final int federationVersion = parseFederationVersion(specLink);
-    if (imports.containsKey("@composeDirective")
-        && !isComposeDirectiveSupported(federationVersion)) {
-      throw new UnsupportedLinkImportException("@composeDirective");
-    }
-
-    if (imports.containsKey("@interfaceObject") && !isInterfaceObjectSupported(federationVersion)) {
-      throw new UnsupportedLinkImportException("@interfaceObject");
-    }
-
-    if (imports.containsKey("@authenticated") && !isAuthorizationSupported(federationVersion)) {
-      throw new UnsupportedLinkImportException("@authenticated");
-    }
-
-    if (imports.containsKey("@requiresScopes") && !isAuthorizationSupported(federationVersion)) {
-      throw new UnsupportedLinkImportException("@requiresScopes");
+    for (Map.Entry<String, Integer> directiveInfo :
+        DIRECTIVES_BY_MIN_SUPPORTED_VERSION.entrySet()) {
+      validateDirectiveSupport(
+          imports, federationVersion, directiveInfo.getKey(), directiveInfo.getValue());
     }
 
     return loadFederationSpecDefinitions(specLink).stream()
@@ -102,16 +99,11 @@ public final class LinkDirectiveProcessor {
     }
   }
 
-  private static boolean isComposeDirectiveSupported(int federationVersion) {
-    return federationVersion >= 21;
-  }
-
-  private static boolean isInterfaceObjectSupported(int federationVersion) {
-    return federationVersion >= 23;
-  }
-
-  private static boolean isAuthorizationSupported(int federationVersion) {
-    return federationVersion >= 25;
+  private static void validateDirectiveSupport(
+      Map<String, String> imports, int version, String directiveName, int minVersion) {
+    if (imports.containsKey(directiveName) && version < minVersion) {
+      throw new UnsupportedLinkImportException(directiveName, minVersion, version);
+    }
   }
 
   private static Stream<Directive> getFederationLinkDirectives(SchemaDefinition schemaDefinition) {

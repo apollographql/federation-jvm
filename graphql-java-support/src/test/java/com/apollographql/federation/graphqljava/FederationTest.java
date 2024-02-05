@@ -319,12 +319,40 @@ class FederationTest {
   }
 
   @Test
+  public void verifyFederationV2Transformation_policy() {
+    verifyFederationTransformation("schemas/policy.graphql", true);
+  }
+
+  @Test
   public void
       verifyFederationV2Transformation_requiresScopesFromUnsupportedVersion_throwsException() {
     final String schemaSDL =
         FileUtils.readResource("schemas/requiresScopesUnsupportedSpecVersion.graphql");
     assertThrows(
         UnsupportedLinkImportException.class,
+        () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+  }
+
+  @Test
+  public void verifyFederationV2Transformation_policyFromUnsupportedVersion_throwsException() {
+    final String schemaSDL = FileUtils.readResource("schemas/policyUnsupportedSpecVersion.graphql");
+    assertThrows(
+        UnsupportedLinkImportException.class,
+        () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+  }
+
+  @Test
+  public void verifyFederationV2Transformation_progressiveOverride() {
+    verifyFederationTransformation("schemas/progressiveOverride.graphql", true);
+  }
+
+  @Test
+  public void
+      verifyFederationV2Transformation_progressiveOverrideFromUnsupportedVersion_throwsException() {
+    final String schemaSDL =
+        FileUtils.readResource("schemas/progressiveOverrideUnsupportedSpecVersion.graphql");
+    assertThrows(
+        SchemaProblem.class,
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
   }
 

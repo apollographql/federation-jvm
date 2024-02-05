@@ -1,0 +1,66 @@
+schema @link(import : ["@key", "@policy", "Policy", "FieldSet"], url : "https://specs.apollo.dev/federation/v2.6"){
+  query: Query
+}
+
+directive @federation__authenticated on SCALAR | OBJECT | FIELD_DEFINITION | INTERFACE | ENUM
+
+directive @federation__composeDirective(name: String!) repeatable on SCHEMA
+
+directive @federation__extends on OBJECT | INTERFACE
+
+directive @federation__external on OBJECT | FIELD_DEFINITION
+
+directive @federation__interfaceObject on OBJECT
+
+directive @federation__override(from: String!) on FIELD_DEFINITION
+
+directive @federation__provides(fields: FieldSet!) on FIELD_DEFINITION
+
+directive @federation__requires(fields: FieldSet!) on FIELD_DEFINITION
+
+directive @federation__requiresScopes(scopes: [[federation__Scope!]!]!) on SCALAR | OBJECT | FIELD_DEFINITION | INTERFACE | ENUM
+
+directive @federation__shareable repeatable on OBJECT | FIELD_DEFINITION
+
+directive @inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+
+directive @key(fields: FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
+
+directive @link(as: String, for: link__Purpose, import: [link__Import], url: String!) repeatable on SCHEMA
+
+directive @policy(policies: [[Policy!]!]!) on SCALAR | OBJECT | FIELD_DEFINITION | INTERFACE | ENUM
+
+directive @tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+
+union _Entity = Product
+
+type Product @key(fields : "id", resolvable : true) {
+  id: ID!
+  name: String!
+  supplier: String @policy(policies : [["policyA"]])
+}
+
+type Query {
+  _entities(representations: [_Any!]!): [_Entity]!
+  _service: _Service!
+  product(id: ID!): Product
+}
+
+type _Service {
+  sdl: String!
+}
+
+enum link__Purpose {
+  EXECUTION
+  SECURITY
+}
+
+scalar FieldSet
+
+scalar Policy
+
+scalar _Any
+
+scalar federation__Scope
+
+scalar link__Import

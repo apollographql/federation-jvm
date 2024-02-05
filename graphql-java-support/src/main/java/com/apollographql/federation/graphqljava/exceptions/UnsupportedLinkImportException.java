@@ -17,8 +17,10 @@ public class UnsupportedLinkImportException extends RuntimeException {
     super("Unsupported import: " + importedDefinition);
   }
 
-  public UnsupportedLinkImportException(String importedDefinition) {
+  public UnsupportedLinkImportException(String importedDefinition, int minVersion, int version) {
     super(
-        "New Federation feature " + importedDefinition + " imported using old Federation version");
+        String.format(
+            "Federation v%.1f feature %s imported using old Federation v%.1f version",
+            minVersion / 10.0, importedDefinition, version / 10.0));
   }
 }
