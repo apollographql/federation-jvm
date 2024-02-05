@@ -76,7 +76,8 @@ public final class LinkDirectiveProcessor {
     final String specLink = ((StringValue) urlArgument.getValue()).getValue();
 
     final int federationVersion = parseFederationVersion(specLink);
-    for (Map.Entry<String, Integer> directiveInfo : DIRECTIVES_BY_MIN_SUPPORTED_VERSION.entrySet()) {
+    for (Map.Entry<String, Integer> directiveInfo :
+        DIRECTIVES_BY_MIN_SUPPORTED_VERSION.entrySet()) {
       validateDirectiveSupport(
           imports, federationVersion, directiveInfo.getKey(), directiveInfo.getValue());
     }
