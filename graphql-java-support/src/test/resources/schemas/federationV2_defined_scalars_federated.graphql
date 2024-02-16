@@ -1,0 +1,104 @@
+schema @composeDirective(name : "@custom") @link(import : ["@composeDirective", "@extends", "@external", "@key", "@inaccessible", "@interfaceObject", "@override", "@provides", "@requires", "@shareable", "@tag"], url : "https://specs.apollo.dev/federation/v2.3") @link(import : ["@custom"], url : "https://myspecs.dev/myCustomDirective/v1.0"){
+  query: Query
+}
+
+directive @composeDirective(name: String!) repeatable on SCHEMA
+
+directive @custom on OBJECT
+
+directive @extends on OBJECT | INTERFACE
+
+directive @external on OBJECT | FIELD_DEFINITION
+
+directive @inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+
+directive @interfaceObject on OBJECT
+
+directive @key(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
+
+directive @link(as: String, for: link__Purpose, import: [link__Import], url: String!) repeatable on SCHEMA
+
+directive @override(from: String!) on FIELD_DEFINITION
+
+directive @provides(fields: federation__FieldSet!) on FIELD_DEFINITION
+
+directive @requires(fields: federation__FieldSet!) on FIELD_DEFINITION
+
+directive @shareable repeatable on OBJECT | FIELD_DEFINITION
+
+directive @tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+
+union _Entity = DeprecatedProduct | Inventory | Product | ProductResearch | User
+
+type CaseStudy {
+  caseNumber: ID!
+  description: String
+}
+
+type DeprecatedProduct @key(fields : "sku package", resolvable : true) {
+  createdBy: User
+  package: String!
+  reason: String
+  sku: String!
+}
+
+type Inventory @interfaceObject @key(fields : "id", resolvable : true) {
+  deprecatedProducts: [DeprecatedProduct!]!
+  id: ID!
+}
+
+type Product @custom @key(fields : "id", resolvable : true) @key(fields : "sku package", resolvable : true) @key(fields : "sku variation { id }", resolvable : true) {
+  createdBy: User @provides(fields : "totalProductsCreated")
+  dimensions: ProductDimension
+  id: ID!
+  notes: String @tag(name : "internal")
+  package: String
+  research: [ProductResearch!]!
+  sku: String
+  variation: ProductVariation
+}
+
+type ProductDimension @shareable {
+  size: String
+  unit: String @inaccessible
+  weight: Float
+}
+
+type ProductResearch @key(fields : "study { caseNumber }", resolvable : true) {
+  outcome: String
+  study: CaseStudy!
+}
+
+type ProductVariation {
+  id: ID!
+}
+
+type Query {
+  _entities(representations: [_Any!]!): [_Entity]!
+  _service: _Service!
+  deprecatedProduct(package: String!, sku: String!): DeprecatedProduct @deprecated(reason : "Use product query instead")
+  product(id: ID!): Product
+}
+
+type User @key(fields : "email", resolvable : true) {
+  averageProductsCreatedPerYear: Int @requires(fields : "totalProductsCreated yearsOfEmployment")
+  email: ID! @external
+  name: String @override(from : "users")
+  totalProductsCreated: Int @external
+  yearsOfEmployment: Int! @external
+}
+
+type _Service {
+  sdl: String!
+}
+
+enum link__Purpose {
+  EXECUTION
+  SECURITY
+}
+
+scalar _Any
+
+scalar federation__FieldSet
+
+scalar link__Import

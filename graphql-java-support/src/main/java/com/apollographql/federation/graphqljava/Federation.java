@@ -163,15 +163,18 @@ public final class Federation {
           if (def instanceof DirectiveDefinition
               && !typeRegistry.getDirectiveDefinition(def.getName()).isPresent()) {
             typeRegistry.add(def);
-          } else if (def instanceof ScalarTypeDefinition
-              && !typeRegistry.scalars().containsKey(def.getName())) {
-            typeRegistry.add(def);
-            scalarTypesToAdd.add(
-                GraphQLScalarType.newScalar()
-                    .name(def.getName())
-                    .description(null)
-                    .coercing(_Any.type.getCoercing())
-                    .build());
+          } else if (def instanceof ScalarTypeDefinition) {
+            if (!typeRegistry.scalars().containsKey(def.getName())) {
+              typeRegistry.add(def);
+            }
+            if (!runtimeWiring.getScalars().containsKey(def.getName())) {
+              scalarTypesToAdd.add(
+                  GraphQLScalarType.newScalar()
+                      .name(def.getName())
+                      .description(null)
+                      .coercing(_Any.type.getCoercing())
+                      .build());
+            }
           } else if (def instanceof EnumTypeDefinition
               && !typeRegistry.types().containsKey(def.getName())) {
             typeRegistry.add(def);
