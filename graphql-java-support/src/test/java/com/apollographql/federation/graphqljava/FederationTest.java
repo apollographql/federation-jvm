@@ -360,11 +360,15 @@ class FederationTest {
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
   }
 
+  @Test
+  public void verifyFederationV2Transformation_scalarsDefinedInSchemaButNotWired() {
+    verifyFederationTransformation("schemas/scalars/schema.graphql");
+  }
+
   private void verifyFederationTransformation(String schemaFileName) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
     verifyFederationTransformation(schemaFileName, runtimeWiring);
   }
-
   /**
    * Federate provided GraphQL schema and verifies the transformation.
    *
