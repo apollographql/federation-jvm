@@ -29,7 +29,7 @@ public class CacheControlInstrumentationTest {
       "enum CacheControlScope { PUBLIC PRIVATE }\n"
           + "directive @cacheControl(maxAge: Int scope: CacheControlScope inheritMaxAge: Boolean) on FIELD_DEFINITION | OBJECT | INTERFACE | UNION\n";
 
-  static GraphQL makeExecutor(String sdl, int defaultMaxAge) {
+  static GraphQL makeExecutor(String sdl, int defaultMaxAge, boolean allowZeroMaxAge) {
     TypeDefinitionRegistry typeDefs = new SchemaParser().parse(DIRECTIVE_DEF + sdl);
 
     RuntimeWiring resolvers =
@@ -42,21 +42,30 @@ public class CacheControlInstrumentationTest {
             .build();
 
     return GraphQL.newGraphQL(schema)
-        .instrumentation(new CacheControlInstrumentation(defaultMaxAge))
+        .instrumentation(new CacheControlInstrumentation(defaultMaxAge, allowZeroMaxAge))
         .build();
   }
 
   static @Nullable String execute(String schema, String query) {
-    return execute(schema, query, 0, new HashMap<>());
+    return execute(schema, query, 0, false, new HashMap<>());
   }
 
   static @Nullable String execute(String schema, String query, int defaultMaxAge) {
-    return execute(schema, query, defaultMaxAge, new HashMap<>());
+    return execute(schema, query, defaultMaxAge, false, new HashMap<>());
   }
 
   static @Nullable String execute(
-      String schema, String query, int defaultMaxAge, Map<String, Object> variables) {
-    GraphQL graphql = makeExecutor(schema, defaultMaxAge);
+      String schema, String query, int defaultMaxAge, boolean allowZeroMaxAge) {
+    return execute(schema, query, defaultMaxAge, allowZeroMaxAge, new HashMap<>());
+  }
+
+  static @Nullable String execute(
+      String schema,
+      String query,
+      int defaultMaxAge,
+      boolean allowZeroMaxAge,
+      Map<String, Object> variables) {
+    GraphQL graphql = makeExecutor(schema, defaultMaxAge, allowZeroMaxAge);
 
     ExecutionInput input =
         ExecutionInput.newExecutionInput().query(query).variables(variables).build();
@@ -202,6 +211,51 @@ public class CacheControlInstrumentationTest {
             + "}";
     String query = "{ droid(id: 2001) { name } }";
     assertNull(execute(schema, query, 10));
+  }
+
+  @Test
+  void overrideDefaultMaxAgeAllowZero() {
+    String schema =
+        "type Query {"
+            + "  droid(id: ID!): Droid"
+            + "}"
+            + ""
+            + "type Droid @cacheControl(maxAge: 0) {"
+            + "  id: ID!"
+            + "  name: String"
+            + "}";
+    String query = "{ droid(id: 2001) { name } }";
+    assertEquals("max-age=0, public", execute(schema, query, 10, true));
+  }
+
+  @Test
+  void defaultMaxAgeAllowZero() {
+    String schema =
+        "type Query {"
+            + "  droid(id: ID!): Droid"
+            + "}"
+            + ""
+            + "type Droid {"
+            + "  id: ID!"
+            + "  name: String"
+            + "}";
+    String query = "{ droid(id: 2001) { name } }";
+    assertEquals("max-age=0, public", execute(schema, query, 0, true));
+  }
+
+  @Test
+  void noMaxAgeWithDefaultMaxAge() {
+    String schema =
+        "type Query {"
+            + "  droid(id: ID!): Droid"
+            + "}"
+            + ""
+            + "type Droid {"
+            + "  id: ID!"
+            + "  name: String"
+            + "}";
+    String query = "{ droid(id: 2001) { name } }";
+    assertEquals("max-age=10, public", execute(schema, query, 10, false));
   }
 
   @Test
@@ -380,6 +434,6 @@ public class CacheControlInstrumentationTest {
     rs.add(user);
 
     variables.put("rs", rs);
-    assertEquals("max-age=30, public", execute(schema, query, 0, variables));
+    assertEquals("max-age=30, public", execute(schema, query, 0, false, variables));
   }
 }

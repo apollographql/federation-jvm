@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheControlInstrumentation extends SimplePerformantInstrumentation {
   private final int defaultMaxAge;
+  private final boolean allowZeroMaxAge;
 
   private static final Object CONTEXT_KEY = new Object();
   private static final String DIRECTIVE_NAME = "cacheControl";
@@ -37,11 +38,16 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
   private static final String INHERIT_MAX_AGE = "inheritMaxAge";
 
   public CacheControlInstrumentation() {
-    this(0);
+    this(0, false);
   }
 
   public CacheControlInstrumentation(int defaultMaxAge) {
+    this(defaultMaxAge, false);
+  }
+
+  public CacheControlInstrumentation(int defaultMaxAge, boolean allowZeroMaxAge) {
     this.defaultMaxAge = defaultMaxAge;
+    this.allowZeroMaxAge = allowZeroMaxAge;
   }
 
   @Nullable
@@ -51,7 +57,7 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
 
   @Override
   public InstrumentationState createState(InstrumentationCreateStateParameters parameters) {
-    return new CacheControlState();
+    return new CacheControlState(allowZeroMaxAge);
   }
 
   @Override
@@ -78,7 +84,7 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
   public InstrumentationContext<ExecutionResult> beginField(
       InstrumentationFieldParameters parameters, InstrumentationState state) {
     CacheControlState cacheControlState = (CacheControlState) state;
-    CacheControlPolicy fieldPolicy = new CacheControlPolicy();
+    CacheControlPolicy fieldPolicy = new CacheControlPolicy(allowZeroMaxAge);
     boolean inheritMaxAge = false;
 
     GraphQLUnmodifiedType unwrappedFieldType =
@@ -172,12 +178,21 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
   }
 
   private static class CacheControlState implements InstrumentationState {
-    public final CacheControlPolicy overallPolicy = new CacheControlPolicy();
+    public final CacheControlPolicy overallPolicy;
+
+    public CacheControlState(boolean allowZeroMaxAge) {
+      this.overallPolicy = new CacheControlPolicy(allowZeroMaxAge);
+    }
   }
 
   private static class CacheControlPolicy {
     @Nullable private Integer maxAge;
     @Nullable private CacheControlScope scope = CacheControlScope.PUBLIC;
+    private final boolean allowZeroMaxAge;
+
+    public CacheControlPolicy(boolean allowZeroMaxAge) {
+      this.allowZeroMaxAge = allowZeroMaxAge;
+    }
 
     void restrict(CacheControlPolicy policy) {
       if (policy.maxAge != null && (maxAge == null || policy.maxAge < maxAge)) {
@@ -222,14 +237,14 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
     }
 
     public Optional<String> maybeAsString() {
-      Integer maxAgeValue = maxAge == null ? 0 : maxAge;
-      if (maxAgeValue.equals(0)) {
+      if (maxAge == null || (!allowZeroMaxAge && maxAge.equals(0))) {
         return Optional.empty();
       }
 
       CacheControlScope scopeValue = scope == null ? CacheControlScope.PUBLIC : scope;
+
       return Optional.of(
-          String.format("max-age=%d, %s", maxAgeValue, scopeValue.toString().toLowerCase()));
+          String.format("max-age=%d, %s", maxAge, scopeValue.toString().toLowerCase()));
     }
 
     public boolean hasMaxAge() {
