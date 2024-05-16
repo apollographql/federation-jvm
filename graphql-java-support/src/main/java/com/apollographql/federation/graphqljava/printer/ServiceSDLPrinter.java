@@ -45,10 +45,7 @@ public final class ServiceSDLPrinter {
     // Gather directive definitions to hide.
     final Set<String> hiddenDirectiveDefinitions = new HashSet<>();
     // Apollo Gateway will fail Federation v1 composition if it sees standard directive definitions.
-    hiddenDirectiveDefinitions.addAll(
-        DirectiveInfo.GRAPHQL_SPECIFICATION_DIRECTIVES.stream()
-            .map(GraphQLDirective::getName)
-            .collect(Collectors.toList()));
+    hiddenDirectiveDefinitions.addAll(DirectiveInfo.GRAPHQL_SPECIFICATION_DIRECTIVE_MAP.keySet());
     hiddenDirectiveDefinitions.addAll(FederationDirectives.allNames);
 
     // Gather type definitions to hide.
