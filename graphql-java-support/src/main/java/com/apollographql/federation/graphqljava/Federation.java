@@ -161,7 +161,7 @@ public final class Federation {
     importedDefinitions.forEach(
         def -> {
           if (def instanceof DirectiveDefinition
-              && !typeRegistry.getDirectiveDefinition(def.getName()).isPresent()) {
+              && typeRegistry.getDirectiveDefinition(def.getName()).isEmpty()) {
             typeRegistry.add(def);
           } else if (def instanceof ScalarTypeDefinition) {
             if (!typeRegistry.scalars().containsKey(def.getName())) {
@@ -193,11 +193,11 @@ public final class Federation {
 
     // Add Federation directives if they don't exist.
     FederationDirectives.federation1DirectiveDefinitions.stream()
-        .filter(def -> !typeRegistry.getDirectiveDefinition(def.getName()).isPresent())
+        .filter(def -> typeRegistry.getDirectiveDefinition(def.getName()).isEmpty())
         .forEachOrdered(typeRegistry::add);
 
     // Add scalar type for _FieldSet, since the directives depend on it.
-    if (!typeRegistry.getType(_FieldSet.typeName).isPresent()) {
+    if (typeRegistry.getType(_FieldSet.typeName).isEmpty()) {
       typeRegistry.add(_FieldSet.definition);
     }
 
