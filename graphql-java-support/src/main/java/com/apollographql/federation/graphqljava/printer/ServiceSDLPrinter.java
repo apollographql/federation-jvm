@@ -12,9 +12,9 @@ import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLNamedSchemaElement;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLSchemaElement;
+import graphql.schema.idl.DirectiveInfo;
 import graphql.schema.idl.SchemaPrinter;
 import graphql.schema.visibility.GraphqlFieldVisibility;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -27,10 +27,6 @@ import java.util.stream.Collectors;
  * _service { sdl }</code> query and is compatible with Federation v1 and v2 specs.
  */
 public final class ServiceSDLPrinter {
-
-  // Apollo Gateway will fail Federation v1 composition if it sees standard directive definitions.
-  private static final Set<String> STANDARD_DIRECTIVES =
-      new HashSet<>(Arrays.asList("deprecated", "include", "oneOf", "skip", "specifiedBy"));
 
   private ServiceSDLPrinter() {
     // hidden constructor as this is static utility class
@@ -48,7 +44,11 @@ public final class ServiceSDLPrinter {
   public static String generateServiceSDL(GraphQLSchema schema, boolean queryTypeShouldBeEmpty) {
     // Gather directive definitions to hide.
     final Set<String> hiddenDirectiveDefinitions = new HashSet<>();
-    hiddenDirectiveDefinitions.addAll(STANDARD_DIRECTIVES);
+    // Apollo Gateway will fail Federation v1 composition if it sees standard directive definitions.
+    hiddenDirectiveDefinitions.addAll(
+        DirectiveInfo.GRAPHQL_SPECIFICATION_DIRECTIVES.stream()
+            .map(GraphQLDirective::getName)
+            .collect(Collectors.toList()));
     hiddenDirectiveDefinitions.addAll(FederationDirectives.allNames);
 
     // Gather type definitions to hide.
@@ -134,7 +134,8 @@ public final class ServiceSDLPrinter {
             SchemaPrinter.Options.defaultOptions()
                 .includeSchemaDefinition(true)
                 .includeScalarTypes(true)
-                .includeDirectives(def -> !STANDARD_DIRECTIVES.contains(def)))
+                .includeDirectives(
+                    directive -> !DirectiveInfo.isGraphqlSpecifiedDirective(directive)))
         .print(schema)
         .trim();
   }

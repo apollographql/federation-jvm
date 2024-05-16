@@ -13,16 +13,12 @@ import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+import graphql.schema.idl.DirectiveInfo;
 import graphql.schema.idl.SchemaPrinter;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 
 final class FederatedSchemaVerifier {
-  public static final Set<String> standardDirectives =
-      new HashSet<>(Arrays.asList("deprecated", "include", "oneOf", "skip", "specifiedBy"));
 
   private FederatedSchemaVerifier() {}
 
@@ -46,7 +42,8 @@ final class FederatedSchemaVerifier {
                 SchemaPrinter.Options.defaultOptions()
                     .includeSchemaDefinition(isFederationV2)
                     .includeScalarTypes(true)
-                    .includeDirectives(directive -> !standardDirectives.contains(directive)))
+                    .includeDirectives(
+                        directive -> !DirectiveInfo.isGraphqlSpecifiedDirective(directive)))
             .print(schema)
             .trim(),
         "Generated schema SDL should match expected one");
