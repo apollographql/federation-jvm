@@ -4,7 +4,7 @@ schema {
 
 type Product @key(fields : "id") @key(fields : "sku package") @key(fields : "sku variation { id }") {
   createdBy: User @provides(fields : "totalProductsCreated")
-  dimensions: ProductDimension
+  dimensions: ProductDimension @deprecated(reason : "no longer used")
   id: ID!
   notes: String
   package: String
