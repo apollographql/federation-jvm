@@ -20,7 +20,7 @@ public final class FileUtils {
       try (BufferedReader reader =
           new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
         String contents = reader.lines().collect(Collectors.joining(NEW_LINE_SEPARATOR)).trim();
-        assert contents.length() > 0;
+        assert !contents.isEmpty();
         return contents;
       }
     } catch (IOException e) {
