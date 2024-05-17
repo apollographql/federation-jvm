@@ -31,33 +31,33 @@ class FederationTest {
 
   @Test
   public void verifyFederationV1Transformation() {
-    verifyFederationTransformation("schemas/federationV1.graphql", false);
+    verifyFederationTransformation("schemas/fedV1/schema.graphql");
   }
 
   @Test
   public void verifyFederationV2Transformation() {
-    verifyFederationTransformation("schemas/federationV2.graphql", true);
+    verifyFederationTransformation("schemas/fedV2/schema.graphql");
   }
 
   @Test
   public void verifyFederationTransformation_subgraphWithoutEntities() {
-    verifyFederationTransformation("schemas/subgraphWithoutEntities.graphql", false);
+    verifyFederationTransformation("schemas/noEntities/schema.graphql");
   }
 
   @Test
   public void verifyFederationTransformation_subgraphWithEntitiesOnly() {
-    verifyFederationTransformation("schemas/subgraphWithEntitiesOnly.graphql", false);
+    verifyFederationTransformation("schemas/entitiesOnlySubgraph/schema.graphql");
   }
 
   @Test
   public void verifyFederationTransformation_nonFederatedSchema_doNotRequireFederatedResolvers() {
-    final String schemaSDL = FileUtils.readResource("schemas/subgraphWithoutEntities.graphql");
+    final String schemaSDL = FileUtils.readResource("schemas/noEntities/schema.graphql");
     assertDoesNotThrow(() -> Federation.transform(schemaSDL).build());
   }
 
   @Test
   public void verifyFederationTransformation_noEntityTypeResolver_throwsException() {
-    final String schemaSDL = FileUtils.readResource("schemas/federationV2.graphql");
+    final String schemaSDL = FileUtils.readResource("schemas/fedV2/schema.graphql");
     assertThrows(
         SchemaProblem.class,
         () -> Federation.transform(schemaSDL).resolveEntityType(env -> null).build());
@@ -65,7 +65,7 @@ class FederationTest {
 
   @Test
   public void verifyFederationTransformation_noEntitiesDataFetcher_throwsException() {
-    final String schemaSDL = FileUtils.readResource("schemas/federationV2.graphql");
+    final String schemaSDL = FileUtils.readResource("schemas/fedV2/schema.graphql");
     assertThrows(
         SchemaProblem.class,
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
@@ -73,7 +73,7 @@ class FederationTest {
 
   @Test
   public void verifyFederationV2TransformationAndEntityResolution() {
-    final String originalSDL = FileUtils.readResource("schemas/federationV2.graphql");
+    final String originalSDL = FileUtils.readResource("schemas/fedV2/schema.graphql");
 
     @SuppressWarnings("rawtypes")
     DataFetcher entityDataFetcher =
@@ -136,7 +136,7 @@ class FederationTest {
   @Test
   public void verifyFederationTransformation_noGlobalState() {
     // https://github.com/apollographql/federation-jvm/issues/7
-    final String sdl = FileUtils.readResource("schemas/federationV2.graphql");
+    final String sdl = FileUtils.readResource("schemas/fedV2/schema.graphql");
     final GraphQLSchema first =
         Federation.transform(sdl)
             .resolveEntityType(env -> null)
@@ -165,43 +165,43 @@ class FederationTest {
         MissingKeyException.class,
         () ->
             verifyFederationTransformation(
-                "schemas/polymorphicSubgraphMissingKeys.graphql", runtimeWiring, true));
+                "schemas/invalidPolymorphicSubgraphMissingKeys.graphql", runtimeWiring));
   }
 
   @Test
   public void verifyWeCannotRenameTagDirective() {
     assertThrows(
         UnsupportedRenameException.class,
-        () -> verifyFederationTransformation("schemas/renamedTagImport.graphql", true));
+        () -> verifyFederationTransformation("schemas/invalidRenameTagImport.graphql"));
   }
 
   @Test
   public void verifyWeCannotRenameInaccessibleDirective() {
     assertThrows(
         UnsupportedRenameException.class,
-        () -> verifyFederationTransformation("schemas/renamedInaccessibleImport.graphql", true));
+        () -> verifyFederationTransformation("schemas/invalidRenameInaccessibleImport.graphql"));
   }
 
   @Test
   public void verifyFederationV2Transformation_renames() {
-    verifyFederationTransformation("schemas/renamedImports.graphql", true);
+    verifyFederationTransformation("schemas/renamedImports/schema.graphql");
   }
 
   @Test
   public void verifyFederationV2Transformation_linkOnSchema() {
-    verifyFederationTransformation("schemas/schemaImport.graphql", true);
+    verifyFederationTransformation("schemas/schemaImport/schema.graphql");
   }
 
   @Test
   public void verifyFederationV2Transformation_composeDirective() {
-    verifyFederationTransformation("schemas/composeDirective.graphql", true);
+    verifyFederationTransformation("schemas/composeDirective/schema.graphql");
   }
 
   @Test
   public void
       verifyFederationV2Transformation_composeDirectiveFromUnsupportedVersion_throwsException() {
     final String schemaSDL =
-        FileUtils.readResource("schemas/composeDirectiveUnsupportedSpecVersion.graphql");
+        FileUtils.readResource("schemas/invalidSpecVersionComposeDirective.graphql");
     assertThrows(
         UnsupportedLinkImportException.class,
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
@@ -209,7 +209,7 @@ class FederationTest {
 
   @Test
   public void verifyFederationV2Transformation_unknownVersion_throwsException() {
-    final String schemaSDL = FileUtils.readResource("schemas/unsupportedSpecVersion.graphql");
+    final String schemaSDL = FileUtils.readResource("schemas/invalidSpecVersion.graphql");
     assertThrows(
         UnsupportedFederationVersionException.class,
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
@@ -217,7 +217,8 @@ class FederationTest {
 
   @Test
   public void verifyFederationV2Transformation_multipleFedLinks_throwsException() {
-    final String schemaSDL = FileUtils.readResource("schemas/multipleLinks.graphql");
+    final String schemaSDL =
+        FileUtils.readResource("schemas/invalidMultipleFederationLinks.graphql");
     assertThrows(
         MultipleFederationLinksException.class,
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
@@ -225,13 +226,14 @@ class FederationTest {
 
   @Test
   public void verifySchemaCanBeExtended() {
-    verifyFederationTransformation("schemas/extendSchema.graphql", true);
+    verifyFederationTransformation("schemas/extendSchema/schema.graphql");
   }
 
   @Test
   public void
       verifyFederationV2Transformation_multipleFedLinksSchemaAndExtension_throwsException() {
-    final String schemaSDL = FileUtils.readResource("schemas/multipleSchemaLinks.graphql");
+    final String schemaSDL =
+        FileUtils.readResource("schemas/invalidMultipleFederationSchemaLinks.graphql");
     assertThrows(
         MultipleFederationLinksException.class,
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
@@ -239,14 +241,14 @@ class FederationTest {
 
   @Test
   public void verifyFederationV2Transformation_repeatableShareable() {
-    verifyFederationTransformation("schemas/repeatableShareable.graphql", true);
+    verifyFederationTransformation("schemas/repeatableShareable/schema.graphql");
   }
 
   @Test
   public void
       verifyFederationV2Transformation_repeatableShareableFromUnsupportedVersion_throwsException() {
     final String schemaSDL =
-        FileUtils.readResource("schemas/repeatableShareableUnsupportedVersion.graphql");
+        FileUtils.readResource("schemas/invalidSpecVersionRepeatableShareable.graphql");
     assertThrows(
         InvalidSchemaException.class,
         () ->
@@ -258,14 +260,14 @@ class FederationTest {
 
   @Test
   public void verifyFederationV2Transformation_interfaceObject() {
-    verifyFederationTransformation("schemas/interfaceObject.graphql", true);
+    verifyFederationTransformation("schemas/interfaceObject/schema.graphql");
   }
 
   @Test
   public void
       verifyFederationV2Transformation_interfaceObjectFromUnsupportedVersion_throwsException() {
     final String schemaSDL =
-        FileUtils.readResource("schemas/interfaceObjectUnsupportedVersion.graphql");
+        FileUtils.readResource("schemas/invalidSpecVersionInterfaceObject.graphql");
     assertThrows(
         UnsupportedLinkImportException.class,
         () ->
@@ -283,36 +285,38 @@ class FederationTest {
             .type(TypeRuntimeWiring.newTypeWiring("Product").typeResolver(env -> null).build())
             .build();
 
-    verifyFederationTransformation("schemas/interfaceEntity.graphql", runtimeWiring, true);
+    verifyFederationTransformation("schemas/interfaceEntity/schema.graphql", runtimeWiring);
   }
 
   @Test
   public void verifyFederationV2Transformation_nonResolvableKey_doesNotRequireResolvers() {
-    final String originalSDL = FileUtils.readResource("schemas/nonResolvableKey.graphql");
+    final String originalSDL = FileUtils.readResource("schemas/nonResolvableKey/schema.graphql");
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
     final GraphQLSchema federatedSchema = Federation.transform(originalSDL, runtimeWiring).build();
 
+    final String expectedFullSchemaSDL =
+        FileUtils.readResource("schemas/nonResolvableKey/schema_full.graphql");
     final String expectedFederatedSchemaSDL =
-        FileUtils.readResource("schemas/nonResolvableKey_federated.graphql");
-    FederatedSchemaVerifier.verifySchemaSDL(federatedSchema, expectedFederatedSchemaSDL, true);
+        FileUtils.readResource("schemas/nonResolvableKey/schema_federated.graphql");
+    FederatedSchemaVerifier.verifyFullSchema(federatedSchema, expectedFullSchemaSDL);
     FederatedSchemaVerifier.verifySchemaContainsServiceFederationType(federatedSchema);
     FederatedSchemaVerifier.verifyServiceSDL(federatedSchema, expectedFederatedSchemaSDL);
   }
 
   @Test
   public void verifyFederationV2Transformation_authorization() {
-    verifyFederationTransformation("schemas/authorization.graphql", true);
+    verifyFederationTransformation("schemas/authorization/schema.graphql");
   }
 
   @Test
   public void verifyFederationV2Transformation_customAuthenticated() {
-    verifyFederationTransformation("schemas/customAuthenticated.graphql", true);
+    verifyFederationTransformation("schemas/customAuthenticated/schema.graphql");
   }
 
   @Test
   public void verifyFederationV2Transformation_authorizedFromUnsupportedVersion_throwsException() {
     final String schemaSDL =
-        FileUtils.readResource("schemas/authenticatedUnsupportedSpecVersion.graphql");
+        FileUtils.readResource("schemas/invalidSpecVersionAuthenticated.graphql");
     assertThrows(
         UnsupportedLinkImportException.class,
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
@@ -320,14 +324,14 @@ class FederationTest {
 
   @Test
   public void verifyFederationV2Transformation_policy() {
-    verifyFederationTransformation("schemas/policy.graphql", true);
+    verifyFederationTransformation("schemas/policy/schema.graphql");
   }
 
   @Test
   public void
       verifyFederationV2Transformation_requiresScopesFromUnsupportedVersion_throwsException() {
     final String schemaSDL =
-        FileUtils.readResource("schemas/requiresScopesUnsupportedSpecVersion.graphql");
+        FileUtils.readResource("schemas/invalidSpecVersionRequiresScopes.graphql");
     assertThrows(
         UnsupportedLinkImportException.class,
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
@@ -335,7 +339,7 @@ class FederationTest {
 
   @Test
   public void verifyFederationV2Transformation_policyFromUnsupportedVersion_throwsException() {
-    final String schemaSDL = FileUtils.readResource("schemas/policyUnsupportedSpecVersion.graphql");
+    final String schemaSDL = FileUtils.readResource("schemas/invalidSpecVersionPolicy.graphql");
     assertThrows(
         UnsupportedLinkImportException.class,
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
@@ -343,14 +347,14 @@ class FederationTest {
 
   @Test
   public void verifyFederationV2Transformation_progressiveOverride() {
-    verifyFederationTransformation("schemas/progressiveOverride.graphql", true);
+    verifyFederationTransformation("schemas/progressiveOverride/schema.graphql");
   }
 
   @Test
   public void
       verifyFederationV2Transformation_progressiveOverrideFromUnsupportedVersion_throwsException() {
     final String schemaSDL =
-        FileUtils.readResource("schemas/progressiveOverrideUnsupportedSpecVersion.graphql");
+        FileUtils.readResource("schemas/invalidSpecVersionProgressiveOverride.graphql");
     assertThrows(
         SchemaProblem.class,
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
@@ -358,17 +362,25 @@ class FederationTest {
 
   @Test
   public void verifyFederationV2Transformation_scalarsDefinedInSchemaButNotWired() {
-    verifyFederationTransformation("schemas/federationV2_defined_scalars.graphql", true);
+    verifyFederationTransformation("schemas/scalars/schema.graphql");
   }
 
-  private GraphQLSchema verifyFederationTransformation(
-      String schemaFileName, boolean isFederationV2) {
+  private void verifyFederationTransformation(String schemaFileName) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
-    return verifyFederationTransformation(schemaFileName, runtimeWiring, isFederationV2);
+    verifyFederationTransformation(schemaFileName, runtimeWiring);
   }
 
-  private GraphQLSchema verifyFederationTransformation(
-      String schemaFileName, RuntimeWiring runtimeWiring, boolean isFederationV2) {
+  /**
+   * Federate provided GraphQL schema and verifies the transformation.
+   *
+   * <p>Given a path to a schema file, this method assumes there are corresponding `_full` (complete
+   * SDL) and `_federated` (return value from `_service { sdl }` query) schema files that are used
+   * to verify the transformation.
+   *
+   * @param schemaFileName path to a schema file
+   * @param runtimeWiring custom runtime wiring
+   */
+  private void verifyFederationTransformation(String schemaFileName, RuntimeWiring runtimeWiring) {
     final String baseFileName = schemaFileName.substring(0, schemaFileName.indexOf(".graphql"));
 
     final String originalSDL = FileUtils.readResource(schemaFileName);
@@ -378,18 +390,12 @@ class FederationTest {
             .fetchEntities(entityFetcher -> null)
             .build();
 
+    final String expectedFullSchemaSDL = FileUtils.readResource(baseFileName + "_full.graphql");
     final String expectedFederatedSchemaSDL =
         FileUtils.readResource(baseFileName + "_federated.graphql");
-    final String expectedServiceSDL;
-    if (isFederationV2) {
-      expectedServiceSDL = expectedFederatedSchemaSDL;
-    } else {
-      expectedServiceSDL = FileUtils.readResource(baseFileName + "_serviceSDL.graphql");
-    }
-    FederatedSchemaVerifier.verifySchemaSDL(
-        federatedSchema, expectedFederatedSchemaSDL, isFederationV2);
+
+    FederatedSchemaVerifier.verifyFullSchema(federatedSchema, expectedFullSchemaSDL);
     FederatedSchemaVerifier.verifySchemaContainsServiceFederationType(federatedSchema);
-    FederatedSchemaVerifier.verifyServiceSDL(federatedSchema, expectedServiceSDL);
-    return federatedSchema;
+    FederatedSchemaVerifier.verifyServiceSDL(federatedSchema, expectedFederatedSchemaSDL);
   }
 }

@@ -12,9 +12,9 @@ import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLNamedSchemaElement;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLSchemaElement;
+import graphql.schema.idl.DirectiveInfo;
 import graphql.schema.idl.SchemaPrinter;
 import graphql.schema.visibility.GraphqlFieldVisibility;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -28,10 +28,6 @@ import java.util.stream.Collectors;
  */
 public final class ServiceSDLPrinter {
 
-  // Apollo Gateway will fail Federation v1 composition if it sees standard directive definitions.
-  private static final Set<String> STANDARD_DIRECTIVES =
-      new HashSet<>(Arrays.asList("deprecated", "include", "oneOf", "skip", "specifiedBy"));
-
   private ServiceSDLPrinter() {
     // hidden constructor as this is static utility class
   }
@@ -44,11 +40,14 @@ public final class ServiceSDLPrinter {
    *     should be removed (at least a single query has to be present for graphql-java to consider
    *     it as a valid schema)
    * @return SDL compatible with Federation v1
+   * @deprecated Migrate to use Federation v2
    */
+  @Deprecated(since = "05/16/2024")
   public static String generateServiceSDL(GraphQLSchema schema, boolean queryTypeShouldBeEmpty) {
     // Gather directive definitions to hide.
     final Set<String> hiddenDirectiveDefinitions = new HashSet<>();
-    hiddenDirectiveDefinitions.addAll(STANDARD_DIRECTIVES);
+    // Apollo Gateway will fail Federation v1 composition if it sees standard directive definitions.
+    hiddenDirectiveDefinitions.addAll(DirectiveInfo.GRAPHQL_SPECIFICATION_DIRECTIVE_MAP.keySet());
     hiddenDirectiveDefinitions.addAll(FederationDirectives.allNames);
 
     // Gather type definitions to hide.
@@ -102,23 +101,18 @@ public final class ServiceSDLPrinter {
     final GraphQLSchema federatedSchema =
         schema.transform(schemaBuilder -> schemaBuilder.codeRegistry(newCodeRegistry));
 
-    final Predicate<GraphQLSchemaElement> excludeFedTypeDefinitions =
-        element ->
-            !(element instanceof GraphQLNamedSchemaElement
-                && hiddenTypeDefinitions.contains(((GraphQLNamedSchemaElement) element).getName()));
-    final Predicate<GraphQLSchemaElement> excludeFedDirectiveDefinitions =
+    final Predicate<GraphQLSchemaElement> shouldIncludeSchemaElement =
         element ->
             !(element instanceof GraphQLDirective
-                && hiddenDirectiveDefinitions.contains(((GraphQLDirective) element).getName()));
+                    && hiddenDirectiveDefinitions.contains(((GraphQLDirective) element).getName()))
+                && !(element instanceof GraphQLNamedSchemaElement
+                    && hiddenTypeDefinitions.contains(
+                        ((GraphQLNamedSchemaElement) element).getName()));
     final SchemaPrinter.Options options =
         SchemaPrinter.Options.defaultOptions()
-            .includeScalarTypes(true)
             .includeSchemaDefinition(true)
-            .includeDirectives(FederationDirectives.allNames::contains)
-            .includeSchemaElement(
-                element ->
-                    excludeFedTypeDefinitions.test(element)
-                        && excludeFedDirectiveDefinitions.test(element));
+            .includeSchemaElement(shouldIncludeSchemaElement);
+
     return new SchemaPrinter(options).print(federatedSchema).trim();
   }
 
@@ -130,11 +124,15 @@ public final class ServiceSDLPrinter {
    */
   public static String generateServiceSDLV2(GraphQLSchema schema) {
     // federation v2 SDL does not need to filter federation directive definitions
+    final Predicate<GraphQLSchemaElement> excludeBuiltInDirectiveDefinitions =
+        element ->
+            !(element instanceof GraphQLDirective
+                && DirectiveInfo.isGraphqlSpecifiedDirective((GraphQLDirective) element));
     return new SchemaPrinter(
             SchemaPrinter.Options.defaultOptions()
                 .includeSchemaDefinition(true)
                 .includeScalarTypes(true)
-                .includeDirectives(def -> !STANDARD_DIRECTIVES.contains(def)))
+                .includeSchemaElement(excludeBuiltInDirectiveDefinitions))
         .print(schema)
         .trim();
   }

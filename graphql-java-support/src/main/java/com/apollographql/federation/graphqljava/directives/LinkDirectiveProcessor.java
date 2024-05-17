@@ -144,12 +144,12 @@ public final class LinkDirectiveProcessor {
                   .filter(field -> field.getName().equals("as"))
                   .findFirst();
 
-          if (!nameField.isPresent() || !(nameField.get().getValue() instanceof StringValue)) {
+          if (nameField.isEmpty() || !(nameField.get().getValue() instanceof StringValue)) {
             throw new UnsupportedLinkImportException(importedObjectValue);
           }
           final String name = ((StringValue) nameField.get().getValue()).getValue();
 
-          if (!renameAsField.isPresent()) {
+          if (renameAsField.isEmpty()) {
             imports.put(name, name);
           } else {
             final Value renamedAsValue = renameAsField.get().getValue();

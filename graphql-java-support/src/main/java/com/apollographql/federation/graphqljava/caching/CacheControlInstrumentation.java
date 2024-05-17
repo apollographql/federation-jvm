@@ -11,7 +11,6 @@ import graphql.execution.instrumentation.parameters.InstrumentationExecutionPara
 import graphql.execution.instrumentation.parameters.InstrumentationFieldParameters;
 import graphql.schema.*;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,13 +18,15 @@ import org.jetbrains.annotations.Nullable;
  * A GraphQL Java Instrumentation that computes a max age for an operation based on @cacheControl
  * directives.
  *
- * <p>You can retrieve the "max-age=..." header value with a {@link graphql.GraphQLContext}: <code>
+ * <p>You can retrieve the "max-age=..." header value with a {@link GraphQLContext}: <code>
  * String cacheControlHeader = CacheControlInstrumentation.cacheControlContext(context);
  * </code>
  *
- * <p>See https://www.apollographql.com/docs/apollo-server/performance/caching/ and the original
- * implementation at
- * https://github.com/apollographql/apollo-server/blob/main/packages/apollo-server-core/src/plugin/cacheControl/index.ts
+ * <p>See <a
+ * href="https://www.apollographql.com/docs/apollo-server/performance/caching/">@cacheControl
+ * documentation</a> and the original Apollo Server <a
+ * href="https://github.com/apollographql/apollo-server/tree/main/packages/plugin-response-cache">plugin-response-cache</a>
+ * implementation.
  */
 public class CacheControlInstrumentation extends SimplePerformantInstrumentation {
   private final int defaultMaxAge;
@@ -63,9 +64,12 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
   @Override
   public InstrumentationContext<ExecutionResult> beginExecution(
       InstrumentationExecutionParameters parameters, InstrumentationState state) {
-    return new InstrumentationContext<ExecutionResult>() {
+    return new InstrumentationContext<>() {
+
       @Override
-      public void onDispatched(CompletableFuture<ExecutionResult> completableFuture) {}
+      public void onDispatched() {
+        // do nothing
+      }
 
       @Override
       public void onCompleted(ExecutionResult executionResult, Throwable throwable) {
@@ -81,7 +85,7 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
   }
 
   @Override
-  public InstrumentationContext<ExecutionResult> beginField(
+  public @Nullable InstrumentationContext<Object> beginFieldExecution(
       InstrumentationFieldParameters parameters, InstrumentationState state) {
     CacheControlState cacheControlState = (CacheControlState) state;
     CacheControlPolicy fieldPolicy = new CacheControlPolicy(allowZeroMaxAge);
@@ -168,8 +172,7 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
     }
 
     cacheControlState.overallPolicy.restrict(fieldPolicy);
-
-    return super.beginField(parameters, state);
+    return super.beginFieldExecution(parameters, state);
   }
 
   enum CacheControlScope {
