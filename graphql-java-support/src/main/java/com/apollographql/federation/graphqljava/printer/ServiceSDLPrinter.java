@@ -40,7 +40,9 @@ public final class ServiceSDLPrinter {
    *     should be removed (at least a single query has to be present for graphql-java to consider
    *     it as a valid schema)
    * @return SDL compatible with Federation v1
+   * @deprecated Migrate to use Federation v2
    */
+  @Deprecated(since = "05/16/2024")
   public static String generateServiceSDL(GraphQLSchema schema, boolean queryTypeShouldBeEmpty) {
     // Gather directive definitions to hide.
     final Set<String> hiddenDirectiveDefinitions = new HashSet<>();
@@ -99,23 +101,18 @@ public final class ServiceSDLPrinter {
     final GraphQLSchema federatedSchema =
         schema.transform(schemaBuilder -> schemaBuilder.codeRegistry(newCodeRegistry));
 
-    final Predicate<GraphQLSchemaElement> excludeFedTypeDefinitions =
-        element ->
-            !(element instanceof GraphQLNamedSchemaElement
-                && hiddenTypeDefinitions.contains(((GraphQLNamedSchemaElement) element).getName()));
-    final Predicate<GraphQLSchemaElement> excludeFedDirectiveDefinitions =
+    final Predicate<GraphQLSchemaElement> shouldIncludeSchemaElement =
         element ->
             !(element instanceof GraphQLDirective
-                && hiddenDirectiveDefinitions.contains(((GraphQLDirective) element).getName()));
+                    && hiddenDirectiveDefinitions.contains(((GraphQLDirective) element).getName()))
+                && !(element instanceof GraphQLNamedSchemaElement
+                    && hiddenTypeDefinitions.contains(
+                        ((GraphQLNamedSchemaElement) element).getName()));
     final SchemaPrinter.Options options =
         SchemaPrinter.Options.defaultOptions()
-            .includeScalarTypes(true)
             .includeSchemaDefinition(true)
-            .includeDirectives(FederationDirectives.allNames::contains)
-            .includeSchemaElement(
-                element ->
-                    excludeFedTypeDefinitions.test(element)
-                        && excludeFedDirectiveDefinitions.test(element));
+            .includeSchemaElement(shouldIncludeSchemaElement);
+
     return new SchemaPrinter(options).print(federatedSchema).trim();
   }
 
@@ -127,12 +124,15 @@ public final class ServiceSDLPrinter {
    */
   public static String generateServiceSDLV2(GraphQLSchema schema) {
     // federation v2 SDL does not need to filter federation directive definitions
+    final Predicate<GraphQLSchemaElement> excludeBuiltInDirectiveDefinitions =
+        element ->
+            !(element instanceof GraphQLDirective
+                && DirectiveInfo.isGraphqlSpecifiedDirective((GraphQLDirective) element));
     return new SchemaPrinter(
             SchemaPrinter.Options.defaultOptions()
                 .includeSchemaDefinition(true)
                 .includeScalarTypes(true)
-                .includeDirectives(
-                    directive -> !DirectiveInfo.isGraphqlSpecifiedDirective(directive)))
+                .includeSchemaElement(excludeBuiltInDirectiveDefinitions))
         .print(schema)
         .trim();
   }

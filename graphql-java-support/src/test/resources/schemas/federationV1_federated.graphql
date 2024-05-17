@@ -1,18 +1,10 @@
-directive @extends on OBJECT | INTERFACE
-
-directive @external on FIELD_DEFINITION
-
-directive @key(fields: _FieldSet!) repeatable on OBJECT | INTERFACE
-
-directive @provides(fields: _FieldSet!) on FIELD_DEFINITION
-
-directive @requires(fields: _FieldSet!) on FIELD_DEFINITION
-
-union _Entity = Product | User
+schema {
+  query: Query
+}
 
 type Product @key(fields : "id") @key(fields : "sku package") @key(fields : "sku variation { id }") {
   createdBy: User @provides(fields : "totalProductsCreated")
-  dimensions: ProductDimension @deprecated(reason : "no longer used")
+  dimensions: ProductDimension
   id: ID!
   notes: String
   package: String
@@ -31,8 +23,6 @@ type ProductVariation {
 }
 
 type Query {
-  _entities(representations: [_Any!]!): [_Entity]!
-  _service: _Service!
   product(id: ID!): Product
 }
 
@@ -41,11 +31,3 @@ type User @extends @key(fields : "email") {
   name: String
   totalProductsCreated: Int @external
 }
-
-type _Service {
-  sdl: String!
-}
-
-scalar _Any
-
-scalar _FieldSet

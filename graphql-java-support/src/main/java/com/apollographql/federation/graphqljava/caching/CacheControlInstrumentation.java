@@ -18,13 +18,15 @@ import org.jetbrains.annotations.Nullable;
  * A GraphQL Java Instrumentation that computes a max age for an operation based on @cacheControl
  * directives.
  *
- * <p>You can retrieve the "max-age=..." header value with a {@link graphql.GraphQLContext}: <code>
+ * <p>You can retrieve the "max-age=..." header value with a {@link GraphQLContext}: <code>
  * String cacheControlHeader = CacheControlInstrumentation.cacheControlContext(context);
  * </code>
  *
- * <p>See https://www.apollographql.com/docs/apollo-server/performance/caching/ and the original
- * implementation at
- * https://github.com/apollographql/apollo-server/blob/main/packages/apollo-server-core/src/plugin/cacheControl/index.ts
+ * <p>See <a
+ * href="https://www.apollographql.com/docs/apollo-server/performance/caching/">@cacheControl
+ * documentation</a> and the original Apollo Server <a
+ * href="https://github.com/apollographql/apollo-server/tree/main/packages/plugin-response-cache">plugin-response-cache</a>
+ * implementation.
  */
 public class CacheControlInstrumentation extends SimplePerformantInstrumentation {
   private final int defaultMaxAge;

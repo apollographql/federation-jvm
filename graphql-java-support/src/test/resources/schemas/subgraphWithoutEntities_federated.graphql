@@ -1,12 +1,6 @@
-directive @extends on OBJECT | INTERFACE
-
-directive @external on FIELD_DEFINITION
-
-directive @key(fields: _FieldSet!) repeatable on OBJECT | INTERFACE
-
-directive @provides(fields: _FieldSet!) on FIELD_DEFINITION
-
-directive @requires(fields: _FieldSet!) on FIELD_DEFINITION
+schema {
+  query: Query
+}
 
 type Product {
   id: ID!
@@ -14,12 +8,5 @@ type Product {
 }
 
 type Query {
-  _service: _Service!
   product(id: ID!): Product
 }
-
-type _Service {
-  sdl: String!
-}
-
-scalar _FieldSet

@@ -3,7 +3,7 @@ type Product @key(fields: "id") @key(fields: "sku package") @key(fields: "sku va
     sku: String
     package: String
     variation: ProductVariation
-    dimensions: ProductDimension @deprecated(reason: "no longer used")
+    dimensions: ProductDimension
     createdBy: User @provides(fields: "totalProductsCreated")
     notes: String
 }

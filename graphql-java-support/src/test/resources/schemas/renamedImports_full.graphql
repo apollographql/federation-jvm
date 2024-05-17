@@ -1,0 +1,94 @@
+schema @link(import : [{name : "@key", as : "@myKey"}, {name : "@shareable"}, "@provides", "@external", "@tag", "@extends", "@override", "@inaccessible"], url : "https://specs.apollo.dev/federation/v2.0"){
+  query: Query
+}
+
+"Marks the field, argument, input field or enum value as deprecated"
+directive @deprecated(
+    "The reason for the deprecation"
+    reason: String = "No longer supported"
+  ) on FIELD_DEFINITION | ARGUMENT_DEFINITION | ENUM_VALUE | INPUT_FIELD_DEFINITION
+
+directive @extends on OBJECT | INTERFACE
+
+directive @external on OBJECT | FIELD_DEFINITION
+
+directive @federation__requires(fields: federation__FieldSet!) on FIELD_DEFINITION
+
+directive @inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+
+"Directs the executor to include this field or fragment only when the `if` argument is true"
+directive @include(
+    "Included when true."
+    if: Boolean!
+  ) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+directive @link(as: String, for: link__Purpose, import: [link__Import], url: String!) repeatable on SCHEMA
+
+directive @myKey(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
+
+"Indicates an Input Object is a OneOf Input Object."
+directive @oneOf on INPUT_OBJECT
+
+directive @override(from: String!) on FIELD_DEFINITION
+
+directive @provides(fields: federation__FieldSet!) on FIELD_DEFINITION
+
+directive @shareable on OBJECT | FIELD_DEFINITION
+
+"Directs the executor to skip this field or fragment when the `if` argument is true."
+directive @skip(
+    "Skipped when true."
+    if: Boolean!
+  ) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+"Exposes a URL that specifies the behaviour of this scalar."
+directive @specifiedBy(
+    "The URL that specifies the behaviour of this scalar."
+    url: String!
+  ) on SCALAR
+
+directive @tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+
+type Product @myKey(fields : "id", resolvable : true) @myKey(fields : "sku package", resolvable : true) @myKey(fields : "sku variation { id }", resolvable : true) {
+  createdBy: User @provides(fields : "totalProductsCreated")
+  dimensions: ProductDimension
+  id: ID!
+  notes: String @tag(name : "internal")
+  package: String
+  sku: String
+  variation: ProductVariation
+}
+
+type ProductDimension @shareable {
+  size: String
+  unit: String @inaccessible
+  weight: Float
+}
+
+type ProductVariation {
+  id: ID!
+}
+
+type Query {
+  _service: _Service!
+  product(id: ID!): Product
+}
+
+type User @myKey(fields : "email", resolvable : true) {
+  email: ID!
+  name: String @override(from : "users") @shareable
+  totalProductsCreated: Int @external
+}
+
+type _Service {
+  sdl: String!
+}
+
+enum link__Purpose {
+  EXECUTION
+  SECURITY
+}
+
+scalar federation__FieldSet
+
+scalar link__Import

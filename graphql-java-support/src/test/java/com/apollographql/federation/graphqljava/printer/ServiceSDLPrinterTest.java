@@ -215,7 +215,7 @@ class ServiceSDLPrinterTest {
 
     final String generatedSDL =
         ServiceSDLPrinter.generateServiceSDL(schemaWithAppliedDirectives, false);
-    final String expectedSDL = FileUtils.readResource("schemas/federationV1_serviceSDL.graphql");
+    final String expectedSDL = FileUtils.readResource("schemas/federationV1_federated.graphql");
     assertEquals(expectedSDL, generatedSDL, "Generated service SDL is the same as expected one");
   }
 
@@ -289,7 +289,7 @@ class ServiceSDLPrinterTest {
 
     final String generatedSDL =
         ServiceSDLPrinter.generateServiceSDL(schemaWithAppliedDirectives, false);
-    final String expectedSDL = FileUtils.readResource("schemas/federationV1_serviceSDL.graphql");
+    final String expectedSDL = FileUtils.readResource("schemas/federationV1_federated.graphql");
     assertEquals(expectedSDL, generatedSDL, "Generated service SDL is the same as expected one");
   }
 }

@@ -1,8 +1,8 @@
 type Query {
-    product(id: ID!): Product
+  product(id: ID!): Product
 }
 
 type Product {
-    id: ID!
-    name: String
+  id: ID!
+  name: String
 }
