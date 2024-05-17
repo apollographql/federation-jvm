@@ -172,8 +172,7 @@ GraphQL graphql = GraphQL.newGraphQL(graphQLSchema)
         .build();
 ```
 
-**By default, all requests will be traced.** In order to skip dev requests and only trace requests that come from the Apollo Gateway, you should populate tracing information in the `GraphQLContext` map.
-This will ensure that only requests with `apollo-federation-include-trace=ftv1` header value will be traced.
+Only requests with `apollo-federation-include-trace=ftv1` header value will be traced and you need to populate this tracing information in the `GraphQLContext` map.
 
 ```java
 String federatedTracingHeaderValue = httpRequest.getHeader(FEDERATED_TRACING_HEADER_NAME);
