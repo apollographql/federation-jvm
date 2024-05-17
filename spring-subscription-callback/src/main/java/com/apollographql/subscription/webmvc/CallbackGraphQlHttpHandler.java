@@ -7,8 +7,6 @@ import static com.apollographql.subscription.callback.SubscriptionCallbackHandle
 import com.apollographql.subscription.callback.SubscriptionCallbackHandler;
 import graphql.ExecutionResult;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -20,13 +18,9 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.graphql.server.WebGraphQlHandler;
 import org.springframework.graphql.server.WebGraphQlRequest;
 import org.springframework.graphql.server.webmvc.GraphQlHttpHandler;
-import org.springframework.http.HttpCookie;
 import org.springframework.http.MediaType;
 import org.springframework.util.AlternativeJdkIdGenerator;
 import org.springframework.util.IdGenerator;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.server.ServerWebInputException;
 import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 import reactor.core.publisher.Mono;
@@ -79,6 +73,7 @@ public class CallbackGraphQlHttpHandler extends GraphQlHttpHandler {
             serverRequest.uri(),
             serverRequest.headers().asHttpHeaders(),
             initCookies(serverRequest),
+            serverRequest.remoteAddress().orElse(null),
             serverRequest.attributes(),
             readBody(serverRequest),
             this.idGenerator.generateId().toString(),
@@ -142,29 +137,6 @@ public class CallbackGraphQlHttpHandler extends GraphQlHttpHandler {
                   });
 
       return ServerResponse.async(responseMono);
-    }
-  }
-
-  private static MultiValueMap<String, HttpCookie> initCookies(ServerRequest serverRequest) {
-    MultiValueMap<String, Cookie> source = serverRequest.cookies();
-    MultiValueMap<String, HttpCookie> target = new LinkedMultiValueMap<>(source.size());
-    source
-        .values()
-        .forEach(
-            cookieList ->
-                cookieList.forEach(
-                    cookie -> {
-                      HttpCookie httpCookie = new HttpCookie(cookie.getName(), cookie.getValue());
-                      target.add(cookie.getName(), httpCookie);
-                    }));
-    return target;
-  }
-
-  private static Map<String, Object> readBody(ServerRequest request) throws ServletException {
-    try {
-      return request.body(MAP_PARAMETERIZED_TYPE_REF);
-    } catch (IOException ex) {
-      throw new ServerWebInputException("I/O error while reading request body", null, ex);
     }
   }
 

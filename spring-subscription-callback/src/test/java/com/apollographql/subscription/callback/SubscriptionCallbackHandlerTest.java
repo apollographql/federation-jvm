@@ -25,10 +25,12 @@ import okhttp3.mockwebserver.RecordedRequest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.graphql.ExecutionGraphQlRequest;
+import org.springframework.graphql.ExecutionGraphQlResponse;
+import org.springframework.graphql.ExecutionGraphQlService;
 import org.springframework.graphql.server.WebGraphQlHandler;
 import org.springframework.graphql.server.WebGraphQlRequest;
 import org.springframework.graphql.server.WebGraphQlResponse;
-import org.springframework.graphql.server.WebSocketGraphQlInterceptor;
 import org.springframework.graphql.support.DefaultExecutionGraphQlResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -39,27 +41,26 @@ import reactor.test.StepVerifier;
 
 public class SubscriptionCallbackHandlerTest {
 
-  static class MockWebHandler implements WebGraphQlHandler {
+  static class MockExecutionEngine implements ExecutionGraphQlService {
 
     private final Flux subscriptionFlux;
 
-    public MockWebHandler(Flux subscriptionFlux) {
+    public MockExecutionEngine(Flux subscriptionFlux) {
       this.subscriptionFlux = subscriptionFlux;
     }
 
     @Override
-    public WebSocketGraphQlInterceptor getWebSocketInterceptor() {
-      return null;
-    }
-
-    @Override
-    public @NotNull Mono<WebGraphQlResponse> handleRequest(@NotNull WebGraphQlRequest request) {
+    public Mono<ExecutionGraphQlResponse> execute(ExecutionGraphQlRequest request) {
       var executionResult = ExecutionResult.newExecutionResult().data(subscriptionFlux).build();
       var executionResponse =
           new DefaultExecutionGraphQlResponse(request.toExecutionInput(), executionResult);
       var response = new WebGraphQlResponse(executionResponse);
       return Mono.just(response);
     }
+  }
+
+  static WebGraphQlHandler mockHandler(Flux subscriptionFlux) {
+    return WebGraphQlHandler.builder(new MockExecutionEngine(subscriptionFlux)).build();
   }
 
   @Test
@@ -81,7 +82,7 @@ public class SubscriptionCallbackHandlerTest {
       var data =
           Flux.just(1, 2)
               .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build());
-      var handler = new SubscriptionCallbackHandler(new MockWebHandler(data));
+      var handler = new SubscriptionCallbackHandler(mockHandler(data));
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
@@ -132,7 +133,7 @@ public class SubscriptionCallbackHandlerTest {
       var data =
           Flux.just(1, 2)
               .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build());
-      var handler = new SubscriptionCallbackHandler(new MockWebHandler(data));
+      var handler = new SubscriptionCallbackHandler(mockHandler(data));
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
@@ -184,7 +185,7 @@ public class SubscriptionCallbackHandlerTest {
           Flux.just(1, 2)
               .delayElements(Duration.ofMillis(3000))
               .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build());
-      var handler = new SubscriptionCallbackHandler(new MockWebHandler(data));
+      var handler = new SubscriptionCallbackHandler(mockHandler(data));
 
       // note: heartbeat goes into infinite recursion and does not emit value
       // TODO update to use virtual timer
@@ -249,7 +250,7 @@ public class SubscriptionCallbackHandlerTest {
           Flux.just(1, 2)
               .delayElements(Duration.ofMillis(3000))
               .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build());
-      var handler = new SubscriptionCallbackHandler(new MockWebHandler(data));
+      var handler = new SubscriptionCallbackHandler(mockHandler(data));
 
       // note: heartbeat goes into infinite recursion and does not emit value
       // TODO update to use virtual timer
@@ -280,7 +281,7 @@ public class SubscriptionCallbackHandlerTest {
           Flux.just(1, 2)
               .delayElements(Duration.ofMillis(50))
               .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build());
-      var handler = new SubscriptionCallbackHandler(new MockWebHandler(data));
+      var handler = new SubscriptionCallbackHandler(mockHandler(data));
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
@@ -309,7 +310,7 @@ public class SubscriptionCallbackHandlerTest {
           Flux.just(1, 2)
               .delayElements(Duration.ofMillis(50))
               .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build());
-      var handler = new SubscriptionCallbackHandler(new MockWebHandler(data));
+      var handler = new SubscriptionCallbackHandler(mockHandler(data));
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
@@ -339,7 +340,7 @@ public class SubscriptionCallbackHandlerTest {
               .delayElements(Duration.ofMillis(50))
               .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build())
               .concatWith(Mono.error(new RuntimeException("JUNIT_FAILURE")));
-      var handler = new SubscriptionCallbackHandler(new MockWebHandler(data));
+      var handler = new SubscriptionCallbackHandler(mockHandler(data));
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
@@ -384,6 +385,7 @@ public class SubscriptionCallbackHandlerTest {
     return new WebGraphQlRequest(
         URI.create(callbackUrl),
         HttpHeaders.EMPTY,
+        null,
         null,
         Collections.emptyMap(),
         createMockGraphQLRequest(subscriptionId, callbackUrl),
