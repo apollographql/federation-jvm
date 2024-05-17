@@ -35,7 +35,7 @@ public final class Federation {
   public static final String FEDERATION_SPEC_V2_6 = "https://specs.apollo.dev/federation/v2.6";
   public static final String FEDERATION_SPEC_V2_7 = "https://specs.apollo.dev/federation/v2.7";
 
-  private static final SchemaGenerator.Options generatorOptions =
+  private static final SchemaGenerator.Options defaultGeneratorOptions =
       SchemaGenerator.Options.defaultOptions();
 
   private Federation() {}
@@ -60,6 +60,13 @@ public final class Federation {
 
   public static SchemaTransformer transform(
       final TypeDefinitionRegistry typeRegistry, final RuntimeWiring runtimeWiring) {
+    return transform(typeRegistry, runtimeWiring, defaultGeneratorOptions);
+  }
+
+  public static SchemaTransformer transform(
+      final TypeDefinitionRegistry typeRegistry,
+      final RuntimeWiring runtimeWiring,
+      final SchemaGenerator.Options generatorOptions) {
     final boolean queryTypeShouldBeEmpty = ensureQueryTypeExists(typeRegistry);
 
     RuntimeWiring federatedRuntimeWiring;
