@@ -140,30 +140,6 @@ public class CallbackGraphQlHttpHandler extends GraphQlHttpHandler {
     }
   }
 
-  //  private static MultiValueMap<String, HttpCookie> initCookies(ServerRequest serverRequest) {
-  //    MultiValueMap<String, Cookie> source = serverRequest.cookies();
-  //    MultiValueMap<String, HttpCookie> target = new LinkedMultiValueMap<>(source.size());
-  //    source
-  //        .values()
-  //        .forEach(
-  //            cookieList ->
-  //                cookieList.forEach(
-  //                    cookie -> {
-  //                      HttpCookie httpCookie = new HttpCookie(cookie.getName(),
-  // cookie.getValue());
-  //                      target.add(cookie.getName(), httpCookie);
-  //                    }));
-  //    return target;
-  //  }
-
-  //  private static Map<String, Object> readBody(ServerRequest request) throws ServletException {
-  //    try {
-  //      return request.body(MAP_PARAMETERIZED_TYPE_REF);
-  //    } catch (IOException ex) {
-  //      throw new ServerWebInputException("I/O error while reading request body", null, ex);
-  //    }
-  //  }
-
   private static MediaType selectResponseMediaType(ServerRequest serverRequest) {
     for (MediaType accepted : serverRequest.headers().accept()) {
       if (SUPPORTED_MEDIA_TYPES.contains(accepted)) {
