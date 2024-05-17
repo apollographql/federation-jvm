@@ -397,6 +397,5 @@ class FederationTest {
     FederatedSchemaVerifier.verifyFullSchema(federatedSchema, expectedFullSchemaSDL);
     FederatedSchemaVerifier.verifySchemaContainsServiceFederationType(federatedSchema);
     FederatedSchemaVerifier.verifyServiceSDL(federatedSchema, expectedFederatedSchemaSDL);
-    return federatedSchema;
   }
 }
