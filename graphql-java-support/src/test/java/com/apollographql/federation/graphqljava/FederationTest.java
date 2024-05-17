@@ -165,7 +165,7 @@ class FederationTest {
         MissingKeyException.class,
         () ->
             verifyFederationTransformation(
-              "schemas/invalidPolymorphicSubgraphMissingKeys.graphql", runtimeWiring));
+                "schemas/invalidPolymorphicSubgraphMissingKeys.graphql", runtimeWiring));
   }
 
   @Test
@@ -217,7 +217,8 @@ class FederationTest {
 
   @Test
   public void verifyFederationV2Transformation_multipleFedLinks_throwsException() {
-    final String schemaSDL = FileUtils.readResource("schemas/invalidMultipleFederationLinks.graphql");
+    final String schemaSDL =
+        FileUtils.readResource("schemas/invalidMultipleFederationLinks.graphql");
     assertThrows(
         MultipleFederationLinksException.class,
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
@@ -231,7 +232,8 @@ class FederationTest {
   @Test
   public void
       verifyFederationV2Transformation_multipleFedLinksSchemaAndExtension_throwsException() {
-    final String schemaSDL = FileUtils.readResource("schemas/invalidMultipleFederationSchemaLinks.graphql");
+    final String schemaSDL =
+        FileUtils.readResource("schemas/invalidMultipleFederationSchemaLinks.graphql");
     assertThrows(
         MultipleFederationLinksException.class,
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
@@ -363,13 +365,22 @@ class FederationTest {
     verifyFederationTransformation("schemas/scalars/schema.graphql");
   }
 
-  private GraphQLSchema verifyFederationTransformation(String schemaFileName) {
+  private void verifyFederationTransformation(String schemaFileName) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
-    return verifyFederationTransformation(schemaFileName, runtimeWiring);
+    verifyFederationTransformation(schemaFileName, runtimeWiring);
   }
 
-  private GraphQLSchema verifyFederationTransformation(
-      String schemaFileName, RuntimeWiring runtimeWiring) {
+  /**
+   * Federate provided GraphQL schema and verifies the transformation.
+   *
+   * <p>Given a path to a schema file, this method assumes there are corresponding `_full` (complete
+   * SDL) and `_federated` (return value from `_service { sdl }` query) schema files that are used
+   * to verify the transformation.
+   *
+   * @param schemaFileName path to a schema file
+   * @param runtimeWiring custom runtime wiring
+   */
+  private void verifyFederationTransformation(String schemaFileName, RuntimeWiring runtimeWiring) {
     final String baseFileName = schemaFileName.substring(0, schemaFileName.indexOf(".graphql"));
 
     final String originalSDL = FileUtils.readResource(schemaFileName);
