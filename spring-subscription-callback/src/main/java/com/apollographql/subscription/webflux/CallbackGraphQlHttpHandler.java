@@ -69,6 +69,7 @@ public class CallbackGraphQlHttpHandler extends GraphQlHttpHandler {
                     serverRequest.uri(),
                     serverRequest.headers().asHttpHeaders(),
                     serverRequest.cookies(),
+                    serverRequest.remoteAddress().orElse(null),
                     serverRequest.attributes(),
                     body,
                     serverRequest.exchange().getRequest().getId(),
