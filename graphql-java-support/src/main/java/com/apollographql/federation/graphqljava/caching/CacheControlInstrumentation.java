@@ -18,6 +18,10 @@ import org.jetbrains.annotations.Nullable;
  * A GraphQL Java Instrumentation that computes a max age for an operation based on @cacheControl
  * directives.
  *
+ * By default, this instrumentation will only set the `Cache-Control` `max-age` value IF positive int
+ * value is provided. If you would rather want to return explicit `max-age=0` values, you need to
+ * explicitly opt-in to this behavior by specifying `allowZeroMaxAge=true` constructor value.
+ *
  * <p>You can retrieve the "max-age=..." header value with a {@link GraphQLContext}: <code>
  * String cacheControlHeader = CacheControlInstrumentation.cacheControlContext(context);
  * </code>
