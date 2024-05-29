@@ -6,14 +6,11 @@ import static com.apollographql.subscription.callback.SubscriptionCallbackHandle
 
 import com.apollographql.subscription.callback.SubscriptionCallbackHandler;
 import graphql.ExecutionResult;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.codec.Decoder;
 import org.springframework.core.io.buffer.DataBuffer;
