@@ -15,6 +15,8 @@ import org.springframework.graphql.server.WebGraphQlRequest;
 import org.springframework.graphql.server.WebGraphQlResponse;
 import org.springframework.graphql.server.WebSocketGraphQlRequest;
 import org.springframework.graphql.support.DefaultExecutionGraphQlResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 /**
@@ -65,7 +67,7 @@ public class CallbackWebGraphQLInterceptor implements WebGraphQlInterceptor, Ord
                 if (logger.isErrorEnabled()) {
                   logger.error("Unable to start subscription using callback protocol", error);
                 }
-                return Mono.just(errorCallbackResponse(request));
+                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST));
               });
     } else {
       return chain.next(request);
