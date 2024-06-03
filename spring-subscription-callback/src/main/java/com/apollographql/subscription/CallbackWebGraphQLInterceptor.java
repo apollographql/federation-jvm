@@ -9,6 +9,7 @@ import graphql.ExecutionResult;
 import graphql.GraphQLError;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.core.Ordered;
 import org.springframework.graphql.server.WebGraphQlInterceptor;
 import org.springframework.graphql.server.WebGraphQlRequest;
 import org.springframework.graphql.server.WebGraphQlResponse;
@@ -16,14 +17,31 @@ import org.springframework.graphql.server.WebSocketGraphQlRequest;
 import org.springframework.graphql.support.DefaultExecutionGraphQlResponse;
 import reactor.core.publisher.Mono;
 
-public class CallbackWebGraphQLInterceptor implements WebGraphQlInterceptor {
+/**
+ * Interceptor that provides support for Apollo Subscription Callback Protocol. This interceptor
+ * defaults to {@link Ordered#LOWEST_PRECEDENCE} order as it should run last in chain to allow users
+ * to still apply other interceptors that handle common stuff (e.g. extracting auth headers, etc).
+ * You can override this behavior by specifying custom order.
+ *
+ * @see <a
+ *     href="https://www.apollographql.com/docs/router/executing-operations/subscription-callback-protocol">Subscription
+ *     Callback Protocol</a>
+ */
+public class CallbackWebGraphQLInterceptor implements WebGraphQlInterceptor, Ordered {
 
   private static final Log logger = LogFactory.getLog(CallbackWebGraphQLInterceptor.class);
 
   private final SubscriptionCallbackHandler subscriptionCallbackHandler;
+  private final int order;
 
   public CallbackWebGraphQLInterceptor(SubscriptionCallbackHandler subscriptionCallbackHandler) {
+    this(subscriptionCallbackHandler, LOWEST_PRECEDENCE);
+  }
+
+  public CallbackWebGraphQLInterceptor(
+      SubscriptionCallbackHandler subscriptionCallbackHandler, int order) {
     this.subscriptionCallbackHandler = subscriptionCallbackHandler;
+    this.order = order;
   }
 
   @Override
@@ -78,5 +96,10 @@ public class CallbackWebGraphQLInterceptor implements WebGraphQlInterceptor {
                     .build())
             .build();
     return callbackResponse(request, errorCallbackResult);
+  }
+
+  @Override
+  public int getOrder() {
+    return order;
   }
 }

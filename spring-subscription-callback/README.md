@@ -59,13 +59,10 @@ implementation("com.apollographql.federation:federation-spring-subscription-call
 
 ## Usage
 
-In order to enable HTTP subscription callback protocol support you need to configure `CallbackGraphQlHttpHandler` bean in your
-application context.
+In order to enable HTTP subscription callback protocol support you need to configure `SubscriptionCallbackHandler` and
+`CallbackWebGraphQLInterceptor` beans in your application context.
 
-This library provides support for both WebMVC and WebFlux applications so make sure to instantiate correct flavor of protocol.
-
-* `com.apollographql.subscription.webmvc.CallbackGraphQlHttpHandler` for WebMVC applications
-* `com.apollographql.subscription.webflux.CallbackGraphQlHttpHandler` for WebFlux applications
+`CallbackWebGraphQLInterceptor` works with both WebMVC and WebFlux applications.
 
 Given a subscription
 
@@ -92,6 +89,10 @@ public class GraphQLConfiguration {
         return new SubscriptionCallbackHandler(graphQlService);
     }
 
+    // This interceptor defaults to Ordered#LOWEST_PRECEDENCE order as it should run last in chain
+    // to allow users to still apply other interceptors that handle common stuff (e.g. extracting
+    // auth headers, etc).
+    // You can override this behavior by specifying custom order.
     @Bean
     public CallbackWebGraphQLInterceptor callbackGraphQlInterceptor(
             SubscriptionCallbackHandler callbackHandler) {
@@ -130,9 +131,8 @@ your provided scheduler.
 
 ```java
 @Bean
-public GraphQlHttpHandler graphQlHttpHandler(WebGraphQlHandler webGraphQlHandler) {
+public SubscriptionCallbackHandler callbackHandler(ExecutionGraphQlService graphQlService) {
     Scheduler customScheduler = <provide your custom scheduler>;
-    SubscriptionCallbackHandler subscriptionHandler = new SubscriptionCallbackHandler(webGraphQlHandler, customScheduler);
-    return new CallbackGraphQlHttpHandler(webGraphQlHandler, subscriptionHandler);
+    return new SubscriptionCallbackHandler(graphQlService, customScheduler);
 }
 ```
