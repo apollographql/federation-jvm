@@ -34,6 +34,7 @@ public final class Federation {
   public static final String FEDERATION_SPEC_V2_5 = "https://specs.apollo.dev/federation/v2.5";
   public static final String FEDERATION_SPEC_V2_6 = "https://specs.apollo.dev/federation/v2.6";
   public static final String FEDERATION_SPEC_V2_7 = "https://specs.apollo.dev/federation/v2.7";
+  public static final String FEDERATION_SPEC_V2_8 = "https://specs.apollo.dev/federation/v2.8";
 
   private static final SchemaGenerator.Options defaultGeneratorOptions =
       SchemaGenerator.Options.defaultOptions();
