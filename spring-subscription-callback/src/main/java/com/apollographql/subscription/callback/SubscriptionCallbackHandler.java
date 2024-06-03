@@ -1,5 +1,6 @@
 package com.apollographql.subscription.callback;
 
+import com.apollographql.subscription.exception.CallbackInitializationFailedException;
 import com.apollographql.subscription.exception.InactiveSubscriptionException;
 import com.apollographql.subscription.message.CallbackMessageCheck;
 import com.apollographql.subscription.message.CallbackMessageComplete;
@@ -14,7 +15,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
-import org.springframework.graphql.server.WebGraphQlHandler;
+import org.springframework.graphql.ExecutionGraphQlService;
 import org.springframework.graphql.server.WebGraphQlRequest;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -30,20 +31,20 @@ public class SubscriptionCallbackHandler {
   public static final String SUBSCRIPTION_PROTOCOL_HEADER = "subscription-protocol";
   public static final String SUBSCRIPTION_PROTOCOL_HEADER_VALUE = "callback/1.0";
 
-  private final WebGraphQlHandler graphQlHandler;
+  private final ExecutionGraphQlService graphQlService;
   private final Scheduler scheduler;
 
-  public SubscriptionCallbackHandler(WebGraphQlHandler graphQlHandler) {
-    this(graphQlHandler, Schedulers.boundedElastic());
+  public SubscriptionCallbackHandler(ExecutionGraphQlService graphQlService) {
+    this(graphQlService, Schedulers.boundedElastic());
   }
 
-  public SubscriptionCallbackHandler(WebGraphQlHandler graphQlHandler, Scheduler scheduler) {
-    this.graphQlHandler = graphQlHandler;
+  public SubscriptionCallbackHandler(ExecutionGraphQlService graphQlService, Scheduler scheduler) {
+    this.graphQlService = graphQlService;
     this.scheduler = scheduler;
   }
 
   @NotNull
-  public Mono<Boolean> handleSubscriptionUsingCallback(
+  public Mono<ExecutionResult> handleSubscriptionUsingCallback(
       @NotNull WebGraphQlRequest graphQlRequest, @NotNull SubscriptionCallback callback) {
     if (logger.isDebugEnabled()) {
       logger.debug("Starting subscription callback: " + callback);
@@ -62,11 +63,11 @@ public class SubscriptionCallbackHandler {
         .exchangeToMono(
             checkResponse -> {
               var responseStatusCode = checkResponse.statusCode();
-              var subscriptionProtocol =
-                  checkResponse.headers().header(SUBSCRIPTION_PROTOCOL_HEADER);
+              // var subscriptionProtocol =
+              // checkResponse.headers().header(SUBSCRIPTION_PROTOCOL_HEADER);
 
               if (responseStatusCode.is2xxSuccessful()) {
-                //            && !subscriptionProtocol.isEmpty() &&
+                //  && !subscriptionProtocol.isEmpty() &&
                 // "callback".equals(subscriptionProtocol.get(0)))
                 if (logger.isDebugEnabled()) {
                   logger.debug("Subscription callback init successful: " + callback);
@@ -74,21 +75,19 @@ public class SubscriptionCallbackHandler {
 
                 Flux<SubscritionCallbackMessage> subscription =
                     startSubscription(client, graphQlRequest, callback);
-                return Mono.just(true)
+                return Mono.just(emptyResult())
                     .publishOn(scheduler)
                     .doOnSubscribe((subscribed) -> subscription.subscribe());
               } else {
-                if (logger.isWarnEnabled()) {
-                  logger.warn(
-                      "Subscription callback failed initialization: "
-                          + callback
-                          + ", server responded with: "
-                          + responseStatusCode.value());
-                }
-                return Mono.just(false);
+                return Mono.error(
+                    new CallbackInitializationFailedException(
+                        callback, responseStatusCode.value()));
               }
-            })
-        .onErrorReturn(false);
+            });
+  }
+
+  private ExecutionResult emptyResult() {
+    return ExecutionResult.newExecutionResult().data(null).build();
   }
 
   @NotNull
@@ -107,8 +106,8 @@ public class SubscriptionCallbackHandler {
 
     // subscription data flux
     Flux<SubscritionCallbackMessage> subscriptionFlux =
-        this.graphQlHandler
-            .handleRequest(graphQlRequest)
+        this.graphQlService
+            .execute(graphQlRequest)
             .flatMapMany(
                 (subscriptionData) -> {
                   Flux<Map<String, Object>> responseFlux;

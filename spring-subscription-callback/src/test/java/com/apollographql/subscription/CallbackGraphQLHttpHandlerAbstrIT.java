@@ -35,6 +35,7 @@ public abstract class CallbackGraphQLHttpHandlerAbstrIT {
   }
 
   public void verifyWebSocketSubscriptionWorks(String url) {
+    System.out.println("TEST URL: " + url);
     WebSocketClient client = new ReactorNettyWebSocketClient();
 
     WebSocketGraphQlTester tester = WebSocketGraphQlTester.builder(url, client).build();

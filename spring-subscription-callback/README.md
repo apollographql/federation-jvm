@@ -88,8 +88,14 @@ We can enable subscription HTTP callback support using following configuration
 public class GraphQLConfiguration {
 
     @Bean
-    public GraphQlHttpHandler graphQlHttpHandler(WebGraphQlHandler webGraphQlHandler) {
-        return new CallbackGraphQlHttpHandler(webGraphQlHandler);
+    public SubscriptionCallbackHandler callbackHandler(ExecutionGraphQlService graphQlService) {
+        return new SubscriptionCallbackHandler(graphQlService);
+    }
+
+    @Bean
+    public CallbackWebGraphQLInterceptor callbackGraphQlInterceptor(
+            SubscriptionCallbackHandler callbackHandler) {
+        return new CallbackWebGraphQLInterceptor(callbackHandler);
     }
 
     // regular federation transform
