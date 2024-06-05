@@ -99,28 +99,16 @@ public class GraphQLConfiguration {
         return new CallbackWebGraphQLInterceptor(callbackHandler);
     }
 
-    // regular federation transform
+    // regular federation transforms
+    // see https://docs.spring.io/spring-graphql/reference/federation.html
     @Bean
-    public GraphQlSourceBuilderCustomizer federationTransform() {
-        DataFetcher<?> entityDataFetcher =
-                env -> {
-                    List<Map<String, Object>> representations = env.getArgument(_Entity.argumentName);
-                    return representations.stream()
-                            .map(
-                                    representation -> {
-                                        // TODO implement entity data fetcher logic here
-                                        return null;
-                                    })
-                            .collect(Collectors.toList());
-                };
+    public GraphQlSourceBuilderCustomizer customizer(FederationSchemaFactory factory) {
+        return builder -> builder.schemaFactory(factory::createGraphQLSchema);
+    }
 
-        return builder ->
-                builder.schemaFactory(
-                        (registry, wiring) ->
-                                Federation.transform(registry, wiring)
-                                        .fetchEntities(entityDataFetcher)
-                                        .resolveEntityType(new ClassNameTypeResolver())
-                                        .build());
+    @Bean
+    FederationSchemaFactory federationSchemaFactory() {
+        return new FederationSchemaFactory();
     }
 }
 ```
