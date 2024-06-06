@@ -28,7 +28,7 @@ directive @link(as: String, for: link__Purpose, import: [link__Import], url: Str
 
 directive @requiresScopes(scopes: [[Scope!]!]!) on SCALAR | OBJECT | FIELD_DEFINITION | INTERFACE | ENUM
 
-directive @tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+directive @tag(name: String!) repeatable on SCHEMA | SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
 union _Entity = Product
 
