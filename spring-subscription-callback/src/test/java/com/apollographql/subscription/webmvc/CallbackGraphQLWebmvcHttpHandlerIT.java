@@ -1,6 +1,8 @@
 package com.apollographql.subscription.webmvc;
 
 import com.apollographql.subscription.CallbackGraphQLHttpHandlerAbstrIT;
+import com.apollographql.subscription.CallbackWebGraphQLInterceptor;
+import com.apollographql.subscription.callback.SubscriptionCallbackHandler;
 import com.apollographql.subscription.configuration.TestGraphQLConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,8 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.graphql.server.WebGraphQlHandler;
-import org.springframework.graphql.server.webmvc.GraphQlHttpHandler;
+import org.springframework.graphql.ExecutionGraphQlService;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 @EnableAutoConfiguration
@@ -30,8 +31,14 @@ public class CallbackGraphQLWebmvcHttpHandlerIT extends CallbackGraphQLHttpHandl
   @ComponentScan(basePackages = "com.apollographql.subscription.configuration")
   static class GraphQLSubscriptionConfiguration {
     @Bean
-    public GraphQlHttpHandler callbackGraphQlHttpHandler(WebGraphQlHandler webGraphQlHandler) {
-      return new CallbackGraphQlHttpHandler(webGraphQlHandler);
+    public SubscriptionCallbackHandler callbackHandler(ExecutionGraphQlService graphQlService) {
+      return new SubscriptionCallbackHandler(graphQlService);
+    }
+
+    @Bean
+    public CallbackWebGraphQLInterceptor callbackGraphQlInterceptor(
+        SubscriptionCallbackHandler callbackHandler) {
+      return new CallbackWebGraphQLInterceptor(callbackHandler);
     }
   }
 

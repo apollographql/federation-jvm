@@ -4,6 +4,7 @@ import static com.apollographql.subscription.CallbackTestUtils.createMockGraphQL
 import static com.apollographql.subscription.callback.SubscriptionCallbackHandler.SUBSCRIPTION_PROTOCOL_HEADER;
 import static com.apollographql.subscription.callback.SubscriptionCallbackHandler.SUBSCRIPTION_PROTOCOL_HEADER_VALUE;
 
+import com.apollographql.subscription.exception.CallbackInitializationFailedException;
 import com.apollographql.subscription.message.CallbackMessageCheck;
 import com.apollographql.subscription.message.CallbackMessageComplete;
 import com.apollographql.subscription.message.CallbackMessageNext;
@@ -28,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.graphql.ExecutionGraphQlRequest;
 import org.springframework.graphql.ExecutionGraphQlResponse;
 import org.springframework.graphql.ExecutionGraphQlService;
-import org.springframework.graphql.server.WebGraphQlHandler;
 import org.springframework.graphql.server.WebGraphQlRequest;
 import org.springframework.graphql.server.WebGraphQlResponse;
 import org.springframework.graphql.support.DefaultExecutionGraphQlResponse;
@@ -59,10 +59,6 @@ public class SubscriptionCallbackHandlerTest {
     }
   }
 
-  static WebGraphQlHandler mockHandler(Flux subscriptionFlux) {
-    return WebGraphQlHandler.builder(new MockExecutionEngine(subscriptionFlux)).build();
-  }
-
   @Test
   public void init_successful() {
     var capturedRequests = new ArrayList<String>();
@@ -82,7 +78,7 @@ public class SubscriptionCallbackHandlerTest {
       var data =
           Flux.just(1, 2)
               .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build());
-      var handler = new SubscriptionCallbackHandler(mockHandler(data));
+      var handler = new SubscriptionCallbackHandler(new MockExecutionEngine(data));
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
@@ -91,7 +87,13 @@ public class SubscriptionCallbackHandlerTest {
 
       var graphQLRequest = stubWebGraphQLRequest(subscriptionId, callbackUrl);
       var subscription = handler.handleSubscriptionUsingCallback(graphQLRequest, callback);
-      StepVerifier.create(subscription).expectNext(true).verifyComplete();
+      StepVerifier.create(subscription)
+          .expectNextMatches(
+              response ->
+                  response.isDataPresent()
+                      && response.getData() == null
+                      && response.getErrors().isEmpty())
+          .verifyComplete();
 
       // wait for subscription to end
       // TODO change to virtual time
@@ -133,7 +135,7 @@ public class SubscriptionCallbackHandlerTest {
       var data =
           Flux.just(1, 2)
               .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build());
-      var handler = new SubscriptionCallbackHandler(mockHandler(data));
+      var handler = new SubscriptionCallbackHandler(new MockExecutionEngine(data));
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
@@ -142,7 +144,9 @@ public class SubscriptionCallbackHandlerTest {
 
       var graphQLRequest = stubWebGraphQLRequest(subscriptionId, callbackUrl);
       var subscription = handler.handleSubscriptionUsingCallback(graphQLRequest, callback);
-      StepVerifier.create(subscription).expectNext(false).verifyComplete();
+      StepVerifier.create(subscription)
+          .expectErrorMatches(error -> error instanceof CallbackInitializationFailedException)
+          .verify();
 
       // wait for subscription to end
       // TODO change to virtual time
@@ -185,7 +189,7 @@ public class SubscriptionCallbackHandlerTest {
           Flux.just(1, 2)
               .delayElements(Duration.ofMillis(3000))
               .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build());
-      var handler = new SubscriptionCallbackHandler(mockHandler(data));
+      var handler = new SubscriptionCallbackHandler(new MockExecutionEngine(data));
 
       // note: heartbeat goes into infinite recursion and does not emit value
       // TODO update to use virtual timer
@@ -250,7 +254,7 @@ public class SubscriptionCallbackHandlerTest {
           Flux.just(1, 2)
               .delayElements(Duration.ofMillis(3000))
               .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build());
-      var handler = new SubscriptionCallbackHandler(mockHandler(data));
+      var handler = new SubscriptionCallbackHandler(new MockExecutionEngine(data));
 
       // note: heartbeat goes into infinite recursion and does not emit value
       // TODO update to use virtual timer
@@ -281,7 +285,7 @@ public class SubscriptionCallbackHandlerTest {
           Flux.just(1, 2)
               .delayElements(Duration.ofMillis(50))
               .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build());
-      var handler = new SubscriptionCallbackHandler(mockHandler(data));
+      var handler = new SubscriptionCallbackHandler(new MockExecutionEngine(data));
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
@@ -310,7 +314,7 @@ public class SubscriptionCallbackHandlerTest {
           Flux.just(1, 2)
               .delayElements(Duration.ofMillis(50))
               .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build());
-      var handler = new SubscriptionCallbackHandler(mockHandler(data));
+      var handler = new SubscriptionCallbackHandler(new MockExecutionEngine(data));
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
@@ -340,7 +344,7 @@ public class SubscriptionCallbackHandlerTest {
               .delayElements(Duration.ofMillis(50))
               .map((i) -> ExecutionResult.newExecutionResult().data(Map.of("counter", i)).build())
               .concatWith(Mono.error(new RuntimeException("JUNIT_FAILURE")));
-      var handler = new SubscriptionCallbackHandler(mockHandler(data));
+      var handler = new SubscriptionCallbackHandler(new MockExecutionEngine(data));
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();

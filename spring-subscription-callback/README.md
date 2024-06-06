@@ -59,13 +59,10 @@ implementation("com.apollographql.federation:federation-spring-subscription-call
 
 ## Usage
 
-In order to enable HTTP subscription callback protocol support you need to configure `CallbackGraphQlHttpHandler` bean in your
-application context.
+In order to enable HTTP subscription callback protocol support you need to configure `SubscriptionCallbackHandler` and
+`CallbackWebGraphQLInterceptor` beans in your application context.
 
-This library provides support for both WebMVC and WebFlux applications so make sure to instantiate correct flavor of protocol.
-
-* `com.apollographql.subscription.webmvc.CallbackGraphQlHttpHandler` for WebMVC applications
-* `com.apollographql.subscription.webflux.CallbackGraphQlHttpHandler` for WebFlux applications
+`CallbackWebGraphQLInterceptor` works with both WebMVC and WebFlux applications.
 
 Given a subscription
 
@@ -88,32 +85,30 @@ We can enable subscription HTTP callback support using following configuration
 public class GraphQLConfiguration {
 
     @Bean
-    public GraphQlHttpHandler graphQlHttpHandler(WebGraphQlHandler webGraphQlHandler) {
-        return new CallbackGraphQlHttpHandler(webGraphQlHandler);
+    public SubscriptionCallbackHandler callbackHandler(ExecutionGraphQlService graphQlService) {
+        return new SubscriptionCallbackHandler(graphQlService);
     }
 
-    // regular federation transform
+    // This interceptor defaults to Ordered#LOWEST_PRECEDENCE order as it should run last in chain
+    // to allow users to still apply other interceptors that handle common stuff (e.g. extracting
+    // auth headers, etc).
+    // You can override this behavior by specifying custom order.
     @Bean
-    public GraphQlSourceBuilderCustomizer federationTransform() {
-        DataFetcher<?> entityDataFetcher =
-                env -> {
-                    List<Map<String, Object>> representations = env.getArgument(_Entity.argumentName);
-                    return representations.stream()
-                            .map(
-                                    representation -> {
-                                        // TODO implement entity data fetcher logic here
-                                        return null;
-                                    })
-                            .collect(Collectors.toList());
-                };
+    public CallbackWebGraphQLInterceptor callbackGraphQlInterceptor(
+            SubscriptionCallbackHandler callbackHandler) {
+        return new CallbackWebGraphQLInterceptor(callbackHandler);
+    }
 
-        return builder ->
-                builder.schemaFactory(
-                        (registry, wiring) ->
-                                Federation.transform(registry, wiring)
-                                        .fetchEntities(entityDataFetcher)
-                                        .resolveEntityType(new ClassNameTypeResolver())
-                                        .build());
+    // regular federation transforms
+    // see https://docs.spring.io/spring-graphql/reference/federation.html
+    @Bean
+    public GraphQlSourceBuilderCustomizer customizer(FederationSchemaFactory factory) {
+        return builder -> builder.schemaFactory(factory::createGraphQLSchema);
+    }
+
+    @Bean
+    FederationSchemaFactory federationSchemaFactory() {
+        return new FederationSchemaFactory();
     }
 }
 ```
@@ -124,9 +119,8 @@ your provided scheduler.
 
 ```java
 @Bean
-public GraphQlHttpHandler graphQlHttpHandler(WebGraphQlHandler webGraphQlHandler) {
+public SubscriptionCallbackHandler callbackHandler(ExecutionGraphQlService graphQlService) {
     Scheduler customScheduler = <provide your custom scheduler>;
-    SubscriptionCallbackHandler subscriptionHandler = new SubscriptionCallbackHandler(webGraphQlHandler, customScheduler);
-    return new CallbackGraphQlHttpHandler(webGraphQlHandler, subscriptionHandler);
+    return new SubscriptionCallbackHandler(graphQlService, customScheduler);
 }
 ```

@@ -4,13 +4,6 @@ plugins {
     id("com.apollographql.federation.java-conventions")
 }
 
-repositories {
-    mavenCentral()
-    maven {
-        url = uri("https://repo.spring.io/milestone")
-    }
-}
-
 val annotationsVersion: String by project
 val graphQLJavaVersion: String by project
 val mockWebServerVersion: String by project

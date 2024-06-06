@@ -99,9 +99,7 @@ public abstract class CallbackGraphQLHttpHandlerAbstrIT {
         .bodyValue(graphQLRequest)
         .exchange()
         .expectStatus()
-        .is4xxClientError()
-        .expectBody()
-        .isEmpty();
+        .is4xxClientError();
   }
 
   public void verifyFailedCallbackInit(WebTestClient testClient) {
@@ -116,8 +114,6 @@ public abstract class CallbackGraphQLHttpHandlerAbstrIT {
         .bodyValue(graphQLRequest)
         .exchange()
         .expectStatus()
-        .is4xxClientError()
-        .expectBody()
-        .isEmpty();
+        .is4xxClientError();
   }
 }
