@@ -63,9 +63,9 @@ type Query {
     deprecatedProduct(sku: String!, package: String!): DeprecatedProduct @deprecated(reason: "Use product query instead")
 }
 
-type User @extends @key(fields: "email") {
+type User @key(fields: "email") {
     averageProductsCreatedPerYear: Int @requires(fields: "totalProductsCreated yearsOfEmployment")
-    email: ID! @external
+    email: ID!
     name: String @override(from: "users")
     totalProductsCreated: Int @external
     yearsOfEmployment: Int! @external
