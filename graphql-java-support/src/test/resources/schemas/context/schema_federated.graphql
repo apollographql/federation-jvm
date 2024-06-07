@@ -26,7 +26,7 @@ directive @federation__requiresScopes(scopes: [[federation__Scope!]!]!) on SCALA
 
 directive @federation__shareable repeatable on OBJECT | FIELD_DEFINITION
 
-directive @fromContext(field: federation__context__ContextFieldValue) on ARGUMENT_DEFINITION
+directive @fromContext(field: federation__ContextFieldValue) on ARGUMENT_DEFINITION
 
 directive @inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
@@ -66,12 +66,12 @@ enum link__Purpose {
 
 scalar _Any
 
+scalar federation__ContextFieldValue
+
 scalar federation__FieldSet
 
 scalar federation__Policy
 
 scalar federation__Scope
-
-scalar federation__context__ContextFieldValue
 
 scalar link__Import

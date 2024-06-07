@@ -110,8 +110,8 @@ directive @override(from: String!, label: String) on FIELD_DEFINITION
 # federation-v2.8
 #
 
-scalar context__ContextFieldValue
+scalar ContextFieldValue
 
 directive @context(name: String!) repeatable on INTERFACE | OBJECT | UNION
 
-directive @fromContext(field: context__ContextFieldValue) on ARGUMENT_DEFINITION
+directive @fromContext(field: ContextFieldValue) on ARGUMENT_DEFINITION
