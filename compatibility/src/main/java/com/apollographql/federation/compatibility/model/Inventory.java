@@ -1,34 +1,19 @@
 package com.apollographql.federation.compatibility.model;
 
+import java.util.List;
+
 import static com.apollographql.federation.compatibility.model.DeprecatedProduct.DEPRECATED_PRODUCT;
 
-import java.util.List;
-import java.util.Map;
-import org.jetbrains.annotations.NotNull;
+public record Inventory(String id, List<DeprecatedProduct> deprecatedProducts) {
 
-public class Inventory {
+  public Inventory(String id) {
+    this(id, List.of(DEPRECATED_PRODUCT));
+  }
 
-    private final String id;
-    private final List<DeprecatedProduct> deprecatedProducts;
-
-    public Inventory(String id) {
-        this.id = id;
-        this.deprecatedProducts = List.of(DEPRECATED_PRODUCT);
+  public static Inventory resolveById(String id) {
+    if ("apollo-oss".equals(id)) {
+      return new Inventory(id);
     }
-
-    public String getId() {
-        return id;
-    }
-
-    public List<DeprecatedProduct> getDeprecatedProducts() {
-        return deprecatedProducts;
-    }
-
-    public static Inventory resolveReference(@NotNull Map<String, Object> reference) {
-        if (reference.get("id") instanceof String id && "apollo-oss".equals(id)) {
-            return new Inventory(id);
-        }
-
-        return null;
-    }
+    return null;
+  }
 }
