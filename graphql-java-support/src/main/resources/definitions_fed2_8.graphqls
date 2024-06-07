@@ -114,4 +114,4 @@ scalar context__ContextFieldValue
 
 directive @context(name: String!) repeatable on INTERFACE | OBJECT | UNION
 
-directive @context__fromContext(field: context__ContextFieldValue) on ARGUMENT_DEFINITION
+directive @fromContext(field: context__ContextFieldValue) on ARGUMENT_DEFINITION
