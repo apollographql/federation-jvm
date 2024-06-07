@@ -326,12 +326,11 @@ class FederationTest {
   public void verifyFederationV2Transformation_policy() {
     verifyFederationTransformation("schemas/policy/schema.graphql");
   }
-  
+
   @Test
   public void verifyFederationV2Transformation_context() {
     verifyFederationTransformation("schemas/context/schema.graphql");
   }
-
 
   @Test
   public void
