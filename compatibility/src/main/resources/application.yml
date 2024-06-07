@@ -3,5 +3,10 @@ spring:
     name: federation-jvm-compatibility
   graphql:
     path: /
+    graphiql:
+      enabled: true
+    schema:
+      printer:
+        enabled: true
 server:
   port: 4001

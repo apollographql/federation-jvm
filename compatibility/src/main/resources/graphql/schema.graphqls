@@ -1,22 +1,22 @@
 extend schema
-    @link(
-        url: "https://specs.apollo.dev/federation/v2.5",
-        import: [
-            "@composeDirective",
-            "@extends",
-            "@external",
-            "@inaccessible",
-            "@interfaceObject",
-            "@key",
-            "@override",
-            "@provides",
-            "@requires",
-            "@shareable",
-            "@tag"
-        ]
-    )
-    @link(url: "https://myspecs.dev/myCustomDirective/v1.0", import: ["@custom"])
-    @composeDirective(name: "@custom")
+@link(
+    url: "https://specs.apollo.dev/federation/v2.5",
+    import: [
+        "@composeDirective",
+        "@extends",
+        "@external",
+        "@inaccessible",
+        "@interfaceObject",
+        "@key",
+        "@override",
+        "@provides",
+        "@requires",
+        "@shareable",
+        "@tag"
+    ]
+)
+@link(url: "https://myspecs.dev/myCustomDirective/v1.0", import: ["@custom"])
+@composeDirective(name: "@custom")
 
 directive @custom on OBJECT
 
@@ -58,14 +58,14 @@ type ProductDimension @shareable {
     unit: String @inaccessible
 }
 
-extend type Query {
+type Query {
     product(id: ID!): Product
     deprecatedProduct(sku: String!, package: String!): DeprecatedProduct @deprecated(reason: "Use product query instead")
 }
 
-type User @extends @key(fields: "email") {
+type User @key(fields: "email") {
     averageProductsCreatedPerYear: Int @requires(fields: "totalProductsCreated yearsOfEmployment")
-    email: ID! @external
+    email: ID!
     name: String @override(from: "users")
     totalProductsCreated: Int @external
     yearsOfEmployment: Int! @external
