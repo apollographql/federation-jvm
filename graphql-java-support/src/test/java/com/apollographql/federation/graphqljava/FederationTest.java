@@ -328,6 +328,11 @@ class FederationTest {
   }
 
   @Test
+  public void verifyFederationV2Transformation_context() {
+    verifyFederationTransformation("schemas/context/schema.graphql");
+  }
+
+  @Test
   public void
       verifyFederationV2Transformation_requiresScopesFromUnsupportedVersion_throwsException() {
     final String schemaSDL =
