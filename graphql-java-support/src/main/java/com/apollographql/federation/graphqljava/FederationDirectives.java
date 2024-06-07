@@ -8,6 +8,7 @@ import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPE
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_5;
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_6;
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_7;
+import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_8;
 import static graphql.introspection.Introspection.DirectiveLocation.FIELD_DEFINITION;
 import static graphql.introspection.Introspection.DirectiveLocation.INTERFACE;
 import static graphql.introspection.Introspection.DirectiveLocation.OBJECT;
@@ -229,6 +230,8 @@ public final class FederationDirectives {
         return loadFed2Definitions("definitions_fed2_6.graphqls");
       case FEDERATION_SPEC_V2_7:
         return loadFed2Definitions("definitions_fed2_7.graphqls");
+      case FEDERATION_SPEC_V2_8:
+        return loadFed2Definitions("definitions_fed2_8.graphqls");
       default:
         throw new UnsupportedFederationVersionException(federationSpec);
     }
