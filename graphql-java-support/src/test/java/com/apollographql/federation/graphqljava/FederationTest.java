@@ -370,6 +370,11 @@ class FederationTest {
     verifyFederationTransformation("schemas/scalars/schema.graphql");
   }
 
+  @Test
+  public void verifyFederationV2Transformation_cost() {
+    verifyFederationTransformation("schemas/cost/schema.graphql");
+  }
+
   private void verifyFederationTransformation(String schemaFileName) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
     verifyFederationTransformation(schemaFileName, runtimeWiring);
