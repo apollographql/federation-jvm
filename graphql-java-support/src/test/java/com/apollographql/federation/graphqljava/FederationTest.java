@@ -375,6 +375,14 @@ class FederationTest {
     verifyFederationTransformation("schemas/cost/schema.graphql");
   }
 
+  @Test
+  public void verifyFederationV2Transformation_costFromUnsupportedVersion_throwsException() {
+    final String schemaSDL = FileUtils.readResource("schemas/invalidSpecVersionCost.graphql");
+    assertThrows(
+        UnsupportedLinkImportException.class,
+        () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+  }
+
   private void verifyFederationTransformation(String schemaFileName) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
     verifyFederationTransformation(schemaFileName, runtimeWiring);

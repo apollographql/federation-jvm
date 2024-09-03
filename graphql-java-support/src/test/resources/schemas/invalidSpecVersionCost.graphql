@@ -1,0 +1,20 @@
+extend schema
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.8"
+    import: ["@cost", "@key", "@listSize"]
+  )
+
+type Product @key(fields: "id") {
+    id: ID!
+    name: String!
+    child: Child! @cost(weight: 5)
+}
+
+type Child @key(fields: "id") {
+  id: ID!
+  details(productName: String): [String!] @listSize(assumedSize: 10)
+}
+
+type Query {
+    product(id: ID!): Product
+}

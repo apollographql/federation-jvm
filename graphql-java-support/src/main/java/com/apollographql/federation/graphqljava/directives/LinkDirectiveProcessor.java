@@ -32,7 +32,9 @@ public final class LinkDirectiveProcessor {
           "@interfaceObject", 23,
           "@authenticated", 25,
           "@requiresScopes", 25,
-          "@policy", 26);
+          "@policy", 26,
+          "@cost", 29,
+          "@listSize", 29);
 
   private LinkDirectiveProcessor() {}
 
