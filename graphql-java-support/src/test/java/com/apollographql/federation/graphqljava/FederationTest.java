@@ -333,6 +333,14 @@ class FederationTest {
   }
 
   @Test
+  public void verifyFederationV2Transformation_contextFromUnsupportedVersion_throwsException() {
+    final String schemaSDL = FileUtils.readResource("schemas/invalidSpecVersionContext.graphql");
+    assertThrows(
+        UnsupportedLinkImportException.class,
+        () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+  }
+
+  @Test
   public void
       verifyFederationV2Transformation_requiresScopesFromUnsupportedVersion_throwsException() {
     final String schemaSDL =
@@ -368,6 +376,19 @@ class FederationTest {
   @Test
   public void verifyFederationV2Transformation_scalarsDefinedInSchemaButNotWired() {
     verifyFederationTransformation("schemas/scalars/schema.graphql");
+  }
+
+  @Test
+  public void verifyFederationV2Transformation_cost() {
+    verifyFederationTransformation("schemas/cost/schema.graphql");
+  }
+
+  @Test
+  public void verifyFederationV2Transformation_costFromUnsupportedVersion_throwsException() {
+    final String schemaSDL = FileUtils.readResource("schemas/invalidSpecVersionCost.graphql");
+    assertThrows(
+        UnsupportedLinkImportException.class,
+        () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
   }
 
   private void verifyFederationTransformation(String schemaFileName) {

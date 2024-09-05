@@ -1,0 +1,20 @@
+extend schema
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.7"
+    import: ["@key", "@context", "@fromContext"]
+  )
+
+type Product @key(fields: "id") @context(name: "product") {
+  id: ID!
+  name: String!
+  child: Child!
+}
+
+type Child @key(fields: "id") {
+  id: ID!
+  details(productName: String @fromContext(field: "$product { name }")): String!
+}
+
+type Query {
+  product(id: ID!): Product
+}
