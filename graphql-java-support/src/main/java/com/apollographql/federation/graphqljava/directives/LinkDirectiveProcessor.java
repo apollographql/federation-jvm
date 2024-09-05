@@ -33,6 +33,8 @@ public final class LinkDirectiveProcessor {
           "@authenticated", 25,
           "@requiresScopes", 25,
           "@policy", 26,
+          "@context", 28,
+          "@fromContext", 28,
           "@cost", 29,
           "@listSize", 29);
 

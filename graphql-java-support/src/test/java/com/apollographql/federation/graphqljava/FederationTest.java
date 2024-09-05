@@ -333,6 +333,14 @@ class FederationTest {
   }
 
   @Test
+  public void verifyFederationV2Transformation_contextFromUnsupportedVersion_throwsException() {
+    final String schemaSDL = FileUtils.readResource("schemas/invalidSpecVersionContext.graphql");
+    assertThrows(
+        UnsupportedLinkImportException.class,
+        () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
+  }
+
+  @Test
   public void
       verifyFederationV2Transformation_requiresScopesFromUnsupportedVersion_throwsException() {
     final String schemaSDL =
