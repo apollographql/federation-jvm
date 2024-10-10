@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 'v*.x'
     paths-ignore:
       - '*.md'
 
