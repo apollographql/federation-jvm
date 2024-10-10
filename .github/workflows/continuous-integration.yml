@@ -3,7 +3,7 @@ name: Continuous Integration
 on:
   push:
     branches:
-      - master
+      - main
       - 'v*.x'
     paths-ignore:
       - '*.md'
@@ -14,15 +14,16 @@ jobs:
 
   integration:
     needs: build
-    uses: ./.github/workflows/federation-compatibility.yaml
-    secrets:
-      token: ${{ secrets.GITHUB_TOKEN }}
+    uses: ./.github/workflows/compatibility.yml
 
   release-notes:
     timeout-minutes: 10
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
     steps:
       - name: Release Drafter
-        uses: release-drafter/release-drafter@v5
+        uses: release-drafter/release-drafter@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

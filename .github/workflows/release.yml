@@ -11,12 +11,12 @@ jobs:
     if: github.repository == 'apollographql/federation-jvm'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: gradle/wrapper-validation-action@v1
+      - uses: gradle/actions/wrapper-validation@v3
 
       - name: Set up Java 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: 'temurin'
@@ -29,7 +29,7 @@ jobs:
         run: |
           NEW_VERSION=$(echo "${GITHUB_REF}" | sed 's/.*\/v//')
           echo "New version: ${NEW_VERSION}"
-          ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository -Pversion=${NEW_VERSION}
+          ./gradlew publishToSonatype closeAndReleaseStagingRepositories -Pversion=${NEW_VERSION}
         env:
           SONATYPE_NEXUS_USERNAME: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           SONATYPE_NEXUS_PASSWORD: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
@@ -38,7 +38,7 @@ jobs:
           GPG_PRIVATE_KEY_PASSWORD: ${{ secrets.GPG_PRIVATE_KEY_PASSWORD }}
 
       - name: Archive failure build reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: build-reports
