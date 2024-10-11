@@ -3,6 +3,7 @@ package com.apollographql.federation.graphqljava;
 import static graphql.ExecutionInput.newExecutionInput;
 import static graphql.GraphQL.newGraphQL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -14,15 +15,10 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.idl.SchemaPrinter;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 
 final class FederatedSchemaVerifier {
-  public static final Set<String> standardDirectives =
-      new HashSet<>(Arrays.asList("deprecated", "include", "skip", "specifiedBy"));
 
   private FederatedSchemaVerifier() {}
 
@@ -35,18 +31,11 @@ final class FederatedSchemaVerifier {
    *
    * @param schema test schema
    * @param expectedSchemaSDL expected SDL
-   * @param isFederationV2 boolean flag indicating whether we are testing Federation v1 or v2
-   *     specification.
    */
-  public static void verifySchemaSDL(
-      GraphQLSchema schema, String expectedSchemaSDL, boolean isFederationV2) {
+  public static void verifyFullSchema(GraphQLSchema schema, String expectedSchemaSDL) {
     Assertions.assertEquals(
         expectedSchemaSDL.trim(),
-        new SchemaPrinter(
-                SchemaPrinter.Options.defaultOptions()
-                    .includeSchemaDefinition(isFederationV2)
-                    .includeScalarTypes(true)
-                    .includeDirectives(directive -> !standardDirectives.contains(directive)))
+        new SchemaPrinter(SchemaPrinter.Options.defaultOptions().includeSchemaDefinition(true))
             .print(schema)
             .trim(),
         "Generated schema SDL should match expected one");
@@ -64,9 +53,9 @@ final class FederatedSchemaVerifier {
     assertNotNull(serviceField, "_service field present");
     final GraphQLType serviceType = schema.getType("_Service");
     assertNotNull(serviceType, "_Service type present");
-    assertTrue(serviceType instanceof GraphQLObjectType, "_Service type is object type");
-    assertTrue(
-        serviceField.getType() instanceof GraphQLNonNull, "_service returns non-nullable object");
+    assertInstanceOf(GraphQLObjectType.class, serviceType, "_Service type is object type");
+    assertInstanceOf(
+        GraphQLNonNull.class, serviceField.getType(), "_service returns non-nullable object");
     final GraphQLNonNull nonNullableServiceType = (GraphQLNonNull) serviceField.getType();
     assertEquals(
         serviceType,

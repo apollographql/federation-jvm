@@ -24,34 +24,24 @@ directive @key(fields: federation__FieldSet!, resolvable: Boolean = true) repeat
 
 directive @link(as: String, for: link__Purpose, import: [link__Import], url: String!) repeatable on SCHEMA
 
-directive @tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+directive @tag(name: String!) repeatable on SCHEMA | SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
-interface Product @key(fields : "id", resolvable : true) {
-  description: String
+union _Entity = User
+
+type Product {
+  createdBy: User
+  description: String!
   id: ID!
-  price: Float
-}
-
-union _Entity = Book | Movie
-
-type Book implements Product @key(fields : "id", resolvable : true) {
-  description: String
-  id: ID!
-  pages: Int
-  price: Float
-}
-
-type Movie implements Product @key(fields : "id", resolvable : true) {
-  description: String
-  duration: Int
-  id: ID!
-  price: Float
 }
 
 type Query {
   _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service!
-  products: [Product!]!
+  product(id: ID!): Product
+}
+
+type User @key(fields : "email", resolvable : false) {
+  email: ID!
 }
 
 type _Service {

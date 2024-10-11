@@ -67,6 +67,19 @@ directive @shareable repeatable on FIELD_DEFINITION | OBJECT
 
 directive @interfaceObject on OBJECT
 
+directive @tag(name: String!) repeatable on
+    | FIELD_DEFINITION
+    | INTERFACE
+    | OBJECT
+    | UNION
+    | ARGUMENT_DEFINITION
+    | SCALAR
+    | ENUM
+    | ENUM_VALUE
+    | INPUT_OBJECT
+    | INPUT_FIELD_DEFINITION
+    | SCHEMA
+
 #
 # federation-v2.5
 #
