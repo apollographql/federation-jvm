@@ -467,9 +467,9 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
      *     "apollo-federation-include-trace" and value "ftv1", you must enable tracing for the
      *     request, and it is your responsibility to augment your {@link ExecutionInput} or its
      *     context to contain the information necessary for this predicate to have the above
-     *     behavior. The default/null behavior is to enable trace generation unless the
-     *     GraphQLContext map contains "apollo-federation-include-trace" entry with a value other
-     *     than "ftv1"
+     *     behavior. The default/null behavior is to disable trace generation unless the
+     *     GraphQLContext map contains "apollo-federation-include-trace" entry with a value equal
+     *     to "ftv1"
      */
     public Options(
         boolean debuggingEnabled, @Nullable Predicate<ExecutionInput> shouldTracePredicate) {
