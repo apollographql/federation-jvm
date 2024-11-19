@@ -22,7 +22,8 @@
     },
     {
       "groupName": "Protobuf version updates",
-      "matchPackagePrefixes": ["com.google.protobuf:"]
+      "matchPackagePrefixes": ["com.google.protobuf:"],
+      "allowedVersions": "<4.0.0"
     }
   ]
 }
