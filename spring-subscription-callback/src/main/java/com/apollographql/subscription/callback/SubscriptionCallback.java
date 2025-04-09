@@ -2,7 +2,6 @@ package com.apollographql.subscription.callback;
 
 import com.apollographql.subscription.exception.CallbackExtensionNotSpecifiedException;
 import com.apollographql.subscription.exception.InvalidCallbackExtensionException;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,16 +25,18 @@ public record SubscriptionCallback(
     int heartbeatIntervalMs,
     @NotNull Map<String, List<String>> context) {
 
-  public SubscriptionCallback(@NotNull String callback_url,
-                              @NotNull String subscription_id,
-                              @NotNull String verifier,
-                              int heartbeatIntervalMs) {
+  public SubscriptionCallback(
+      @NotNull String callback_url,
+      @NotNull String subscription_id,
+      @NotNull String verifier,
+      int heartbeatIntervalMs) {
     this(callback_url, subscription_id, verifier, heartbeatIntervalMs, new HashMap<>());
   }
 
   @NotNull
   public SubscriptionCallback withContext(@NotNull Map<String, List<String>> context) {
-    return new SubscriptionCallback(callback_url, subscription_id, verifier, heartbeatIntervalMs, context);
+    return new SubscriptionCallback(
+        callback_url, subscription_id, verifier, heartbeatIntervalMs, context);
   }
 
   public static String SUBSCRIPTION_EXTENSION = "subscription";
