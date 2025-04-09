@@ -93,6 +93,7 @@ public class GraphQLConfiguration {
     // to allow users to still apply other interceptors that handle common stuff (e.g. extracting
     // auth headers, etc).
     // You can override this behavior by specifying custom order.
+    // You can also provide a set of HTTP headers that should be propagated to the callback responses.
     @Bean
     public CallbackWebGraphQLInterceptor callbackGraphQlInterceptor(
             SubscriptionCallbackHandler callbackHandler) {

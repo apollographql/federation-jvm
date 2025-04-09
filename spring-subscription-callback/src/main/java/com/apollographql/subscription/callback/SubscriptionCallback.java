@@ -2,6 +2,9 @@ package com.apollographql.subscription.callback;
 
 import com.apollographql.subscription.exception.CallbackExtensionNotSpecifiedException;
 import com.apollographql.subscription.exception.InvalidCallbackExtensionException;
+
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Mono;
@@ -13,12 +16,27 @@ import reactor.core.publisher.Mono;
  * @param subscription_id The generated unique ID for the subscription operation
  * @param verifier A string that Emitter will include in all HTTP callback requests to verify its
  *     identity
+ * @param heartbeatIntervalMs Interval between heartbeats in milliseconds
+ * @param context Contextual data that should be returned with callbacks as HTTP headers
  */
 public record SubscriptionCallback(
     @NotNull String callback_url,
     @NotNull String subscription_id,
     @NotNull String verifier,
-    int heartbeatIntervalMs) {
+    int heartbeatIntervalMs,
+    @NotNull Map<String, List<String>> context) {
+
+  public SubscriptionCallback(@NotNull String callback_url,
+                              @NotNull String subscription_id,
+                              @NotNull String verifier,
+                              int heartbeatIntervalMs) {
+    this(callback_url, subscription_id, verifier, heartbeatIntervalMs, new HashMap<>());
+  }
+
+  @NotNull
+  public SubscriptionCallback withContext(@NotNull Map<String, List<String>> context) {
+    return new SubscriptionCallback(callback_url, subscription_id, verifier, heartbeatIntervalMs, context);
+  }
 
   public static String SUBSCRIPTION_EXTENSION = "subscription";
   public static String CALLBACK_URL = "callbackUrl";

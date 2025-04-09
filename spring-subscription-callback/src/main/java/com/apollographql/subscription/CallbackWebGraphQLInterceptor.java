@@ -19,14 +19,24 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 /**
- * Interceptor that provides support for Apollo Subscription Callback Protocol. This interceptor
- * defaults to {@link Ordered#LOWEST_PRECEDENCE} order as it should run last in chain to allow users
- * to still apply other interceptors that handle common stuff (e.g. extracting auth headers, etc).
- * You can override this behavior by specifying custom order.
+ * Interceptor that provides support for Apollo Subscription Callback Protocol.</p>
+ *
+ * HTTP headers from the original subscription GraphQL operation can be propagated to the subsequent
+ * callback responses by specifying a Set of contextual header names.</p>
+ *
+ * This interceptor defaults to {@link Ordered#LOWEST_PRECEDENCE} order as it should run last in the
+ * chain to allow users to still apply other interceptors that handle common stuff (e.g. extracting
+ * auth headers, etc). You can override this behavior by specifying custom order.
  *
  * @see <a
- *     href="https://www.apollographql.com/docs/router/executing-operations/subscription-callback-protocol">Subscription
+ *     href="https://www.apollographql.com/docs/graphos/routing/operations/subscriptions/callback-protocol">Subscription
  *     Callback Protocol</a>
  */
 public class CallbackWebGraphQLInterceptor implements WebGraphQlInterceptor, Ordered {
@@ -35,15 +45,25 @@ public class CallbackWebGraphQLInterceptor implements WebGraphQlInterceptor, Ord
 
   private final SubscriptionCallbackHandler subscriptionCallbackHandler;
   private final int order;
+  private final Set<String> contextualHeaders;
 
   public CallbackWebGraphQLInterceptor(SubscriptionCallbackHandler subscriptionCallbackHandler) {
     this(subscriptionCallbackHandler, LOWEST_PRECEDENCE);
   }
 
+  public CallbackWebGraphQLInterceptor(SubscriptionCallbackHandler subscriptionCallbackHandler, int order) {
+    this(subscriptionCallbackHandler, order, new HashSet<>());
+  }
+
+  public CallbackWebGraphQLInterceptor(SubscriptionCallbackHandler subscriptionCallbackHandler, Set<String> contextualHeaders) {
+    this(subscriptionCallbackHandler, LOWEST_PRECEDENCE, contextualHeaders);
+  }
+
   public CallbackWebGraphQLInterceptor(
-      SubscriptionCallbackHandler subscriptionCallbackHandler, int order) {
+      SubscriptionCallbackHandler subscriptionCallbackHandler, int order, Set<String> contextualHeaders) {
     this.subscriptionCallbackHandler = subscriptionCallbackHandler;
     this.order = order;
+    this.contextualHeaders = contextualHeaders;
   }
 
   @Override
@@ -52,14 +72,17 @@ public class CallbackWebGraphQLInterceptor implements WebGraphQlInterceptor, Ord
     // document with query fragments first) we would need to parse it which is a much heavier
     // operation, we may opt to do it in the future releases
     if (!isWebSocketRequest(request) && request.getDocument().startsWith("subscription")) {
+//      request.getHeaders()
+
       return parseSubscriptionCallbackExtension(request.getExtensions())
           .flatMap(
               callback -> {
                 if (logger.isDebugEnabled()) {
                   logger.debug("Starting subscription using callback: " + callback);
                 }
+                var callbackWithContextualData = callback.withContext(parseContextualHeaders(request));
                 return this.subscriptionCallbackHandler
-                    .handleSubscriptionUsingCallback(request, callback)
+                    .handleSubscriptionUsingCallback(request, callbackWithContextualData)
                     .map(response -> callbackResponse(request, response));
               })
           .onErrorResume(
@@ -103,5 +126,21 @@ public class CallbackWebGraphQLInterceptor implements WebGraphQlInterceptor, Ord
   @Override
   public int getOrder() {
     return order;
+  }
+
+  private Map<String, List<String>> parseContextualHeaders(WebGraphQlRequest request) {
+    if (!this.contextualHeaders.isEmpty()) {
+      Map<String, List<String>> contextualHeaders = new HashMap<>();
+      var headers = request.getHeaders();
+      for (String header : this.contextualHeaders) {
+        if (headers.containsKey(header)) {
+          var headerValue = request.getHeaders().get(header);
+          contextualHeaders.put(header, headerValue);
+        }
+      }
+      return contextualHeaders;
+    } else {
+      return new HashMap<>();
+    }
   }
 }
