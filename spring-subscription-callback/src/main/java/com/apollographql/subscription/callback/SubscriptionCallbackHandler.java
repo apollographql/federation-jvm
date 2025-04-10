@@ -59,6 +59,7 @@ public class SubscriptionCallbackHandler {
         .post()
         .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
         .header(SUBSCRIPTION_PROTOCOL_HEADER, SUBSCRIPTION_PROTOCOL_HEADER_VALUE)
+        .headers(httpHeaders -> httpHeaders.putAll(callback.context()))
         .bodyValue(checkMessage)
         .exchangeToMono(
             checkResponse -> {
@@ -149,6 +150,7 @@ public class SubscriptionCallbackHandler {
                         .post()
                         .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                         .header(SUBSCRIPTION_PROTOCOL_HEADER, SUBSCRIPTION_PROTOCOL_HEADER_VALUE)
+                        .headers(httpHeaders -> httpHeaders.putAll(callback.context()))
                         .bodyValue(message)
                         .exchangeToMono(
                             (routerResponse) -> {
@@ -184,6 +186,7 @@ public class SubscriptionCallbackHandler {
                     .post()
                     .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                     .header(SUBSCRIPTION_PROTOCOL_HEADER, SUBSCRIPTION_PROTOCOL_HEADER_VALUE)
+                    .headers(httpHeaders -> httpHeaders.putAll(callback.context()))
                     .bodyValue(heartbeat)
                     .exchangeToFlux(
                         (heartBeatResponse) -> {

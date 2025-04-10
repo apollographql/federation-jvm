@@ -93,6 +93,7 @@ public class GraphQLConfiguration {
     // to allow users to still apply other interceptors that handle common stuff (e.g. extracting
     // auth headers, etc).
     // You can override this behavior by specifying custom order.
+    // You can also provide a set of HTTP headers that should be propagated to the callback responses.
     @Bean
     public CallbackWebGraphQLInterceptor callbackGraphQlInterceptor(
             SubscriptionCallbackHandler callbackHandler) {
@@ -113,6 +114,8 @@ public class GraphQLConfiguration {
 }
 ```
 
+### Custom Scheduler
+
 By default, subscription and heartbeat stream will be executed in non-blocking way on [bounded elastic](https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html#boundedElastic--)
 scheduler. If you need more granular control over the underlying scheduler, you can configure callback handler to run on
 your provided scheduler.
@@ -122,5 +125,19 @@ your provided scheduler.
 public SubscriptionCallbackHandler callbackHandler(ExecutionGraphQlService graphQlService) {
     Scheduler customScheduler = <provide your custom scheduler>;
     return new SubscriptionCallbackHandler(graphQlService, customScheduler);
+}
+```
+
+### Propagating HTTP Headers
+
+Subscription callback interceptor can be configured with a list of header names to propagate from the
+original GraphQL subscription request.
+
+```java
+@Bean
+public CallbackWebGraphQLInterceptor callbackGraphQlInterceptor(
+    SubscriptionCallbackHandler callbackHandler) {
+  var headers = Set.of("X-Custom-Header");
+  return new CallbackWebGraphQLInterceptor(callbackHandler, headers);
 }
 ```

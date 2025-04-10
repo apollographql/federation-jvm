@@ -4,6 +4,7 @@ import com.apollographql.subscription.CallbackGraphQLHttpHandlerAbstrIT;
 import com.apollographql.subscription.CallbackWebGraphQLInterceptor;
 import com.apollographql.subscription.callback.SubscriptionCallbackHandler;
 import com.apollographql.subscription.configuration.TestGraphQLConfiguration;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -39,7 +40,8 @@ public class CallbackGraphQLWebfluxHttpHandlerIT extends CallbackGraphQLHttpHand
     @Bean
     public CallbackWebGraphQLInterceptor callbackGraphQlInterceptor(
         SubscriptionCallbackHandler callbackHandler) {
-      return new CallbackWebGraphQLInterceptor(callbackHandler);
+      var headers = Set.of(TEST_HEADER_NAME);
+      return new CallbackWebGraphQLInterceptor(callbackHandler, headers);
     }
   }
 
@@ -58,13 +60,18 @@ public class CallbackGraphQLWebfluxHttpHandlerIT extends CallbackGraphQLHttpHand
   }
 
   @Test
-  public void postSubscription_withoutCallback_returns404() {
-    verifyPostSubscriptionsWithoutCallbackDontWork(testClient);
+  public void callbackSubscription_works() {
+    verifySuccessfulCallbackSubscription(testClient);
   }
 
   @Test
-  public void callback_initSuccessful_returns200() {
-    verifySuccessfulCallbackInit(testClient);
+  public void callbackSubscription_withHeaders_works() {
+    verifySuccessfulCallbackSubscriptionWithHeaders(testClient);
+  }
+
+  @Test
+  public void postSubscription_withoutCallback_returns404() {
+    verifyPostSubscriptionsWithoutCallbackDontWork(testClient);
   }
 
   @Test
