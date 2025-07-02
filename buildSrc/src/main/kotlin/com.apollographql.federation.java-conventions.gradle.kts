@@ -108,8 +108,8 @@ tasks {
         setRequired {
             !version.toString().endsWith("SNAPSHOT") && gradle.taskGraph.hasTask("publish")
         }
-        val signingKey: String? = System.getenv("GPG_PRIVATE_KEY")
-        val signingPassword: String? = System.getenv("GPG_PRIVATE_KEY_PASSWORD")
+        val signingKey: String? = System.getenv("SONATYPE_GPG_KEY")
+        val signingPassword: String? = System.getenv("SONATYPE_GPG_KEY_PASSWORD")
         useInMemoryPgpKeys(signingKey, signingPassword)
         sign(publishing.publications)
     }
