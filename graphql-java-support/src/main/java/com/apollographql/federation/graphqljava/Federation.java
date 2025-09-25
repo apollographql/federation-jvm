@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import org.jetbrains.annotations.NotNull;
 
-//TESTING
+// TESTING
 public final class Federation {
 
   public static final String FEDERATION_SPEC_V2_0 = "https://specs.apollo.dev/federation/v2.0";
