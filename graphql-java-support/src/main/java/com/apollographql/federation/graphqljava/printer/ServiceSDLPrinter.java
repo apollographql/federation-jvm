@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
  */
 public final class ServiceSDLPrinter {
 
+  public static SchemaPrinter.Options OPTIONS =
+    SchemaPrinter.Options.defaultOptions();
   private ServiceSDLPrinter() {
     // hidden constructor as this is static utility class
   }
@@ -109,7 +111,7 @@ public final class ServiceSDLPrinter {
                     && hiddenTypeDefinitions.contains(
                         ((GraphQLNamedSchemaElement) element).getName()));
     final SchemaPrinter.Options options =
-        SchemaPrinter.Options.defaultOptions()
+      OPTIONS
             .includeSchemaDefinition(true)
             .includeSchemaElement(shouldIncludeSchemaElement);
 
@@ -129,7 +131,7 @@ public final class ServiceSDLPrinter {
             !(element instanceof GraphQLDirective
                 && DirectiveInfo.isGraphqlSpecifiedDirective((GraphQLDirective) element));
     return new SchemaPrinter(
-            SchemaPrinter.Options.defaultOptions()
+            OPTIONS
                 .includeSchemaDefinition(true)
                 .includeScalarTypes(true)
                 .includeSchemaElement(excludeBuiltInDirectiveDefinitions))
