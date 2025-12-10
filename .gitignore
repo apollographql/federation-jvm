@@ -16,3 +16,6 @@ out/
 # compatibility tests ignore
 results.md
 supergraph*
+CLAUDE.md
+.claude
+.vscode
