@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +38,10 @@ public final class LinkDirectiveProcessor {
           "@context", 28,
           "@fromContext", 28,
           "@cost", 29,
-          "@listSize", 29);
+          "@listSize", 29,
+          "@cacheTag", 212);
+
+  private static final Pattern LINK_FED_VERSION_PATTERN = Pattern.compile("v(\\d+)\\.(\\d+)");
 
   private LinkDirectiveProcessor() {}
 
@@ -95,10 +100,19 @@ public final class LinkDirectiveProcessor {
   }
 
   private static int parseFederationVersion(String specLink) {
-    final String versionString = specLink.substring(specLink.length() - 3);
+    final Matcher matcher = LINK_FED_VERSION_PATTERN.matcher(specLink);
+    if (!matcher.find() || matcher.groupCount() != 2) {
+      throw new UnsupportedFederationVersionException(specLink);
+    }
+
     try {
-      return Math.round(Float.parseFloat(versionString) * 10);
-    } catch (Exception e) {
+      int major = Integer.parseInt(matcher.group(1));
+      final String minorStr = matcher.group(2);
+
+      // Calculate: major * 10^(digits in minor) + minor
+      // Examples: v2.3 → 2*10 + 3 = 23, v2.12 → 2*100 + 12 = 212
+      return (int) (major * Math.pow(10, minorStr.length()) + Integer.parseInt(minorStr));
+    } catch (NumberFormatException e) {
       throw new UnsupportedFederationVersionException(specLink);
     }
   }

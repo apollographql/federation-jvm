@@ -1,23 +1,12 @@
-extend schema
-  @link(
-    url: "https://specs.apollo.dev/federation/v2.12"
-    import: ["@key", "@requires", "@external", "@cacheTag"]
-  )
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.12",
+  import: ["@key", "@cacheTag"])
+
+type Product @key(fields: "id") @cacheTag(format: "product-{$key.id}") {
+  id: ID!
+  name: String! @cacheTag(format: "product-name")
+  supplier: String
+}
 
 type Query {
-  user(id: ID!): User @cacheTag(format: "profile")
-  users: [User!]! @cacheTag(format: "profile") @cacheTag(format: "users-list")
-  postsByUser(userId: ID!): [Post!]! @cacheTag(format: "posts-user-{$args.userId}")
-}
-
-type User @key(fields: "id") @cacheTag(format: "user-{$key.id}") {
-  id: ID!
-  name: String!
-  email: String!
-  posts: [Post!]! @external
-}
-
-type Post @key(fields: "id") {
-  id: ID!
-  content: String! @external
+  product(id: ID!): Product @cacheTag(format: "product-query")
 }

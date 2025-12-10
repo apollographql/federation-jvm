@@ -1,8 +1,8 @@
-schema @link(import : ["@key", "@requires", "@external", "@cacheTag"], url : "https://specs.apollo.dev/federation/v2.12"){
+schema @link(import : ["@key", "@cacheTag"], url : "https://specs.apollo.dev/federation/v2.12"){
   query: Query
 }
 
-directive @cacheTag(format: String!) repeatable on FIELD_DEFINITION | OBJECT
+directive @cacheTag(format: String!) repeatable on OBJECT | FIELD_DEFINITION
 
 "Marks the field, argument, input field or enum value as deprecated"
 directive @deprecated(
@@ -16,6 +16,8 @@ directive @federation__composeDirective(name: String!) repeatable on SCHEMA
 
 directive @federation__context(name: String!) repeatable on OBJECT | INTERFACE | UNION
 
+directive @federation__cost(weight: Int!) on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | ENUM | INPUT_FIELD_DEFINITION
+
 directive @federation__extends on OBJECT | INTERFACE
 
 directive @federation__external on OBJECT | FIELD_DEFINITION
@@ -23,6 +25,8 @@ directive @federation__external on OBJECT | FIELD_DEFINITION
 directive @federation__fromContext(field: federation__ContextFieldValue) on ARGUMENT_DEFINITION
 
 directive @federation__interfaceObject on OBJECT
+
+directive @federation__listSize(assumedSize: Int, requireOneSlicingArgument: Boolean = true, sizedFields: [String!], slicingArguments: [String!]) on FIELD_DEFINITION
 
 directive @federation__override(from: String!, label: String) on FIELD_DEFINITION
 
@@ -65,26 +69,18 @@ directive @specifiedBy(
 
 directive @tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
-union _Entity = Post | User
+union _Entity = Product
 
-type Post @key(fields : "id", resolvable : true) {
-  content: String!
+type Product @cacheTag(format : "product-{$key.id}") @key(fields : "id", resolvable : true) {
   id: ID!
-}
-
-type User @key(fields : "id", resolvable : true) @cacheTag(format : "user-{$key.id}") {
-  email: String!
-  id: ID!
-  name: String!
-  posts: [Post!]!
+  name: String! @cacheTag(format : "product-name")
+  supplier: String
 }
 
 type Query {
   _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service!
-  postsByUser(userId: ID!): [Post!]! @cacheTag(format : "posts-user-{$args.userId}")
-  user(id: ID!): User @cacheTag(format : "profile")
-  users: [User!]! @cacheTag(format : "profile") @cacheTag(format : "users-list")
+  product(id: ID!): Product @cacheTag(format : "product-query")
 }
 
 type _Service {
