@@ -426,7 +426,7 @@ class FederationTest {
         FileUtils.readResource(baseFileName + "_federated.graphql");
 
     FederatedSchemaVerifier.verifyFullSchema(federatedSchema, expectedFullSchemaSDL);
-    //    FederatedSchemaVerifier.verifySchemaContainsServiceFederationType(federatedSchema);
-    //    FederatedSchemaVerifier.verifyServiceSDL(federatedSchema, expectedFederatedSchemaSDL);
-  }
+    FederatedSchemaVerifier.verifySchemaContainsServiceFederationType(federatedSchema);
+    FederatedSchemaVerifier.verifyServiceSDL(federatedSchema, expectedFederatedSchemaSDL);
+}
 }
