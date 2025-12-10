@@ -1,0 +1,109 @@
+schema @link(import : ["@key", "@requires", "@external", "@cacheTag"], url : "https://specs.apollo.dev/federation/v2.12"){
+  query: Query
+}
+
+directive @cacheTag(format: String!) repeatable on FIELD_DEFINITION | OBJECT
+
+"Marks the field, argument, input field or enum value as deprecated"
+directive @deprecated(
+    "The reason for the deprecation"
+    reason: String = "No longer supported"
+  ) on FIELD_DEFINITION | ARGUMENT_DEFINITION | ENUM_VALUE | INPUT_FIELD_DEFINITION
+
+directive @federation__authenticated on SCALAR | OBJECT | FIELD_DEFINITION | INTERFACE | ENUM
+
+directive @federation__composeDirective(name: String!) repeatable on SCHEMA
+
+directive @federation__context(name: String!) repeatable on OBJECT | INTERFACE | UNION
+
+directive @federation__extends on OBJECT | INTERFACE
+
+directive @federation__external on OBJECT | FIELD_DEFINITION
+
+directive @federation__fromContext(field: federation__ContextFieldValue) on ARGUMENT_DEFINITION
+
+directive @federation__interfaceObject on OBJECT
+
+directive @federation__override(from: String!, label: String) on FIELD_DEFINITION
+
+directive @federation__policy(policies: [[federation__Policy!]!]!) on SCALAR | OBJECT | FIELD_DEFINITION | INTERFACE | ENUM
+
+directive @federation__provides(fields: federation__FieldSet!) on FIELD_DEFINITION
+
+directive @federation__requires(fields: federation__FieldSet!) on FIELD_DEFINITION
+
+directive @federation__requiresScopes(scopes: [[federation__Scope!]!]!) on SCALAR | OBJECT | FIELD_DEFINITION | INTERFACE | ENUM
+
+directive @federation__shareable repeatable on OBJECT | FIELD_DEFINITION
+
+directive @inaccessible on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+
+"Directs the executor to include this field or fragment only when the `if` argument is true"
+directive @include(
+    "Included when true."
+    if: Boolean!
+  ) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+directive @key(fields: federation__FieldSet!, resolvable: Boolean = true) repeatable on OBJECT | INTERFACE
+
+directive @link(as: String, for: link__Purpose, import: [link__Import], url: String!) repeatable on SCHEMA
+
+"Indicates an Input Object is a OneOf Input Object."
+directive @oneOf on INPUT_OBJECT
+
+"Directs the executor to skip this field or fragment when the `if` argument is true."
+directive @skip(
+    "Skipped when true."
+    if: Boolean!
+  ) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+"Exposes a URL that specifies the behaviour of this scalar."
+directive @specifiedBy(
+    "The URL that specifies the behaviour of this scalar."
+    url: String!
+  ) on SCALAR
+
+directive @tag(name: String!) repeatable on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+
+union _Entity = Post | User
+
+type Post @key(fields : "id", resolvable : true) {
+  content: String!
+  id: ID!
+}
+
+type User @key(fields : "id", resolvable : true) @cacheTag(format : "user-{$key.id}") {
+  email: String!
+  id: ID!
+  name: String!
+  posts: [Post!]!
+}
+
+type Query {
+  _entities(representations: [_Any!]!): [_Entity]!
+  _service: _Service!
+  postsByUser(userId: ID!): [Post!]! @cacheTag(format : "posts-user-{$args.userId}")
+  user(id: ID!): User @cacheTag(format : "profile")
+  users: [User!]! @cacheTag(format : "profile") @cacheTag(format : "users-list")
+}
+
+type _Service {
+  sdl: String!
+}
+
+enum link__Purpose {
+  EXECUTION
+  SECURITY
+}
+
+scalar _Any
+
+scalar federation__ContextFieldValue
+
+scalar federation__FieldSet
+
+scalar federation__Policy
+
+scalar federation__Scope
+
+scalar link__Import
