@@ -107,11 +107,11 @@ public final class LinkDirectiveProcessor {
 
     try {
       int major = Integer.parseInt(matcher.group(1));
-      final String minorStr = matcher.group(2);
+      int minor = Integer.parseInt(matcher.group(2));
 
-      // Calculate: major * 10^(digits in minor) + minor
-      // Examples: v2.3 → 2*10 + 3 = 23, v2.12 → 2*100 + 12 = 212
-      return (int) (major * Math.pow(10, minorStr.length()) + Integer.parseInt(minorStr));
+      // Calculate: major * 100 + minor
+      // Examples: v2.3 → 2*100 + 3 = 203, v2.12 → 2*100 + 12 = 212
+      return (int) (major * 100 + minor);
     } catch (NumberFormatException e) {
       throw new UnsupportedFederationVersionException(specLink);
     }
