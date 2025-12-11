@@ -30,15 +30,15 @@ public final class LinkDirectiveProcessor {
 
   private static final Map<String, Integer> DIRECTIVES_BY_MIN_SUPPORTED_VERSION =
       Map.of(
-          "@composeDirective", 21,
-          "@interfaceObject", 23,
-          "@authenticated", 25,
-          "@requiresScopes", 25,
-          "@policy", 26,
-          "@context", 28,
-          "@fromContext", 28,
-          "@cost", 29,
-          "@listSize", 29,
+          "@composeDirective", 201,
+          "@interfaceObject", 203,
+          "@authenticated", 205,
+          "@requiresScopes", 205,
+          "@policy", 206,
+          "@context", 208,
+          "@fromContext", 208,
+          "@cost", 209,
+          "@listSize", 209,
           "@cacheTag", 212);
 
   private static final Pattern LINK_FED_VERSION_PATTERN = Pattern.compile("v(\\d+)\\.(\\d+)");
@@ -109,8 +109,6 @@ public final class LinkDirectiveProcessor {
       int major = Integer.parseInt(matcher.group(1));
       int minor = Integer.parseInt(matcher.group(2));
 
-      // Calculate: major * 100 + minor
-      // Examples: v2.3 → 2*100 + 3 = 203, v2.12 → 2*100 + 12 = 212
       return (int) (major * 100 + minor);
     } catch (NumberFormatException e) {
       throw new UnsupportedFederationVersionException(specLink);

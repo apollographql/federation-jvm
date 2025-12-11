@@ -1,16 +1,6 @@
 package com.apollographql.federation.graphqljava;
 
-import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_0;
-import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_1;
-import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_12;
-import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_2;
-import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_3;
-import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_4;
-import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_5;
-import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_6;
-import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_7;
-import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_8;
-import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_9;
+import static com.apollographql.federation.graphqljava.Federation.*;
 import static graphql.introspection.Introspection.DirectiveLocation.FIELD_DEFINITION;
 import static graphql.introspection.Introspection.DirectiveLocation.INTERFACE;
 import static graphql.introspection.Introspection.DirectiveLocation.OBJECT;
@@ -184,7 +174,8 @@ public final class FederationDirectives {
   public static final Set<DirectiveDefinition> federation1DirectiveDefinitions;
 
   static {
-    // We need to maintain sorted order here for tests, since SchemaPrinter doesn't sort
+    // We need to maintain sorted order here for tests, since SchemaPrinter doesn't
+    // sort
     // directive definitions.
     allDirectives =
         Stream.of(key, external, requires, provides, extends_)
@@ -235,6 +226,8 @@ public final class FederationDirectives {
       case FEDERATION_SPEC_V2_8:
         return loadFed2Definitions("definitions_fed2_8.graphqls");
       case FEDERATION_SPEC_V2_9:
+      case FEDERATION_SPEC_V2_10:
+      case FEDERATION_SPEC_V2_11:
         return loadFed2Definitions("definitions_fed2_9.graphqls");
       case FEDERATION_SPEC_V2_12:
         return loadFed2Definitions("definitions_fed2_12.graphqls");
