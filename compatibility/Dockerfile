@@ -1,4 +1,4 @@
-FROM openjdk:21
+FROM eclipse-temurin:21
 
 EXPOSE 4001
 RUN mkdir /app
