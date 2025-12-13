@@ -391,6 +391,11 @@ class FederationTest {
         () -> Federation.transform(schemaSDL).fetchEntities(env -> null).build());
   }
 
+  @Test
+  public void verifyFederationV2Transformation_cacheTag() {
+    verifyFederationTransformation("schemas/cacheTag/schema.graphql");
+  }
+
   private void verifyFederationTransformation(String schemaFileName) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
     verifyFederationTransformation(schemaFileName, runtimeWiring);

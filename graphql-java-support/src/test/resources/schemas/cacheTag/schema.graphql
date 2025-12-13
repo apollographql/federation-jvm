@@ -1,0 +1,12 @@
+extend schema @link(url: "https://specs.apollo.dev/federation/v2.12",
+  import: ["@key", "@cacheTag"])
+
+type Product @key(fields: "id") @cacheTag(format: "product-{$key.id}") {
+  id: ID!
+  name: String! @cacheTag(format: "product-name")
+  supplier: String
+}
+
+type Query {
+  product(id: ID!): Product @cacheTag(format: "product-query")
+}

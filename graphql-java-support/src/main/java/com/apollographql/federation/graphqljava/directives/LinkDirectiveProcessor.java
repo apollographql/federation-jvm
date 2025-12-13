@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jetbrains.annotations.Nullable;
@@ -28,15 +30,18 @@ public final class LinkDirectiveProcessor {
 
   private static final Map<String, Integer> DIRECTIVES_BY_MIN_SUPPORTED_VERSION =
       Map.of(
-          "@composeDirective", 21,
-          "@interfaceObject", 23,
-          "@authenticated", 25,
-          "@requiresScopes", 25,
-          "@policy", 26,
-          "@context", 28,
-          "@fromContext", 28,
-          "@cost", 29,
-          "@listSize", 29);
+          "@composeDirective", 201,
+          "@interfaceObject", 203,
+          "@authenticated", 205,
+          "@requiresScopes", 205,
+          "@policy", 206,
+          "@context", 208,
+          "@fromContext", 208,
+          "@cost", 209,
+          "@listSize", 209,
+          "@cacheTag", 212);
+
+  private static final Pattern LINK_FED_VERSION_PATTERN = Pattern.compile("v(\\d+)\\.(\\d+)");
 
   private LinkDirectiveProcessor() {}
 
@@ -95,10 +100,17 @@ public final class LinkDirectiveProcessor {
   }
 
   private static int parseFederationVersion(String specLink) {
-    final String versionString = specLink.substring(specLink.length() - 3);
+    final Matcher matcher = LINK_FED_VERSION_PATTERN.matcher(specLink);
+    if (!matcher.find() || matcher.groupCount() != 2) {
+      throw new UnsupportedFederationVersionException(specLink);
+    }
+
     try {
-      return Math.round(Float.parseFloat(versionString) * 10);
-    } catch (Exception e) {
+      int major = Integer.parseInt(matcher.group(1));
+      int minor = Integer.parseInt(matcher.group(2));
+
+      return (int) (major * 100 + minor);
+    } catch (NumberFormatException e) {
       throw new UnsupportedFederationVersionException(specLink);
     }
   }
