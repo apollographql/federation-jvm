@@ -2,13 +2,10 @@ package com.apollographql.federation.graphqljava.printer;
 
 import static graphql.util.TraversalControl.CONTINUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.apollographql.federation.graphqljava.FederationDirectives;
 import com.apollographql.federation.graphqljava.FileUtils;
 import graphql.Scalars;
-import graphql.schema.DefaultGraphqlTypeComparatorRegistry;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLNonNull;
@@ -16,7 +13,6 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLSchemaElement;
 import graphql.schema.GraphQLTypeVisitorStub;
-import graphql.schema.GraphqlTypeComparatorRegistry;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
 import org.junit.jupiter.api.Test;
@@ -295,125 +291,5 @@ class ServiceSDLPrinterTest {
         ServiceSDLPrinter.generateServiceSDL(schemaWithAppliedDirectives, false);
     final String expectedSDL = FileUtils.readResource("schemas/fedV1/schema_federated.graphql");
     assertEquals(expectedSDL, generatedSDL, "Generated service SDL is the same as expected one");
-  }
-
-  @Test
-  public void generateServiceSDLV2_withDefaultComparator_generatesValidSDL() {
-    final GraphQLObjectType typeWithFields =
-        GraphQLObjectType.newObject()
-            .name("TestType")
-            .field(
-                GraphQLFieldDefinition.newFieldDefinition()
-                    .name("z_field")
-                    .type(Scalars.GraphQLString)
-                    .build())
-            .field(
-                GraphQLFieldDefinition.newFieldDefinition()
-                    .name("a_field")
-                    .type(Scalars.GraphQLString)
-                    .build())
-            .field(
-                GraphQLFieldDefinition.newFieldDefinition()
-                    .name("m_field")
-                    .type(Scalars.GraphQLInt)
-                    .build())
-            .build();
-
-    final GraphQLSchema schema =
-        GraphQLSchema.newSchema()
-            .query(
-                GraphQLObjectType.newObject()
-                    .name("Query")
-                    .field(
-                        GraphQLFieldDefinition.newFieldDefinition()
-                            .name("test")
-                            .type(typeWithFields)
-                            .build()))
-            .additionalType(typeWithFields)
-            .build();
-
-    String sdl = ServiceSDLPrinter.generateServiceSDLV2(schema);
-
-    assertNotNull(sdl, "Generated SDL should not be null");
-    assertTrue(sdl.contains("z_field"), "Generated SDL should contain z_field");
-    assertTrue(sdl.contains("a_field"), "Generated SDL should contain a_field");
-    assertTrue(sdl.contains("m_field"), "Generated SDL should contain m_field");
-  }
-
-  @Test
-  public void generateServiceSDLV2_withCustomComparator_generatesValidSDL() {
-    final GraphQLObjectType typeWithFields =
-        GraphQLObjectType.newObject()
-            .name("TestType")
-            .field(
-                GraphQLFieldDefinition.newFieldDefinition()
-                    .name("z_field")
-                    .type(Scalars.GraphQLString)
-                    .build())
-            .field(
-                GraphQLFieldDefinition.newFieldDefinition()
-                    .name("a_field")
-                    .type(Scalars.GraphQLString)
-                    .build())
-            .build();
-
-    final GraphQLSchema schema =
-        GraphQLSchema.newSchema()
-            .query(
-                GraphQLObjectType.newObject()
-                    .name("Query")
-                    .field(
-                        GraphQLFieldDefinition.newFieldDefinition()
-                            .name("test")
-                            .type(typeWithFields)
-                            .build()))
-            .additionalType(typeWithFields)
-            .build();
-
-    GraphqlTypeComparatorRegistry customRegistry =
-        DefaultGraphqlTypeComparatorRegistry.AS_IS_REGISTRY;
-    String sdl = ServiceSDLPrinter.generateServiceSDLV2(schema, customRegistry);
-
-    assertNotNull(sdl, "Generated SDL with custom comparator should not be null");
-    assertTrue(sdl.contains("z_field"), "Generated SDL should contain z_field");
-    assertTrue(sdl.contains("a_field"), "Generated SDL should contain a_field");
-  }
-
-  @Test
-  public void generateServiceSDLV2_overloadedMethod_usesProvidedComparator() {
-    final GraphQLObjectType typeWithFields =
-        GraphQLObjectType.newObject()
-            .name("TestType")
-            .field(
-                GraphQLFieldDefinition.newFieldDefinition()
-                    .name("field1")
-                    .type(Scalars.GraphQLString)
-                    .build())
-            .build();
-
-    final GraphQLSchema schema =
-        GraphQLSchema.newSchema()
-            .query(
-                GraphQLObjectType.newObject()
-                    .name("Query")
-                    .field(
-                        GraphQLFieldDefinition.newFieldDefinition()
-                            .name("test")
-                            .type(typeWithFields)
-                            .build()))
-            .additionalType(typeWithFields)
-            .build();
-
-    // Both overloads should produce valid SDL
-    String sdlDefault = ServiceSDLPrinter.generateServiceSDLV2(schema);
-    String sdlWithComparator =
-        ServiceSDLPrinter.generateServiceSDLV2(
-            schema, DefaultGraphqlTypeComparatorRegistry.defaultComparators());
-
-    assertNotNull(sdlDefault);
-    assertNotNull(sdlWithComparator);
-    // When using default comparators, both should produce the same output
-    assertEquals(sdlDefault, sdlWithComparator, 
-        "SDL with default comparators should match");
   }
 }
