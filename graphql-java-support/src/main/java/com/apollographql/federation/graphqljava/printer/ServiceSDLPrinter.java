@@ -12,6 +12,8 @@ import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLNamedSchemaElement;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLSchemaElement;
+import graphql.schema.GraphqlTypeComparatorRegistry;
+import graphql.schema.DefaultGraphqlTypeComparatorRegistry;
 import graphql.schema.idl.DirectiveInfo;
 import graphql.schema.idl.SchemaPrinter;
 import graphql.schema.visibility.GraphqlFieldVisibility;
@@ -123,17 +125,29 @@ public final class ServiceSDLPrinter {
    * @return SDL compatible with Federation v2
    */
   public static String generateServiceSDLV2(GraphQLSchema schema) {
+    return generateServiceSDLV2(schema, DefaultGraphqlTypeComparatorRegistry.defaultComparators());
+  }
+
+  /**
+   * Generate service SDL compatible with Federation v2 specification.
+   *
+   * @param schema target schema
+   * @param comparatorRegistry custom schema element comparator for controlling print order
+   * @return SDL compatible with Federation v2
+   */
+  public static String generateServiceSDLV2(GraphQLSchema schema, GraphqlTypeComparatorRegistry comparatorRegistry) {
     // federation v2 SDL does not need to filter federation directive definitions
     final Predicate<GraphQLSchemaElement> excludeBuiltInDirectiveDefinitions =
-        element ->
-            !(element instanceof GraphQLDirective
-                && DirectiveInfo.isGraphqlSpecifiedDirective((GraphQLDirective) element));
+      element ->
+        !(element instanceof GraphQLDirective
+          && DirectiveInfo.isGraphqlSpecifiedDirective((GraphQLDirective) element));
     return new SchemaPrinter(
-            SchemaPrinter.Options.defaultOptions()
-                .includeSchemaDefinition(true)
-                .includeScalarTypes(true)
-                .includeSchemaElement(excludeBuiltInDirectiveDefinitions))
-        .print(schema)
-        .trim();
+      SchemaPrinter.Options.defaultOptions()
+        .includeSchemaDefinition(true)
+        .includeScalarTypes(true)
+        .includeSchemaElement(excludeBuiltInDirectiveDefinitions)
+        .setComparators(comparatorRegistry))
+      .print(schema)
+      .trim();
   }
 }
