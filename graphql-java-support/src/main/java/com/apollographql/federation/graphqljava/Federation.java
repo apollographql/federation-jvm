@@ -88,9 +88,7 @@ public final class Federation {
     final GraphQLSchema schema =
         new SchemaGenerator()
             .makeExecutableSchema(generatorOptions, typeRegistry, federatedRuntimeWiring);
-    return transform(schema, queryTypeShouldBeEmpty)
-      .setFederation2(importedDefinitions != null)
-      .setSchemaPrinterComparatorRegistry(federatedRuntimeWiring.getComparatorRegistry());
+    return transform(schema, queryTypeShouldBeEmpty).setFederation2(importedDefinitions != null);
   }
 
   public static SchemaTransformer transform(final TypeDefinitionRegistry typeRegistry) {

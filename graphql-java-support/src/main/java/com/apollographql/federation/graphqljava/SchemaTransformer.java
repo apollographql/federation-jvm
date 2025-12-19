@@ -20,14 +20,12 @@ import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
-import graphql.schema.GraphqlTypeComparatorRegistry;
 import graphql.schema.TypeResolver;
 import graphql.schema.idl.errors.SchemaProblem;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
@@ -41,7 +39,6 @@ public final class SchemaTransformer {
   private DataFetcherFactory entitiesDataFetcherFactory = null;
   private Coercing coercingForAny = _Any.type.getCoercing();
   private boolean isFederation2 = false;
-  private GraphqlTypeComparatorRegistry comparatorRegistry;
 
   SchemaTransformer(GraphQLSchema originalSchema, boolean queryTypeShouldBeEmpty) {
     this.originalSchema = originalSchema;
@@ -78,11 +75,6 @@ public final class SchemaTransformer {
     return this;
   }
 
-  public SchemaTransformer setSchemaPrinterComparatorRegistry(GraphqlTypeComparatorRegistry comparatorRegistry) {
-    this.comparatorRegistry = comparatorRegistry;
-    return this;
-  }
-
   @NotNull
   public GraphQLSchema build() throws SchemaProblem {
     // Make new Schema
@@ -115,10 +107,7 @@ public final class SchemaTransformer {
         (DataFetcher<Object>) environment -> serviceObject);
     final String sdl;
     if (isFederation2) {
-      GraphQLSchema generatingSource = newSchema.codeRegistry(newCodeRegistry.build( )).build( );
-      sdl = Optional.ofNullable(this.comparatorRegistry)
-        .map(customizer -> generateServiceSDLV2(generatingSource, customizer))
-        .orElse(generateServiceSDLV2(generatingSource));
+      sdl = generateServiceSDLV2(newSchema.codeRegistry(newCodeRegistry.build()).build());
     } else {
       // For Federation1, we filter out the federation definitions
       sdl = sdl(originalSchema, queryTypeShouldBeEmpty);
