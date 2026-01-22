@@ -1,7 +1,7 @@
 import java.util.Properties
 
 plugins {
-    id("org.springframework.boot") version "3.3.6"
+    id("org.springframework.boot") version "3.5.10"
     id("io.spring.dependency-management") version "1.1.7"
     java
 }
