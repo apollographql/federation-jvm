@@ -6,7 +6,6 @@ import com.apollographql.subscription.callback.SubscriptionCallbackHandler;
 import com.apollographql.subscription.configuration.TestGraphQLConfiguration;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -44,12 +43,15 @@ public class CallbackGraphQLWebmvcHttpHandlerIT extends CallbackGraphQLHttpHandl
     }
   }
 
-  @Autowired private WebTestClient testClient;
   @LocalServerPort private int serverPort;
+
+  private WebTestClient getTestClient() {
+    return WebTestClient.bindToServer().baseUrl("http://localhost:" + serverPort).build();
+  }
 
   @Test
   public void queries_works() {
-    verifyQueriesWorks(testClient);
+    verifyQueriesWorks(getTestClient());
   }
 
   @Test
@@ -60,26 +62,26 @@ public class CallbackGraphQLWebmvcHttpHandlerIT extends CallbackGraphQLHttpHandl
 
   @Test
   public void callbackSubscription_works() {
-    verifySuccessfulCallbackSubscription(testClient);
+    verifySuccessfulCallbackSubscription(getTestClient());
   }
 
   @Test
   public void callbackSubscription_withHeaders_works() {
-    verifySuccessfulCallbackSubscriptionWithHeaders(testClient);
+    verifySuccessfulCallbackSubscriptionWithHeaders(getTestClient());
   }
 
   @Test
   public void postSubscription_withoutCallback_returns404() {
-    verifyPostSubscriptionsWithoutCallbackDontWork(testClient);
+    verifyPostSubscriptionsWithoutCallbackDontWork(getTestClient());
   }
 
   @Test
   public void callback_initFailed_returns404() {
-    verifyFailedCallbackInit(testClient);
+    verifyFailedCallbackInit(getTestClient());
   }
 
   @Test
   public void callback_malformedRequest_returns404() {
-    verifyMalformedCallbackInfo(testClient);
+    verifyMalformedCallbackInfo(getTestClient());
   }
 }
