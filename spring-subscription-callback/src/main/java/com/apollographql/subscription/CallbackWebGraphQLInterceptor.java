@@ -133,8 +133,8 @@ public class CallbackWebGraphQLInterceptor implements WebGraphQlInterceptor, Ord
       Map<String, List<String>> contextualHeaders = new HashMap<>();
       var headers = request.getHeaders();
       for (String header : this.contextualHeaders) {
-        var headerValue = headers.get(header);
-        if (headerValue != null && !headerValue.isEmpty()) {
+        if (headers.containsHeader(header)) {
+          var headerValue = headers.get(header);
           contextualHeaders.put(header, headerValue);
         }
       }

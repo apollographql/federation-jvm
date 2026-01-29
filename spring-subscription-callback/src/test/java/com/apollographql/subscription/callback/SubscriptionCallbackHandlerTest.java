@@ -82,7 +82,7 @@ public class SubscriptionCallbackHandlerTest {
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
-      var verifier = callbackUrl;
+      var verifier = "junit";
       var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier, 5000);
 
       var graphQLRequest = stubWebGraphQLRequest(subscriptionId, callbackUrl);
@@ -139,7 +139,7 @@ public class SubscriptionCallbackHandlerTest {
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
-      var verifier = callbackUrl;
+      var verifier = "junit";
       var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier, 5000);
 
       var graphQLRequest = stubWebGraphQLRequest(subscriptionId, callbackUrl);
@@ -180,7 +180,7 @@ public class SubscriptionCallbackHandlerTest {
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
-      var verifier = callbackUrl;
+      var verifier = "junit";
       var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier, 5000);
       var client = WebClient.builder().baseUrl(callback.callback_url()).build();
 
@@ -245,7 +245,7 @@ public class SubscriptionCallbackHandlerTest {
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
-      var verifier = callbackUrl;
+      var verifier = "junit";
       var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier, 5000);
       var client = WebClient.builder().baseUrl(callback.callback_url()).build();
 
@@ -289,7 +289,7 @@ public class SubscriptionCallbackHandlerTest {
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
-      var verifier = callbackUrl;
+      var verifier = "junit";
       var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier, 5000);
       var client = WebClient.builder().baseUrl(callback.callback_url()).build();
 
@@ -318,7 +318,7 @@ public class SubscriptionCallbackHandlerTest {
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
-      var verifier = callbackUrl;
+      var verifier = "junit";
       var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier, 0);
       var client = WebClient.builder().baseUrl(callback.callback_url()).build();
 
@@ -348,7 +348,7 @@ public class SubscriptionCallbackHandlerTest {
 
       var subscriptionId = UUID.randomUUID().toString();
       var callbackUrl = server.url("/callback/" + subscriptionId).toString();
-      var verifier = callbackUrl;
+      var verifier = "junit";
       var callback = new SubscriptionCallback(callbackUrl, subscriptionId, verifier, 5000);
       var client = WebClient.builder().baseUrl(callback.callback_url()).build();
 
