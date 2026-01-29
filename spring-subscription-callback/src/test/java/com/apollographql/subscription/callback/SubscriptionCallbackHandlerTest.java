@@ -8,7 +8,6 @@ import com.apollographql.subscription.exception.CallbackInitializationFailedExce
 import com.apollographql.subscription.message.CallbackMessageCheck;
 import com.apollographql.subscription.message.CallbackMessageComplete;
 import com.apollographql.subscription.message.CallbackMessageNext;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import graphql.ExecutionResult;
 import java.io.IOException;
 import java.net.URI;
@@ -38,6 +37,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import tools.jackson.databind.ObjectMapper;
 
 public class SubscriptionCallbackHandlerTest {
 
