@@ -26,6 +26,7 @@ dependencies {
     testImplementation("org.springframework.boot", "spring-boot-starter-test", springBootVersion)
     testImplementation("org.springframework.boot", "spring-boot-starter-webflux-test", springBootVersion)
     testImplementation("org.springframework.boot", "spring-boot-starter-websocket", springBootVersion)
+    testImplementation("org.springframework.boot", "spring-boot-webclient-test", springBootVersion)
     testImplementation("org.springframework.graphql", "spring-graphql-test", springGraphQLVersion)
     testImplementation("io.projectreactor", "reactor-test", reactorVersion)
     testRuntimeOnly("org.junit.platform", "junit-platform-launcher")

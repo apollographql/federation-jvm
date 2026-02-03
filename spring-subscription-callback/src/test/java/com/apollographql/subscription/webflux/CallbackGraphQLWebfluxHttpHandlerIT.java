@@ -6,9 +6,11 @@ import com.apollographql.subscription.callback.SubscriptionCallbackHandler;
 import com.apollographql.subscription.configuration.TestGraphQLConfiguration;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +19,7 @@ import org.springframework.graphql.ExecutionGraphQlService;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 @EnableAutoConfiguration
+@AutoConfigureWebTestClient
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     classes = CallbackGraphQLWebfluxHttpHandlerIT.GraphQLSubscriptionConfiguration.class,
@@ -44,15 +47,12 @@ public class CallbackGraphQLWebfluxHttpHandlerIT extends CallbackGraphQLHttpHand
     }
   }
 
+  @Autowired private WebTestClient testClient;
   @LocalServerPort private int serverPort;
-
-  private WebTestClient getTestClient() {
-    return WebTestClient.bindToServer().baseUrl("http://localhost:" + serverPort).build();
-  }
 
   @Test
   public void queries_works() {
-    verifyQueriesWorks(getTestClient());
+    verifyQueriesWorks(testClient);
   }
 
   @Test
@@ -63,26 +63,26 @@ public class CallbackGraphQLWebfluxHttpHandlerIT extends CallbackGraphQLHttpHand
 
   @Test
   public void callbackSubscription_works() {
-    verifySuccessfulCallbackSubscription(getTestClient());
+    verifySuccessfulCallbackSubscription(testClient);
   }
 
   @Test
   public void callbackSubscription_withHeaders_works() {
-    verifySuccessfulCallbackSubscriptionWithHeaders(getTestClient());
+    verifySuccessfulCallbackSubscriptionWithHeaders(testClient);
   }
 
   @Test
   public void postSubscription_withoutCallback_returns404() {
-    verifyPostSubscriptionsWithoutCallbackDontWork(getTestClient());
+    verifyPostSubscriptionsWithoutCallbackDontWork(testClient);
   }
 
   @Test
   public void callback_initFailed_returns404() {
-    verifyFailedCallbackInit(getTestClient());
+    verifyFailedCallbackInit(testClient);
   }
 
   @Test
   public void callback_malformedRequest_returns404() {
-    verifyMalformedCallbackInfo(getTestClient());
+    verifyMalformedCallbackInfo(testClient);
   }
 }
