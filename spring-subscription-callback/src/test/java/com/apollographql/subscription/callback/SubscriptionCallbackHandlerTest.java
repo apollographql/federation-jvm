@@ -8,7 +8,6 @@ import com.apollographql.subscription.exception.CallbackInitializationFailedExce
 import com.apollographql.subscription.message.CallbackMessageCheck;
 import com.apollographql.subscription.message.CallbackMessageComplete;
 import com.apollographql.subscription.message.CallbackMessageNext;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import graphql.ExecutionResult;
 import java.io.IOException;
 import java.net.URI;
@@ -38,6 +37,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import tools.jackson.databind.ObjectMapper;
 
 public class SubscriptionCallbackHandlerTest {
 
@@ -102,16 +102,16 @@ public class SubscriptionCallbackHandlerTest {
       var objectMapper = new ObjectMapper();
       Assertions.assertEquals(4, capturedRequests.size());
       Assertions.assertEquals(
-          new CallbackMessageCheck(subscriptionId, callbackUrl),
+          new CallbackMessageCheck(subscriptionId, verifier),
           objectMapper.readValue(capturedRequests.get(0), CallbackMessageCheck.class));
       Assertions.assertEquals(
-          nextMessage(subscriptionId, callbackUrl, 1),
+          nextMessage(subscriptionId, verifier, 1),
           objectMapper.readValue(capturedRequests.get(1), CallbackMessageNext.class));
       Assertions.assertEquals(
-          nextMessage(subscriptionId, callbackUrl, 2),
+          nextMessage(subscriptionId, verifier, 2),
           objectMapper.readValue(capturedRequests.get(2), CallbackMessageNext.class));
       Assertions.assertEquals(
-          new CallbackMessageComplete(subscriptionId, callbackUrl),
+          new CallbackMessageComplete(subscriptionId, verifier),
           objectMapper.readValue(capturedRequests.get(3), CallbackMessageComplete.class));
     } catch (IOException | InterruptedException e) {
       // failed to close the server
@@ -155,7 +155,7 @@ public class SubscriptionCallbackHandlerTest {
       var objectMapper = new ObjectMapper();
       Assertions.assertEquals(1, capturedRequests.size());
       Assertions.assertEquals(
-          new CallbackMessageCheck(subscriptionId, callbackUrl),
+          new CallbackMessageCheck(subscriptionId, verifier),
           objectMapper.readValue(capturedRequests.get(0), CallbackMessageCheck.class));
     } catch (IOException | InterruptedException e) {
       // failed to close the server
@@ -203,16 +203,16 @@ public class SubscriptionCallbackHandlerTest {
       var objectMapper = new ObjectMapper();
       Assertions.assertEquals(4, capturedRequests.size());
       Assertions.assertEquals(
-          nextMessage(subscriptionId, callbackUrl, 1),
+          nextMessage(subscriptionId, verifier, 1),
           objectMapper.readValue(capturedRequests.get(0), CallbackMessageNext.class));
       Assertions.assertEquals(
-          new CallbackMessageCheck(subscriptionId, callbackUrl),
+          new CallbackMessageCheck(subscriptionId, verifier),
           objectMapper.readValue(capturedRequests.get(1), CallbackMessageCheck.class));
       Assertions.assertEquals(
-          nextMessage(subscriptionId, callbackUrl, 2),
+          nextMessage(subscriptionId, verifier, 2),
           objectMapper.readValue(capturedRequests.get(2), CallbackMessageNext.class));
       Assertions.assertEquals(
-          new CallbackMessageComplete(subscriptionId, callbackUrl),
+          new CallbackMessageComplete(subscriptionId, verifier),
           objectMapper.readValue(capturedRequests.get(3), CallbackMessageComplete.class));
     } catch (IOException e) {
       // failed to close the server
@@ -266,10 +266,10 @@ public class SubscriptionCallbackHandlerTest {
       var objectMapper = new ObjectMapper();
       Assertions.assertEquals(2, capturedRequests.size());
       Assertions.assertEquals(
-          nextMessage(subscriptionId, callbackUrl, 1),
+          nextMessage(subscriptionId, verifier, 1),
           objectMapper.readValue(capturedRequests.get(0), CallbackMessageNext.class));
       Assertions.assertEquals(
-          new CallbackMessageCheck(subscriptionId, callbackUrl),
+          new CallbackMessageCheck(subscriptionId, verifier),
           objectMapper.readValue(capturedRequests.get(1), CallbackMessageCheck.class));
     } catch (IOException e) {
       // failed to close the server
