@@ -396,6 +396,40 @@ class FederationTest {
     verifyFederationTransformation("schemas/cacheTag/schema.graphql");
   }
 
+  @Test
+  public void verifyFederationV2Transformation_v213_isSupported() {
+    // Federation v2.13 introduces no new subgraph directives (Connect spec v0.4 prerequisite only),
+    // so any schema linking to v2.13 should resolve the same directive set as v2.12.
+    final String schemaSDL =
+        "extend schema @link(url: \"https://specs.apollo.dev/federation/v2.13\","
+            + " import: [\"@key\"])\n"
+            + "type Product @key(fields: \"id\") { id: ID! }\n"
+            + "type Query { product(id: ID!): Product }\n";
+    assertDoesNotThrow(
+        () ->
+            Federation.transform(schemaSDL)
+                .resolveEntityType(env -> null)
+                .fetchEntities(env -> null)
+                .build());
+  }
+
+  @Test
+  public void verifyFederationV2Transformation_v214_isSupported() {
+    // Federation v2.14 introduces no new subgraph directives (composition-only changes), so any
+    // schema linking to v2.14 should resolve the same directive set as v2.12.
+    final String schemaSDL =
+        "extend schema @link(url: \"https://specs.apollo.dev/federation/v2.14\","
+            + " import: [\"@key\"])\n"
+            + "type Product @key(fields: \"id\") { id: ID! }\n"
+            + "type Query { product(id: ID!): Product }\n";
+    assertDoesNotThrow(
+        () ->
+            Federation.transform(schemaSDL)
+                .resolveEntityType(env -> null)
+                .fetchEntities(env -> null)
+                .build());
+  }
+
   private void verifyFederationTransformation(String schemaFileName) {
     final RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build();
     verifyFederationTransformation(schemaFileName, runtimeWiring);
