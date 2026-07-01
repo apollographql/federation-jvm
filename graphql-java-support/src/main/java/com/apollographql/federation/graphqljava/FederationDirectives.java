@@ -7,6 +7,7 @@ import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPE
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_12;
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_13;
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_14;
+import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_15;
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_2;
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_3;
 import static com.apollographql.federation.graphqljava.Federation.FEDERATION_SPEC_V2_4;
@@ -246,6 +247,7 @@ public final class FederationDirectives {
       case FEDERATION_SPEC_V2_12:
       case FEDERATION_SPEC_V2_13:
       case FEDERATION_SPEC_V2_14:
+      case FEDERATION_SPEC_V2_15:
         return loadFed2Definitions("definitions_fed2_12.graphqls");
       default:
         throw new UnsupportedFederationVersionException(federationSpec);
