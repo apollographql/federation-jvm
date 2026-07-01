@@ -455,10 +455,7 @@ public class CacheControlInstrumentationTest {
             .build();
 
     GraphQLSchema schema =
-        GraphQLSchema.newSchema()
-            .query(queryType)
-            .additionalDirective(cacheControlDef)
-            .build();
+        GraphQLSchema.newSchema().query(queryType).additionalDirective(cacheControlDef).build();
 
     GraphQL graphql =
         GraphQL.newGraphQL(schema)
@@ -470,7 +467,8 @@ public class CacheControlInstrumentationTest {
 
     assertEquals(
         "max-age=60, public",
-        CacheControlInstrumentation.cacheControlHeaderFromGraphQLContext(input.getGraphQLContext()));
+        CacheControlInstrumentation.cacheControlHeaderFromGraphQLContext(
+            input.getGraphQLContext()));
   }
 
   /**

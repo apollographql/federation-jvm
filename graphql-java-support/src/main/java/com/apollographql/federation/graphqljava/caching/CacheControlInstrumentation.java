@@ -60,8 +60,8 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
    * Pre-installs a mutable result holder into the given context. Call this on the context
    * <em>before</em> it is passed to graphql-java execution, if your framework copies the context
    * when building an {@link graphql.ExecutionInput} (e.g. graphql-kotlin). Both the original
-   * context and the copy will share the same holder object by reference, so
-   * {@link #cacheControlHeaderFromGraphQLContext} can be called on either after execution.
+   * context and the copy will share the same holder object by reference, so {@link
+   * #cacheControlHeaderFromGraphQLContext} can be called on either after execution.
    *
    * <p>If this method is not called, the instrumentation falls back to writing the result directly
    * to the execution context, which is the correct behavior when the caller passes the exact same
