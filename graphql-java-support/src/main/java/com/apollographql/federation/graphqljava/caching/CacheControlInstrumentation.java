@@ -308,6 +308,7 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
               .map(GraphQLAppliedDirectiveArgument::getValue)
               .filter(v -> v instanceof Integer)
               .map(Integer.class::cast)
+              .filter(v -> v >= 0)
               .orElse(null);
 
       CacheControlScope scope =
@@ -372,10 +373,6 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
     }
   }
 
-  private static class CacheControlHolder {
-    volatile String value;
-  }
-
   static List<GraphQLType> typesFromEntitiesArgument(Object representations, GraphQLSchema schema) {
     if (representations instanceof List) {
       return ((List<?>) representations)
@@ -390,4 +387,8 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
     }
     return new ArrayList<>();
   }
+}
+
+class CacheControlHolder {
+  volatile String value;
 }
