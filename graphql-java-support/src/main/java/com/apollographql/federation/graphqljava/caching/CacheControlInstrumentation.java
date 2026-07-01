@@ -37,6 +37,7 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
   private final boolean allowZeroMaxAge;
 
   private static final Object CONTEXT_KEY = new Object();
+  private static final Object HOLDER_KEY = new Object();
   private static final String DIRECTIVE_NAME = "cacheControl";
   private static final String MAX_AGE = "maxAge";
   private static final String SCOPE = "scope";
@@ -55,8 +56,25 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
     this.allowZeroMaxAge = allowZeroMaxAge;
   }
 
+  /**
+   * Pre-installs a mutable result holder into the given context. Call this on the context
+   * <em>before</em> it is passed to graphql-java execution, if your framework copies the context
+   * when building an {@link graphql.ExecutionInput} (e.g. graphql-kotlin). Both the original
+   * context and the copy will share the same holder object by reference, so
+   * {@link #cacheControlHeaderFromGraphQLContext} can be called on either after execution.
+   *
+   * <p>If this method is not called, the instrumentation falls back to writing the result directly
+   * to the execution context, which is the correct behavior when the caller passes the exact same
+   * {@link GraphQLContext} instance to {@link graphql.ExecutionInput.Builder#graphQLContext}.
+   */
+  public static void prepareContext(GraphQLContext context) {
+    context.put(HOLDER_KEY, new CacheControlHolder());
+  }
+
   @Nullable
   public static String cacheControlHeaderFromGraphQLContext(GraphQLContext context) {
+    CacheControlHolder holder = context.get(HOLDER_KEY);
+    if (holder != null) return holder.value;
     return context.get(CONTEXT_KEY);
   }
 
@@ -83,7 +101,16 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
         cacheControlState
             .overallPolicy
             .maybeAsString()
-            .ifPresent(s -> parameters.getGraphQLContext().put(CONTEXT_KEY, s));
+            .ifPresent(
+                s -> {
+                  GraphQLContext ctx = parameters.getGraphQLContext();
+                  CacheControlHolder holder = ctx.get(HOLDER_KEY);
+                  if (holder != null) {
+                    holder.value = s;
+                  } else {
+                    ctx.put(CONTEXT_KEY, s);
+                  }
+                });
       }
     };
   }
@@ -270,7 +297,7 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
 
     public static Optional<CacheControlDirective> fromDirectiveContainer(
         GraphQLDirectiveContainer container) {
-      GraphQLDirective directive = container.getDirective(DIRECTIVE_NAME);
+      GraphQLAppliedDirective directive = container.getAppliedDirective(DIRECTIVE_NAME);
 
       if (directive == null) {
         return Optional.empty();
@@ -278,21 +305,21 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
 
       Integer maxAge =
           Optional.ofNullable(directive.getArgument(MAX_AGE))
-              .map(a -> GraphQLArgument.getArgumentValue(a))
+              .map(GraphQLAppliedDirectiveArgument::getValue)
               .filter(v -> v instanceof Integer)
               .map(Integer.class::cast)
               .orElse(null);
 
       CacheControlScope scope =
           Optional.ofNullable(directive.getArgument(SCOPE))
-              .map(a -> GraphQLArgument.getArgumentValue(a))
+              .map(GraphQLAppliedDirectiveArgument::getValue)
               .filter(v -> v instanceof String)
               .map(s -> CacheControlScope.valueOf((String) s))
               .orElse(null);
 
       Boolean inheritMaxAge =
           Optional.ofNullable(directive.getArgument(INHERIT_MAX_AGE))
-              .map(a -> GraphQLArgument.getArgumentValue(a))
+              .map(GraphQLAppliedDirectiveArgument::getValue)
               .filter(v -> v instanceof Boolean)
               .map(Boolean.class::cast)
               .orElse(null);
@@ -343,6 +370,10 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
       return String.format(
           "@cacheControl(maxAge: %s, scope: %s, inheritMaxAge: %s)", maxAge, scope, inheritMaxAge);
     }
+  }
+
+  private static class CacheControlHolder {
+    volatile String value;
   }
 
   static List<GraphQLType> typesFromEntitiesArgument(Object representations, GraphQLSchema schema) {

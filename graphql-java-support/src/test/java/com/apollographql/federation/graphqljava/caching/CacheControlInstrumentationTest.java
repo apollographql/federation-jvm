@@ -9,6 +9,11 @@ import graphql.ExecutionInput;
 import graphql.GraphQL;
 import graphql.GraphQLContext;
 import graphql.schema.DataFetcher;
+import graphql.schema.GraphQLAppliedDirective;
+import graphql.schema.GraphQLAppliedDirectiveArgument;
+import graphql.schema.GraphQLArgument;
+import graphql.schema.GraphQLDirective;
+import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
@@ -402,6 +407,108 @@ public class CacheControlInstrumentationTest {
     assertNull(execute(schema, "{foo{defaultBar{cachedScalar}}}"));
     assertEquals("max-age=5, public", execute(schema, "{foo{bar{scalar}}}"));
     assertEquals("max-age=2, public", execute(schema, "{foo{bar{cachedScalar}}}"));
+  }
+
+  /**
+   * Verifies that @cacheControl directives applied programmatically via the graphql-java builder
+   * API are correctly read using {@code getAppliedDirective()}.
+   */
+  @Test
+  void hintOnFieldProgrammaticSchema() {
+    GraphQLDirective cacheControlDef =
+        GraphQLDirective.newDirective()
+            .name("cacheControl")
+            .argument(GraphQLArgument.newArgument().name("maxAge").type(graphql.Scalars.GraphQLInt))
+            .validLocations(
+                graphql.introspection.Introspection.DirectiveLocation.FIELD_DEFINITION,
+                graphql.introspection.Introspection.DirectiveLocation.OBJECT)
+            .build();
+
+    GraphQLAppliedDirective cacheControlApplied =
+        GraphQLAppliedDirective.newDirective()
+            .name("cacheControl")
+            .argument(
+                GraphQLAppliedDirectiveArgument.newArgument()
+                    .name("maxAge")
+                    .type(graphql.Scalars.GraphQLInt)
+                    .valueProgrammatic(60)
+                    .build())
+            .build();
+
+    GraphQLObjectType droidType =
+        GraphQLObjectType.newObject()
+            .name("Droid")
+            .field(
+                GraphQLFieldDefinition.newFieldDefinition()
+                    .name("name")
+                    .type(graphql.Scalars.GraphQLString))
+            .build();
+
+    GraphQLObjectType queryType =
+        GraphQLObjectType.newObject()
+            .name("Query")
+            .field(
+                GraphQLFieldDefinition.newFieldDefinition()
+                    .name("droid")
+                    .type(droidType)
+                    .withAppliedDirective(cacheControlApplied))
+            .build();
+
+    GraphQLSchema schema =
+        GraphQLSchema.newSchema()
+            .query(queryType)
+            .additionalDirective(cacheControlDef)
+            .build();
+
+    GraphQL graphql =
+        GraphQL.newGraphQL(schema)
+            .instrumentation(new CacheControlInstrumentation(0, false))
+            .build();
+
+    ExecutionInput input = ExecutionInput.newExecutionInput().query("{ droid { name } }").build();
+    graphql.execute(input);
+
+    assertEquals(
+        "max-age=60, public",
+        CacheControlInstrumentation.cacheControlHeaderFromGraphQLContext(input.getGraphQLContext()));
+  }
+
+  /**
+   * Simulates frameworks (e.g. graphql-kotlin) that copy the GraphQLContext when building an
+   * ExecutionInput. Without {@link CacheControlInstrumentation#prepareContext}, the header is
+   * written to the execution-context copy and the caller's original context stays empty. With
+   * {@code prepareContext}, both contexts share the same holder by reference.
+   */
+  @Test
+  void prepareContextSurvivesContextCopy() {
+    String schema =
+        "type Query {"
+            + "  droid(id: ID!): Droid @cacheControl(maxAge: 60)"
+            + "}"
+            + "type Droid {"
+            + "  id: ID!"
+            + "  name: String"
+            + "}";
+
+    GraphQL graphql = makeExecutor(schema, 0, false);
+
+    // Simulate graphql-kotlin's toExecutionInput which copies the context into a new object.
+    GraphQLContext originalContext = GraphQLContext.newContext().build();
+    CacheControlInstrumentation.prepareContext(originalContext);
+    GraphQLContext copiedContext = GraphQLContext.newContext().of(originalContext).build();
+
+    ExecutionInput input =
+        ExecutionInput.newExecutionInput()
+            .query("{ droid(id: 1) { name } }")
+            .graphQLContext(builder -> builder.of(copiedContext))
+            .build();
+
+    graphql.execute(input);
+
+    // The header must be readable from the original context, not just from the execution copy.
+    assertEquals(
+        "max-age=60, public",
+        CacheControlInstrumentation.cacheControlHeaderFromGraphQLContext(originalContext));
   }
 
   @Test
