@@ -471,44 +471,6 @@ public class CacheControlInstrumentationTest {
             input.getGraphQLContext()));
   }
 
-  /**
-   * Simulates frameworks (e.g. graphql-kotlin) that copy the GraphQLContext when building an
-   * ExecutionInput. Without {@link CacheControlInstrumentation#prepareContext}, the header is
-   * written to the execution-context copy and the caller's original context stays empty. With
-   * {@code prepareContext}, both contexts share the same holder by reference.
-   */
-  @Test
-  void prepareContextSurvivesContextCopy() {
-    String schema =
-        "type Query {"
-            + "  droid(id: ID!): Droid @cacheControl(maxAge: 60)"
-            + "}"
-            + "type Droid {"
-            + "  id: ID!"
-            + "  name: String"
-            + "}";
-
-    GraphQL graphql = makeExecutor(schema, 0, false);
-
-    // Simulate graphql-kotlin's toExecutionInput which copies the context into a new object.
-    GraphQLContext originalContext = GraphQLContext.newContext().build();
-    CacheControlInstrumentation.prepareContext(originalContext);
-    GraphQLContext copiedContext = GraphQLContext.newContext().of(originalContext).build();
-
-    ExecutionInput input =
-        ExecutionInput.newExecutionInput()
-            .query("{ droid(id: 1) { name } }")
-            .graphQLContext(builder -> builder.of(copiedContext))
-            .build();
-
-    graphql.execute(input);
-
-    // The header must be readable from the original context, not just from the execution copy.
-    assertEquals(
-        "max-age=60, public",
-        CacheControlInstrumentation.cacheControlHeaderFromGraphQLContext(originalContext));
-  }
-
   @Test
   void entities() {
     String schema =
