@@ -270,7 +270,7 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
 
     public static Optional<CacheControlDirective> fromDirectiveContainer(
         GraphQLDirectiveContainer container) {
-      GraphQLDirective directive = container.getDirective(DIRECTIVE_NAME);
+      GraphQLAppliedDirective directive = container.getAppliedDirective(DIRECTIVE_NAME);
 
       if (directive == null) {
         return Optional.empty();
@@ -278,21 +278,21 @@ public class CacheControlInstrumentation extends SimplePerformantInstrumentation
 
       Integer maxAge =
           Optional.ofNullable(directive.getArgument(MAX_AGE))
-              .map(a -> GraphQLArgument.getArgumentValue(a))
+              .map(GraphQLAppliedDirectiveArgument::getValue)
               .filter(v -> v instanceof Integer)
               .map(Integer.class::cast)
               .orElse(null);
 
       CacheControlScope scope =
           Optional.ofNullable(directive.getArgument(SCOPE))
-              .map(a -> GraphQLArgument.getArgumentValue(a))
+              .map(GraphQLAppliedDirectiveArgument::getValue)
               .filter(v -> v instanceof String)
               .map(s -> CacheControlScope.valueOf((String) s))
               .orElse(null);
 
       Boolean inheritMaxAge =
           Optional.ofNullable(directive.getArgument(INHERIT_MAX_AGE))
-              .map(a -> GraphQLArgument.getArgumentValue(a))
+              .map(GraphQLAppliedDirectiveArgument::getValue)
               .filter(v -> v instanceof Boolean)
               .map(Boolean.class::cast)
               .orElse(null);
