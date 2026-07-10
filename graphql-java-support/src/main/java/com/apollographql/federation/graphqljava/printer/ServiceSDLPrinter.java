@@ -5,6 +5,7 @@ import com.apollographql.federation.graphqljava._Any;
 import com.apollographql.federation.graphqljava._Entity;
 import com.apollographql.federation.graphqljava._FieldSet;
 import com.apollographql.federation.graphqljava._Service;
+import graphql.Directives;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLFieldDefinition;
@@ -12,7 +13,6 @@ import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLNamedSchemaElement;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLSchemaElement;
-import graphql.schema.idl.DirectiveInfo;
 import graphql.schema.idl.SchemaPrinter;
 import graphql.schema.visibility.GraphqlFieldVisibility;
 import java.util.Collections;
@@ -47,7 +47,7 @@ public final class ServiceSDLPrinter {
     // Gather directive definitions to hide.
     final Set<String> hiddenDirectiveDefinitions = new HashSet<>();
     // Apollo Gateway will fail Federation v1 composition if it sees standard directive definitions.
-    hiddenDirectiveDefinitions.addAll(DirectiveInfo.GRAPHQL_SPECIFICATION_DIRECTIVE_MAP.keySet());
+    hiddenDirectiveDefinitions.addAll(Directives.BUILT_IN_DIRECTIVES_MAP.keySet());
     hiddenDirectiveDefinitions.addAll(FederationDirectives.allNames);
 
     // Gather type definitions to hide.
@@ -127,7 +127,7 @@ public final class ServiceSDLPrinter {
     final Predicate<GraphQLSchemaElement> excludeBuiltInDirectiveDefinitions =
         element ->
             !(element instanceof GraphQLDirective
-                && DirectiveInfo.isGraphqlSpecifiedDirective((GraphQLDirective) element));
+                && Directives.isBuiltInDirective((GraphQLDirective) element));
     return new SchemaPrinter(
             SchemaPrinter.Options.defaultOptions()
                 .includeSchemaDefinition(true)
