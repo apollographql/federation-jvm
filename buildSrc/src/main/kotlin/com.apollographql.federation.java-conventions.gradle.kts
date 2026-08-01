@@ -18,8 +18,10 @@ repositories {
 }
 
 val junitVersion: String by project
+val junitPlatformVersion: String by project
 dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
+    testRuntimeOnly("org.junit.platform", "junit-platform-launcher", junitPlatformVersion)
 }
 
 java {
