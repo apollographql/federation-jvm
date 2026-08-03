@@ -31,7 +31,7 @@ jobs:
         run: ./gradlew bootJar
 
       - name: Compatibility Test
-        uses: apollographql/federation-subgraph-compatibility@v2
+        uses: apollographql/federation-subgraph-compatibility@v3
         with:
           compose: 'docker-compose.yaml'
           schema: 'src/main/resources/graphql/schema.graphqls'
