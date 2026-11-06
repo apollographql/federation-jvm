@@ -1,0 +1,37 @@
+type Query {
+    gadgets: [Gadget!]
+}
+
+type Gadget {
+    # trivial leaves
+    id: ID!
+    status: Status
+    tags: [String!]
+    wrapped: String
+    asyncValue: String
+
+    # non-trivial leaf
+    resolved: String
+
+    # trivial object
+    detail: Detail
+    emptyDetail: Detail
+
+    # trivial leaves that don't succeed
+    missing: String
+    emptyOptional: String
+    throwing: String
+    slowThrowing: String
+    asyncThrowing: String
+    withErrors: String
+    withNullData: String
+}
+
+type Detail {
+    label: String
+    resolved: String
+}
+
+enum Status {
+    ACTIVE
+}

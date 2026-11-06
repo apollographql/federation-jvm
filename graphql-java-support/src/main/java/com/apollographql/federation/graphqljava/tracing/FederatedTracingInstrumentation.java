@@ -22,11 +22,13 @@ import graphql.execution.instrumentation.parameters.InstrumentationValidationPar
 import graphql.language.Document;
 import graphql.language.SourceLocation;
 import graphql.parser.InvalidSyntaxException;
+import graphql.schema.GraphQLTypeUtil;
 import graphql.validation.ValidationError;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -101,23 +103,93 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
       return super.beginFieldFetch(parameters, null);
     }
 
+    if (options.getTrivialFieldFetchMode() == TrivialFieldFetchMode.OMIT_SUCCESSFUL_TRIVIAL_LEAVES
+        && parameters.isTrivialDataFetcher()) {
+      // Don't read the lazy DataFetchingEnvironment up front, as trivial fetches usually don't need
+      // it at all and most of these nodes are about to be dropped.
+      long startNanos = System.nanoTime();
+      return whenCompleted(
+          (result, throwable) -> {
+            long endNanos = System.nanoTime();
+            if (isSuccessfulFetch(parameters, result, throwable) && isLeafField(parameters)) {
+              return;
+            }
+            SourceLocation fieldLocation =
+                parameters.getEnvironment().getField().getSourceLocation();
+            addFieldFetchData(
+                federatedTracingState,
+                parameters,
+                startNanos,
+                endNanos,
+                result,
+                throwable,
+                fieldLocation);
+          });
+    }
+
     SourceLocation fieldLocation = parameters.getEnvironment().getField().getSourceLocation();
 
     long startNanos = System.nanoTime();
     return whenCompleted(
         (result, throwable) -> {
           long endNanos = System.nanoTime();
-
-          ExecutionStepInfo executionStepInfo = parameters.getEnvironment().getExecutionStepInfo();
-          federatedTracingState.addFieldFetchData(
-              executionStepInfo,
-              // relative to the trace's start_time, in ns
-              startNanos - federatedTracingState.getStartRequestNanos(),
-              // relative to the trace's start_time, in ns
-              endNanos - federatedTracingState.getStartRequestNanos(),
-              convertErrors(throwable, result),
+          addFieldFetchData(
+              federatedTracingState,
+              parameters,
+              startNanos,
+              endNanos,
+              result,
+              throwable,
               fieldLocation);
         });
+  }
+
+  private void addFieldFetchData(
+      FederatedTracingState federatedTracingState,
+      InstrumentationFieldFetchParameters parameters,
+      long startNanos,
+      long endNanos,
+      Object result,
+      Throwable throwable,
+      SourceLocation fieldLocation) {
+    ExecutionStepInfo executionStepInfo = parameters.getEnvironment().getExecutionStepInfo();
+    federatedTracingState.addFieldFetchData(
+        executionStepInfo,
+        // relative to the trace's start_time, in ns
+        startNanos - federatedTracingState.getStartRequestNanos(),
+        // relative to the trace's start_time, in ns
+        endNanos - federatedTracingState.getStartRequestNanos(),
+        convertErrors(throwable, result),
+        fieldLocation);
+  }
+
+  /** Returns whether a fetch produced a non-null value without reporting any errors. */
+  private static boolean isSuccessfulFetch(
+      InstrumentationFieldFetchParameters parameters, Object result, Throwable throwable) {
+    if (throwable != null) {
+      return false;
+    }
+
+    Object data = result;
+    if (result instanceof DataFetcherResult<?>) {
+      DataFetcherResult<?> dataFetcherResult = (DataFetcherResult<?>) result;
+      if (dataFetcherResult.hasErrors()) {
+        return false;
+      }
+      data = dataFetcherResult.getData();
+    }
+
+    // Unbox so that an empty Optional, which ends up as null in the response, counts as null here.
+    return data != null && parameters.getExecutionContext().getValueUnboxer().unbox(data) != null;
+  }
+
+  /**
+   * Returns whether the field is a scalar or enum (or a list of them). Only these fields can be
+   * omitted, as the trace tree requires a node for every field that is an ancestor of a traced
+   * field.
+   */
+  private static boolean isLeafField(InstrumentationFieldFetchParameters parameters) {
+    return GraphQLTypeUtil.isLeaf(parameters.getEnvironment().getFieldType());
   }
 
   @Override
@@ -454,9 +526,30 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
     }
   }
 
+  /** Controls which trivial field fetches, such as POJO getters, are added to the trace. */
+  public enum TrivialFieldFetchMode {
+    /** Adds a trace node for every field fetch. */
+    TRACE_ALL,
+
+    /**
+     * Omits the trace nodes of trivial scalar and enum fetches that succeed.
+     *
+     * <p>A fetch is omitted only if its data fetcher is a {@link graphql.TrivialDataFetcher}, the
+     * field's unwrapped type is a scalar or enum, the fetch didn't throw or report errors, and the
+     * fetched value isn't null. Non-trivial data fetchers, trivial object fields, and trivial
+     * fetches that fail or return null are always traced.
+     *
+     * <p>This reduces the cost and size of traces on subgraphs that return large lists of entities.
+     * In exchange, field-level metrics such as execution counts and latency won't be reported for
+     * the omitted fetches.
+     */
+    OMIT_SUCCESSFUL_TRIVIAL_LEAVES
+  }
+
   public static class Options {
     private final boolean debuggingEnabled;
     private final @Nullable Predicate<ExecutionInput> shouldTracePredicate;
+    private final TrivialFieldFetchMode trivialFieldFetchMode;
 
     /**
      * Configuration options for federated tracing.
@@ -470,11 +563,28 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
      *     behavior. The default/null behavior is to disable trace generation unless the
      *     GraphQLContext map contains "apollo-federation-include-trace" entry with a value equal to
      *     "ftv1"
+     * @param trivialFieldFetchMode Controls which trivial field fetches are added to the trace
+     *     (default: {@link TrivialFieldFetchMode#TRACE_ALL}).
+     */
+    public Options(
+        boolean debuggingEnabled,
+        @Nullable Predicate<ExecutionInput> shouldTracePredicate,
+        @NotNull TrivialFieldFetchMode trivialFieldFetchMode) {
+      this.debuggingEnabled = debuggingEnabled;
+      this.shouldTracePredicate = shouldTracePredicate;
+      this.trivialFieldFetchMode = Objects.requireNonNull(trivialFieldFetchMode);
+    }
+
+    /**
+     * Configuration options for federated tracing that trace every field fetch.
+     *
+     * @param debuggingEnabled Enables debug logging of the generated trace (default: false).
+     * @param shouldTracePredicate Predicate that controls whether to generate a trace for a given
+     *     request (default: null). See {@link #Options(boolean, Predicate, TrivialFieldFetchMode)}.
      */
     public Options(
         boolean debuggingEnabled, @Nullable Predicate<ExecutionInput> shouldTracePredicate) {
-      this.debuggingEnabled = debuggingEnabled;
-      this.shouldTracePredicate = shouldTracePredicate;
+      this(debuggingEnabled, shouldTracePredicate, TrivialFieldFetchMode.TRACE_ALL);
     }
 
     public Options(boolean debuggingEnabled) {
@@ -487,6 +597,10 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
 
     public boolean isDebuggingEnabled() {
       return debuggingEnabled;
+    }
+
+    public @NotNull TrivialFieldFetchMode getTrivialFieldFetchMode() {
+      return trivialFieldFetchMode;
     }
 
     public boolean shouldTrace(ExecutionInput executionInput) {

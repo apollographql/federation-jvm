@@ -186,3 +186,18 @@ ExecutionInput executionInput = ExecutionInput.newExecutionInput()
         .build();
 graphql.executeAsync(executionInput);
 ```
+
+By default, every field fetch adds a node to the trace, including trivial `PropertyDataFetcher` and POJO getters. On subgraphs that return large lists of entities, these nodes can make up most of
+the cost and size of a trace. To omit them, use `TrivialFieldFetchMode.OMIT_SUCCESSFUL_TRIVIAL_LEAVES`:
+
+```java
+FederatedTracingInstrumentation.Options options = new FederatedTracingInstrumentation.Options(
+        false, null, FederatedTracingInstrumentation.TrivialFieldFetchMode.OMIT_SUCCESSFUL_TRIVIAL_LEAVES);
+
+GraphQL graphql = GraphQL.newGraphQL(graphQLSchema)
+        .instrumentation(new FederatedTracingInstrumentation(options))
+        .build();
+```
+
+This mode only omits successful trivial fetches of scalar and enum fields. Non-trivial data fetchers, trivial object fields, and trivial fetches that throw, report errors, or return `null` are
+still traced. Field-level metrics, such as execution counts and latency, won't be reported for the omitted fetches.
