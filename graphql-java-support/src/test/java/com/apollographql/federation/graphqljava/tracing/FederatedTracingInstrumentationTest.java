@@ -6,6 +6,7 @@ import static com.apollographql.federation.graphqljava.tracing.FederatedTracingI
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.apollographql.federation.graphqljava.FileUtils;
@@ -13,15 +14,25 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
 import graphql.GraphQLException;
+import graphql.execution.AsyncExecutionStrategy;
+import graphql.execution.ResultPath;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import mdg.engine.proto.Reports;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -288,6 +299,269 @@ class FederatedTracingInstrumentationTest {
     extensions = result.get("extensions");
     assertTrue(extensions instanceof Map);
     assertTrue(((Map) extensions).containsKey("ftv1"));
+  }
+
+  @Test
+  void testChildOrderingForWideListsAndNestedLists() throws InvalidProtocolBufferException {
+    int widgetCount = 50;
+    GraphQL wide = buildGraphQL(widgetCount, 3, 4, null);
+
+    Reports.Trace trace =
+        parseTrace(
+            wide.execute(createExecutionInput("{ widgets { foo, bar }, listOfLists { bar, foo } }"))
+                .toSpecification());
+
+    assertEquals(2, trace.getRoot().getChildCount());
+
+    Reports.Trace.Node widgets = trace.getRoot().getChild(0);
+    assertEquals("widgets", widgets.getResponseName());
+    assertEquals(widgetCount, widgets.getChildCount());
+    for (int i = 0; i < widgetCount; i++) {
+      Reports.Trace.Node item = widgets.getChild(i);
+      assertEquals(i, item.getIndex(), "widgets[" + i + "] index");
+      assertEquals(2, item.getChildCount(), "widgets[" + i + "] child count");
+      assertEquals("foo", item.getChild(0).getResponseName());
+      assertEquals("bar", item.getChild(1).getResponseName());
+    }
+
+    Reports.Trace.Node listOfLists = trace.getRoot().getChild(1);
+    assertEquals("listOfLists", listOfLists.getResponseName());
+    assertEquals(3, listOfLists.getChildCount());
+    for (int i = 0; i < 3; i++) {
+      Reports.Trace.Node outer = listOfLists.getChild(i);
+      assertEquals(i, outer.getIndex(), "listOfLists[" + i + "] index");
+      assertEquals(4, outer.getChildCount());
+      for (int j = 0; j < 4; j++) {
+        Reports.Trace.Node inner = outer.getChild(j);
+        assertEquals(j, inner.getIndex(), "listOfLists[" + i + "][" + j + "] index");
+        assertEquals(2, inner.getChildCount());
+        // selection order in the query is bar, foo
+        assertEquals("bar", inner.getChild(0).getResponseName());
+        assertEquals("foo", inner.getChild(1).getResponseName());
+      }
+    }
+  }
+
+  @Test
+  void testAliasedAndErrorBearingFieldNodesAreStructurallyUnchanged()
+      throws InvalidProtocolBufferException {
+    Reports.Trace trace =
+        parseTrace(
+            graphql
+                .execute(createExecutionInput("{ widgets { foo, baz: bar } }"))
+                .toSpecification());
+
+    Reports.Trace.Node widgets = trace.getRoot().getChild(0);
+    assertEquals(2, widgets.getChildCount());
+
+    Reports.Trace.Node expectedItem0 =
+        Reports.Trace.Node.newBuilder()
+            .setIndex(0)
+            .addChild(
+                Reports.Trace.Node.newBuilder()
+                    .setResponseName("foo")
+                    .setType("String")
+                    .setParentType("Widget"))
+            .addChild(
+                Reports.Trace.Node.newBuilder()
+                    .setResponseName("baz")
+                    .setOriginalFieldName("bar")
+                    .setType("String")
+                    .setParentType("Widget")
+                    .addError(
+                        Reports.Trace.Error.newBuilder()
+                            .setMessage("whoops")
+                            .addLocation(
+                                Reports.Trace.Location.newBuilder().setLine(1).setColumn(18))))
+            .build();
+    Reports.Trace.Node expectedItem1 = expectedItem0.toBuilder().setIndex(1).build();
+
+    assertEquals(expectedItem0, withoutTimings(widgets.getChild(0)));
+    assertEquals(expectedItem1, withoutTimings(widgets.getChild(1)));
+  }
+
+  @Test
+  void testConcurrentFieldFetchesWithAsyncExecutionStrategy()
+      throws InvalidProtocolBufferException {
+    int widgetCount = 500;
+    ExecutorService executor = Executors.newFixedThreadPool(8);
+    try {
+      GraphQL async = buildGraphQL(widgetCount, 2, 2, executor);
+
+      graphql.ExecutionResult executionResult =
+          async.execute(createExecutionInput("{ widgets { foo, bar }, listOfLists { foo } }"));
+      assertTrue(
+          executionResult.getErrors().isEmpty(), () -> executionResult.getErrors().toString());
+
+      Reports.Trace trace = parseTrace(executionResult.toSpecification());
+
+      // Field nodes: widgets, listOfLists, 2 per widget, 1 per nested list item.
+      int expectedFieldNodes = 2 + widgetCount * 2 + 2 * 2;
+      // Index nodes: one per widget, one per outer list, one per inner item.
+      int expectedIndexNodes = widgetCount + 2 + 2 * 2;
+      int[] counts = new int[2];
+      countNodes(trace.getRoot(), counts);
+      assertEquals(expectedFieldNodes, counts[0], "field node count");
+      assertEquals(expectedIndexNodes, counts[1], "index node count");
+
+      Reports.Trace.Node widgets = trace.getRoot().getChild(0);
+      assertEquals(widgetCount, widgets.getChildCount());
+      for (int i = 0; i < widgetCount; i++) {
+        assertEquals(2, widgets.getChild(i).getChildCount());
+      }
+    } finally {
+      executor.shutdownNow();
+    }
+  }
+
+  @Test
+  void testEditAfterProtoConversionThrows() throws Exception {
+    Class<?> treeClass =
+        Class.forName(
+            "com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation"
+                + "$FederatedTracingState$ProtoBuilderTree");
+    Constructor<?> ctor = treeClass.getDeclaredConstructor();
+    ctor.setAccessible(true);
+    Object tree = ctor.newInstance();
+    Method editBuilder =
+        treeClass.getDeclaredMethod("editBuilder", ResultPath.class, Consumer.class);
+    editBuilder.setAccessible(true);
+    Method toProto = treeClass.getDeclaredMethod("toProto");
+    toProto.setAccessible(true);
+
+    ResultPath fieldPath = ResultPath.rootPath().segment("widgets");
+    Consumer<Reports.Trace.Node.Builder> setName = builder -> builder.setResponseName("widgets");
+    editBuilder.invoke(tree, fieldPath, setName);
+
+    Reports.Trace.Node proto = (Reports.Trace.Node) toProto.invoke(tree);
+    assertEquals(1, proto.getChildCount());
+    assertEquals("widgets", proto.getChild(0).getResponseName());
+    // Conversion is idempotent.
+    assertEquals(proto, toProto.invoke(tree));
+
+    InvocationTargetException thrown =
+        assertThrows(
+            InvocationTargetException.class, () -> editBuilder.invoke(tree, fieldPath, setName));
+    assertTrue(thrown.getCause() instanceof RuntimeException);
+    assertEquals("Cannot edit builder after protobuf conversion.", thrown.getCause().getMessage());
+  }
+
+  @Test
+  void testMissingNonIndexAncestorThrows() throws Exception {
+    Class<?> treeClass =
+        Class.forName(
+            "com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation"
+                + "$FederatedTracingState$ProtoBuilderTree");
+    Constructor<?> ctor = treeClass.getDeclaredConstructor();
+    ctor.setAccessible(true);
+    Object tree = ctor.newInstance();
+    Method editBuilder =
+        treeClass.getDeclaredMethod("editBuilder", ResultPath.class, Consumer.class);
+    editBuilder.setAccessible(true);
+
+    ResultPath orphan = ResultPath.rootPath().segment("widgets").segment(0).segment("foo");
+    Consumer<Reports.Trace.Node.Builder> noop = builder -> {};
+    InvocationTargetException thrown =
+        assertThrows(InvocationTargetException.class, () -> editBuilder.invoke(tree, orphan, noop));
+    assertEquals("Unexpected missing non-index widgets", thrown.getCause().getMessage());
+  }
+
+  /**
+   * Builds a GraphQL instance over the tracing schema with {@code widgetCount} widgets and a {@code
+   * outer x inner} list of lists. When {@code executor} is non-null, every data fetcher returns a
+   * CompletableFuture completed on that executor and Widget.bar does not throw.
+   */
+  private GraphQL buildGraphQL(
+      int widgetCount,
+      int outer,
+      int inner,
+      @org.jetbrains.annotations.Nullable ExecutorService executor) {
+    TypeDefinitionRegistry typeDefs = new SchemaParser().parse(tracingSDL);
+    RuntimeWiring resolvers =
+        RuntimeWiring.newRuntimeWiring()
+            .type(
+                "Query",
+                builder ->
+                    builder
+                        .dataFetcher(
+                            "widgets",
+                            env -> {
+                              List<Object> objects = new ArrayList<>(widgetCount);
+                              for (int i = 0; i < widgetCount; i++) {
+                                objects.add(new Object());
+                              }
+                              return maybeAsync(objects, executor);
+                            })
+                        .dataFetcher(
+                            "listOfLists",
+                            env -> {
+                              List<List<Object>> lists = new ArrayList<>(outer);
+                              for (int i = 0; i < outer; i++) {
+                                List<Object> list = new ArrayList<>(inner);
+                                for (int j = 0; j < inner; j++) {
+                                  list.add(new Object());
+                                }
+                                lists.add(list);
+                              }
+                              return maybeAsync(lists, executor);
+                            })
+                        .dataFetcher("listOfScalars", env -> new String[] {"one"}))
+            .type(
+                "Widget",
+                builder ->
+                    builder
+                        .dataFetcher("foo", env -> maybeAsync("hello world", executor))
+                        .dataFetcher(
+                            "bar",
+                            env -> {
+                              if (executor == null) {
+                                throw new GraphQLException("whoops");
+                              }
+                              return maybeAsync("bar", executor);
+                            }))
+            .build();
+    GraphQLSchema schema = new SchemaGenerator().makeExecutableSchema(typeDefs, resolvers);
+    return GraphQL.newGraphQL(schema)
+        .queryExecutionStrategy(new AsyncExecutionStrategy())
+        .instrumentation(new FederatedTracingInstrumentation())
+        .build();
+  }
+
+  private static Object maybeAsync(
+      Object value, @org.jetbrains.annotations.Nullable ExecutorService executor) {
+    if (executor == null) {
+      return value;
+    }
+    return CompletableFuture.supplyAsync(() -> value, executor);
+  }
+
+  private static Reports.Trace parseTrace(Map<String, Object> result)
+      throws InvalidProtocolBufferException {
+    Object extensions = result.get("extensions");
+    assertTrue(extensions instanceof Map);
+    String ftv1 = ((Map) extensions).get("ftv1").toString();
+    return Reports.Trace.parseFrom(Base64.getDecoder().decode(ftv1));
+  }
+
+  /** Counts field nodes (counts[0]) and index nodes (counts[1]) below the given node. */
+  private static void countNodes(Reports.Trace.Node node, int[] counts) {
+    for (Reports.Trace.Node child : node.getChildList()) {
+      if (child.getIdCase() == Reports.Trace.Node.IdCase.INDEX) {
+        counts[1]++;
+      } else {
+        counts[0]++;
+      }
+      countNodes(child, counts);
+    }
+  }
+
+  private static Reports.Trace.Node withoutTimings(Reports.Trace.Node node) {
+    Reports.Trace.Node.Builder builder = node.toBuilder().clearStartTime().clearEndTime();
+    builder.clearChild();
+    for (Reports.Trace.Node child : node.getChildList()) {
+      builder.addChild(withoutTimings(child));
+    }
+    return builder.build();
   }
 
   private static ExecutionInput createExecutionInput(String query) {

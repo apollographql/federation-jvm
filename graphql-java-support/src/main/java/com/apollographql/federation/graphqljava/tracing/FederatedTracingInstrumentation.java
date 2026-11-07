@@ -31,9 +31,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import mdg.engine.proto.Reports;
@@ -311,98 +308,88 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
     /** A thread-safe class for storing field information and converting it to a protobuf. */
     private static class ProtoBuilderTree {
       private final Node root;
-      private final ConcurrentMap<ResultPath, Node> nodesByPath;
-      // We use a whole-tree read-write lock to prevent the protobuf conversion step from
-      // having to acquire each node's lock.
-      private final ReadWriteLock treeLock;
       // This flag is used to ensure protobuf conversion occurs once, and that builders can't
       // be edited afterwards. We intentionally leave this field to be default initialized as
       // false.
-      private boolean isFinalized;
+      //
+      // No lock is needed around builder edits. Each field node's builder is written only by
+      // that field's own fetch completion callback; index placeholder nodes are written once,
+      // at creation, by whichever thread wins the putIfAbsent() race; root errors are added
+      // from beginParse() and beginValidation(), which complete before execution starts; and
+      // graphql-java invokes instrumentExecutionResult(), which calls toProto(), only after
+      // all field fetches have completed. The volatile read here is the only
+      // synchronization on the edit path.
+      private volatile boolean finalized;
 
       public ProtoBuilderTree() {
         root = new Node(Reports.Trace.Node.newBuilder());
-        nodesByPath = new ConcurrentHashMap<>();
-        nodesByPath.put(ResultPath.rootPath(), root);
-        treeLock = new ReentrantReadWriteLock();
       }
 
       /** Edit builder for the node at the given path (creating it and its parents if needed). */
       public void editBuilder(
           ResultPath path, Consumer<Reports.Trace.Node.Builder> builderConsumer) {
-        Lock l = treeLock.readLock();
-        l.lock();
-        try {
-          if (isFinalized) {
-            throw new RuntimeException("Cannot edit builder after protobuf conversion.");
-          }
-          Node node = getOrCreateNode(path);
-          synchronized (node.builder) {
-            builderConsumer.accept(node.builder);
-          }
-        } finally {
-          l.unlock();
+        if (finalized) {
+          throw new RuntimeException("Cannot edit builder after protobuf conversion.");
         }
+        Node node = getOrCreateNode(path);
+        builderConsumer.accept(node.builder);
       }
 
       /**
-       * Get node for the given path in nodesByPath (creating it and its parents if needed).
+       * Get node for the given path in the trie (creating it and its parents if needed).
        *
-       * <p>Note that {@link #treeLock}'s read lock must be held when calling this method.
+       * <p>This walks the path's parent chain to collect segment values, then descends from the
+       * root one child lookup per level. It never materializes intermediate {@link ResultPath}
+       * instances.
        */
       @NotNull
       private Node getOrCreateNode(ResultPath path) {
-        // Fast path for when the node already exists.
-        Node current = nodesByPath.get(path);
-        if (current != null) {
-          return current;
+        // Collect segment values from the requested path up to (not including) the root.
+        int depth = 0;
+        for (ResultPath p = path; !p.isRootPath(); p = p.getParent()) {
+          depth++;
+        }
+        if (depth == 0) {
+          return root;
+        }
+        Object[] segments = new Object[depth];
+        int i = depth;
+        for (ResultPath p = path; !p.isRootPath(); p = p.getParent()) {
+          segments[--i] = p.getSegmentValue();
         }
 
-        // Find the latest ancestor that exists in the map.
-        List<Object> pathSegments = path.toList();
-        int currentSegmentIndex = pathSegments.size();
-        while (current == null) {
-          if (currentSegmentIndex <= 0) {
-            // The root path's node is inserted at construction time, so this shouldn't
-            // happen.
-            throw new RuntimeException("root path missing from nodesByPath?");
-          }
-          currentSegmentIndex--;
-          ResultPath currentPath =
-              ResultPath.fromList(pathSegments.subList(0, currentSegmentIndex));
-          current = nodesByPath.get(currentPath);
-        }
+        // Travel down from the root to the requested node, creating child nodes along the way
+        // as needed.
+        Node current = root;
+        for (i = 0; i < depth; i++) {
+          Object segment = segments[i];
+          Node child = current.childrenBySegment.get(segment);
+          if (child == null) {
+            Reports.Trace.Node.Builder childBuilder = Reports.Trace.Node.newBuilder();
+            if (segment instanceof Integer) {
+              childBuilder.setIndex((Integer) segment);
+            } else if (i < depth - 1) {
+              // We've encountered a field name node that is an ancestor of the requested
+              // node. However, the fetcher for that field name should have ultimately
+              // called getOrCreateNode() on its node before getOrCreateNode() was called
+              // on the requested node, meaning that this field name node should already
+              // be in the trie. Accordingly, we should never encounter such field name
+              // ancestor nodes, and we throw when we do.
+              throw new RuntimeException("Unexpected missing non-index " + segment);
+            }
+            Node childNode = new Node(childBuilder);
 
-        // Travel back down to the requested node, creating child nodes along the way as
-        // needed.
-        for (; currentSegmentIndex < pathSegments.size(); currentSegmentIndex++) {
-          Node parent = current;
-          ResultPath childPath =
-              ResultPath.fromList(pathSegments.subList(0, currentSegmentIndex + 1));
-          Object childSegment = pathSegments.get(currentSegmentIndex);
-
-          Reports.Trace.Node.Builder childBuilder = Reports.Trace.Node.newBuilder();
-          if (childSegment instanceof Integer) {
-            childBuilder.setIndex((Integer) childSegment);
-          } else if (currentSegmentIndex < pathSegments.size() - 1) {
-            // We've encountered a field name node that is an ancestor of the requested
-            // node. However, the fetcher for that field name should have ultimately
-            // called getOrCreateNode() on its node before getOrCreateNode() was called
-            // on the requested node, meaning that this field name node should already
-            // be in nodesByPath. Accordingly, we should never encounter such field
-            // name ancestor nodes, and we throw when we do.
-            throw new RuntimeException("Unexpected missing non-index " + childSegment);
+            // Note that putIfAbsent() here will give the child node if it already existed,
+            // or null if it didn't (in which case the node passed to putIfAbsent() becomes
+            // the child node). Only the thread that inserted the node adds it to the
+            // parent's ordered children list, so each node appears there exactly once.
+            child = current.childrenBySegment.putIfAbsent(segment, childNode);
+            if (child == null) {
+              child = childNode;
+              current.children.add(childNode);
+            }
           }
-          Node childNode = new Node(childBuilder);
-
-          // Note that putIfAbsent() here will give the child node if it already existed,
-          // or null if it didn't (in which case the node passed to putIfAbsent() becomes
-          // the child node).
-          current = nodesByPath.putIfAbsent(childPath, childNode);
-          if (current == null) {
-            current = childNode;
-            parent.children.add(childNode);
-          }
+          current = child;
         }
 
         return current;
@@ -412,28 +399,22 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
        * Convert the entire builder tree to protobuf, forming the parent-child relationships as
        * needed.
        *
-       * <p>Note that no builder may be edited after this method is called.
+       * <p>Note that no builder may be edited after this method is called. This method is
+       * synchronized only so that the one-time conversion is idempotent if it is ever called
+       * concurrently; it is off the per-field hot path.
        */
       @NotNull
-      public Reports.Trace.Node toProto() {
-        Lock l = treeLock.writeLock();
-        l.lock();
-        try {
-          if (!isFinalized) {
-            buildDescendants(root);
-            isFinalized = true;
-          }
-          return root.builder.build();
-        } finally {
-          l.unlock();
+      public synchronized Reports.Trace.Node toProto() {
+        if (!finalized) {
+          buildDescendants(root);
+          finalized = true;
         }
+        return root.builder.build();
       }
 
       /**
        * Recursively build the protobuf builder for the given node, forming the parent-child
        * relationships between builders of descendant nodes as needed.
-       *
-       * <p>Note that {@link #treeLock}'s write lock must be held when calling this method.
        */
       private void buildDescendants(Node node) {
         for (Node childNode : node.children) {
@@ -444,10 +425,15 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
 
       private static class Node {
         public final Reports.Trace.Node.Builder builder;
+        // Children keyed by result path segment value (String for fields, Integer for list
+        // indices), used for lookup.
+        public final ConcurrentMap<Object, Node> childrenBySegment;
+        // Children in insertion order, used for protobuf output.
         public final ConcurrentLinkedQueue<Node> children;
 
         public Node(Reports.Trace.Node.Builder builder) {
           this.builder = builder;
+          this.childrenBySegment = new ConcurrentHashMap<>();
           this.children = new ConcurrentLinkedQueue<>();
         }
       }
