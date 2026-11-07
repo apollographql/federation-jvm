@@ -8,7 +8,11 @@ type Gadget {
     status: Status
     tags: [String!]
     wrapped: String
+
+    # trivial async leaves
     asyncValue: String
+    publishedValue: String
+    reactiveValue: String
 
     # non-trivial leaf
     resolved: String

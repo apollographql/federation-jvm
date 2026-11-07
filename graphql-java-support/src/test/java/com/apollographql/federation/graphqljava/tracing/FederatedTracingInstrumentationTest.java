@@ -18,6 +18,7 @@ import graphql.GraphQL;
 import graphql.GraphQLException;
 import graphql.GraphqlErrorBuilder;
 import graphql.execution.DataFetcherResult;
+import graphql.execution.instrumentation.FieldFetchingInstrumentationContext;
 import graphql.execution.instrumentation.InstrumentationContext;
 import graphql.execution.instrumentation.InstrumentationState;
 import graphql.execution.instrumentation.parameters.InstrumentationCreateStateParameters;
@@ -36,6 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -43,11 +45,12 @@ import java.util.stream.Collectors;
 import mdg.engine.proto.Reports;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.FlowAdapters;
 
 class FederatedTracingInstrumentationTest {
   private static final long SLOW_FETCH_MILLIS = 20;
   private static final String TRIVIAL_LEAVES_QUERY =
-      "{ gadgets { id status tags wrapped asyncValue resolved } }";
+      "{ gadgets { id status tags wrapped resolved } }";
 
   private final String tracingSDL = FileUtils.readResource("schemas/tracingSchema.graphql");
   private final String trivialFetchSDL =
@@ -330,7 +333,7 @@ class FederatedTracingInstrumentationTest {
     Reports.Trace.Node traceAllGadget =
         firstGadget(execute(TrivialFieldFetchMode.TRACE_ALL, TRIVIAL_LEAVES_QUERY));
 
-    Set<String> expected = Set.of("id", "status", "tags", "wrapped", "asyncValue", "resolved");
+    Set<String> expected = Set.of("id", "status", "tags", "wrapped", "resolved");
     assertEquals(expected, responseNames(defaultGadget));
     assertEquals(expected, responseNames(traceAllGadget));
   }
@@ -363,8 +366,48 @@ class FederatedTracingInstrumentationTest {
     assertEquals("ACTIVE", gadget.get("status"));
     assertEquals(List.of("a", "b"), gadget.get("tags"));
     assertEquals("wrapped", gadget.get("wrapped"));
-    assertEquals("async", gadget.get("asyncValue"));
     assertEquals("resolved", gadget.get("resolved"));
+  }
+
+  @Test
+  void testAsyncTrivialLeavesAreKept() throws InvalidProtocolBufferException {
+    String query = "{ gadgets { id asyncValue publishedValue reactiveValue } }";
+    Reports.Trace trace = executeOmittingTrivialLeaves(query);
+
+    Reports.Trace.Node gadget = firstGadget(trace);
+    assertEquals(Set.of("asyncValue", "publishedValue", "reactiveValue"), responseNames(gadget));
+    gadget.getChildList().forEach(node -> assertEquals(0, node.getErrorCount()));
+
+    Map<String, Object> data =
+        createTrivialFetchGraphQL(
+                new FederatedTracingInstrumentation(
+                    new Options(false, null, TrivialFieldFetchMode.OMIT_SUCCESSFUL_TRIVIAL_LEAVES)))
+            .execute(createExecutionInput(query))
+            .getData();
+    Map<String, Object> firstGadget = ((List<Map<String, Object>>) data.get("gadgets")).get(0);
+    assertEquals("async", firstGadget.get("asyncValue"));
+    assertEquals("published", firstGadget.get("publishedValue"));
+    assertEquals("published", firstGadget.get("reactiveValue"));
+  }
+
+  @Test
+  void testSubclassBeginFieldFetchIsCalledInDefaultMode() {
+    AtomicInteger fetches = new AtomicInteger();
+    FederatedTracingInstrumentation instrumentation =
+        new FederatedTracingInstrumentation() {
+          @Override
+          public InstrumentationContext<Object> beginFieldFetch(
+              InstrumentationFieldFetchParameters parameters, InstrumentationState state) {
+            fetches.incrementAndGet();
+            return super.beginFieldFetch(parameters, state);
+          }
+        };
+
+    createTrivialFetchGraphQL(instrumentation)
+        .execute(createExecutionInput("{ gadgets { id resolved } }"));
+
+    // gadgets, plus id and resolved for each of the two gadgets
+    assertEquals(5, fetches.get());
   }
 
   @Test
@@ -451,8 +494,8 @@ class FederatedTracingInstrumentationTest {
           throw new AssertionError("DataFetchingEnvironment should not be read");
         };
 
-    InstrumentationContext<Object> context =
-        instrumentation.beginFieldFetch(
+    FieldFetchingInstrumentationContext context =
+        instrumentation.beginFieldFetching(
             new InstrumentationFieldFetchParameters(null, environment, null, true), state);
 
     assertNotNull(context);
@@ -553,6 +596,32 @@ class FederatedTracingInstrumentationTest {
 
     public CompletableFuture<String> getAsyncValue() {
       return CompletableFuture.supplyAsync(() -> "async");
+    }
+
+    public org.reactivestreams.Publisher<String> getReactiveValue() {
+      return FlowAdapters.toPublisher(getPublishedValue());
+    }
+
+    public Flow.Publisher<String> getPublishedValue() {
+      return subscriber ->
+          subscriber.onSubscribe(
+              new Flow.Subscription() {
+                private boolean done;
+
+                @Override
+                public void request(long n) {
+                  if (!done) {
+                    done = true;
+                    subscriber.onNext("published");
+                    subscriber.onComplete();
+                  }
+                }
+
+                @Override
+                public void cancel() {
+                  done = true;
+                }
+              });
     }
 
     public Detail getDetail() {
