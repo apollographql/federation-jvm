@@ -187,8 +187,13 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
     return graphQLErrors;
   }
 
-  /** Stores timing information and a map of nodes for field information. */
-  private static class FederatedTracingState implements InstrumentationState {
+  /**
+   * Stores timing information and a map of nodes for field information.
+   *
+   * <p>Package-private (rather than private) only so that tests and benchmarks in this package can
+   * reach {@link ProtoBuilderTree} directly.
+   */
+  static class FederatedTracingState implements InstrumentationState {
     private final Instant startRequestTime;
     private final long startRequestNanos;
     private final ProtoBuilderTree protoBuilderTree;
@@ -306,19 +311,27 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
     }
 
     /** A thread-safe class for storing field information and converting it to a protobuf. */
-    private static class ProtoBuilderTree {
+    static class ProtoBuilderTree {
       private final Node root;
       // This flag is used to ensure protobuf conversion occurs once, and that builders can't
       // be edited afterwards. We intentionally leave this field to be default initialized as
       // false.
       //
-      // No lock is needed around builder edits. Each field node's builder is written only by
-      // that field's own fetch completion callback; index placeholder nodes are written once,
-      // at creation, by whichever thread wins the putIfAbsent() race; root errors are added
-      // from beginParse() and beginValidation(), which complete before execution starts; and
-      // graphql-java invokes instrumentExecutionResult(), which calls toProto(), only after
-      // all field fetches have completed. The volatile read here is the only
-      // synchronization on the edit path.
+      // There is no tree-wide lock. Edits never contend with each other: each field node's
+      // builder is written only by that field's own fetch completion callback; index
+      // placeholder nodes are written once, at creation, before being published through
+      // putIfAbsent(); and root errors are added from beginParse() and beginValidation(),
+      // which complete before execution starts.
+      //
+      // Edits can, however, overlap toProto(). graphql-java normally completes the execution
+      // result (and so calls toProto()) only after every field fetch has completed, but that
+      // is not guaranteed: for example, when the ExecutionInput is cancelled the result is
+      // completed while fetches may still be in flight, and their completion callbacks then
+      // call editBuilder() late. To keep such an edit from mutating a builder while build()
+      // reads it, toProto() sets this flag before building anything and builds each node
+      // inside that node's builder monitor, and editBuilder() re-checks the flag inside the
+      // same monitor. Those monitors are per-node and uncontended, so they add no shared
+      // state to the edit path; the tree-wide lock this replaces was the contended part.
       private volatile boolean finalized;
 
       public ProtoBuilderTree() {
@@ -328,98 +341,105 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
       /** Edit builder for the node at the given path (creating it and its parents if needed). */
       public void editBuilder(
           ResultPath path, Consumer<Reports.Trace.Node.Builder> builderConsumer) {
+        // Checked early so that an edit arriving after conversion does not grow the trie.
         if (finalized) {
           throw new RuntimeException("Cannot edit builder after protobuf conversion.");
         }
-        Node node = getOrCreateNode(path);
-        builderConsumer.accept(node.builder);
+        Node node = getOrCreateNode(path, true);
+        synchronized (node.builder) {
+          if (finalized) {
+            throw new RuntimeException("Cannot edit builder after protobuf conversion.");
+          }
+          builderConsumer.accept(node.builder);
+        }
       }
 
       /**
        * Get node for the given path in the trie (creating it and its parents if needed).
        *
-       * <p>This walks the path's parent chain to collect segment values, then descends from the
-       * root one child lookup per level. It never materializes intermediate {@link ResultPath}
-       * instances.
+       * <p>This recurses up the path's parent chain to the root, then descends one child lookup per
+       * level on the way back. It never materializes intermediate {@link ResultPath} instances.
+       *
+       * @param isRequested whether {@code path} is the path originally requested, as opposed to one
+       *     of its ancestors
        */
       @NotNull
-      private Node getOrCreateNode(ResultPath path) {
-        // Collect segment values from the requested path up to (not including) the root.
-        int depth = 0;
-        for (ResultPath p = path; !p.isRootPath(); p = p.getParent()) {
-          depth++;
-        }
-        if (depth == 0) {
+      private Node getOrCreateNode(ResultPath path, boolean isRequested) {
+        if (path.isRootPath()) {
           return root;
         }
-        Object[] segments = new Object[depth];
-        int i = depth;
-        for (ResultPath p = path; !p.isRootPath(); p = p.getParent()) {
-          segments[--i] = p.getSegmentValue();
+        Node parent = getOrCreateNode(path.getParent(), false);
+        Object segment = path.getSegmentValue();
+        Node child = parent.childrenBySegment.get(segment);
+        if (child != null) {
+          return child;
         }
 
-        // Travel down from the root to the requested node, creating child nodes along the way
-        // as needed.
-        Node current = root;
-        for (i = 0; i < depth; i++) {
-          Object segment = segments[i];
-          Node child = current.childrenBySegment.get(segment);
-          if (child == null) {
-            Reports.Trace.Node.Builder childBuilder = Reports.Trace.Node.newBuilder();
-            if (segment instanceof Integer) {
-              childBuilder.setIndex((Integer) segment);
-            } else if (i < depth - 1) {
-              // We've encountered a field name node that is an ancestor of the requested
-              // node. However, the fetcher for that field name should have ultimately
-              // called getOrCreateNode() on its node before getOrCreateNode() was called
-              // on the requested node, meaning that this field name node should already
-              // be in the trie. Accordingly, we should never encounter such field name
-              // ancestor nodes, and we throw when we do.
-              throw new RuntimeException("Unexpected missing non-index " + segment);
-            }
-            Node childNode = new Node(childBuilder);
-
-            // Note that putIfAbsent() here will give the child node if it already existed,
-            // or null if it didn't (in which case the node passed to putIfAbsent() becomes
-            // the child node). Only the thread that inserted the node adds it to the
-            // parent's ordered children list, so each node appears there exactly once.
-            child = current.childrenBySegment.putIfAbsent(segment, childNode);
-            if (child == null) {
-              child = childNode;
-              current.children.add(childNode);
-            }
-          }
-          current = child;
+        Reports.Trace.Node.Builder childBuilder = Reports.Trace.Node.newBuilder();
+        if (segment instanceof Integer) {
+          childBuilder.setIndex((Integer) segment);
+        } else if (!isRequested) {
+          // We've encountered a field name node that is an ancestor of the requested
+          // node. However, the fetcher for that field name should have ultimately
+          // called getOrCreateNode() on its node before getOrCreateNode() was called
+          // on the requested node, meaning that this field name node should already
+          // be in the trie. Accordingly, we should never encounter such field name
+          // ancestor nodes, and we throw when we do.
+          throw new RuntimeException("Unexpected missing non-index " + segment);
         }
+        Node childNode = new Node(childBuilder);
 
-        return current;
+        // Note that putIfAbsent() here will give the child node if it already existed,
+        // or null if it didn't (in which case the node passed to putIfAbsent() becomes
+        // the child node). Only the thread that inserted the node adds it to the
+        // parent's ordered children list, so each node appears there exactly once.
+        child = parent.childrenBySegment.putIfAbsent(segment, childNode);
+        if (child == null) {
+          child = childNode;
+          parent.children.add(childNode);
+        }
+        return child;
       }
 
       /**
        * Convert the entire builder tree to protobuf, forming the parent-child relationships as
        * needed.
        *
-       * <p>Note that no builder may be edited after this method is called. This method is
-       * synchronized only so that the one-time conversion is idempotent if it is ever called
-       * concurrently; it is off the per-field hot path.
+       * <p>Note that no builder may be edited after this method is called; a late edit throws. This
+       * method is synchronized only so that the one-time conversion is idempotent if it is ever
+       * called concurrently; it is off the per-field hot path.
        */
       @NotNull
       public synchronized Reports.Trace.Node toProto() {
         if (!finalized) {
-          buildDescendants(root);
+          // Set before building so that no edit can enter a builder monitor after we have
+          // built that builder (see the comment on this field).
           finalized = true;
+          buildDescendants(root);
         }
-        return root.builder.build();
+        synchronized (root.builder) {
+          return root.builder.build();
+        }
       }
 
       /**
        * Recursively build the protobuf builder for the given node, forming the parent-child
        * relationships between builders of descendant nodes as needed.
+       *
+       * <p>Note that {@link #finalized} must be set before calling this method. Each builder is
+       * read and written only inside its own monitor, so this waits out any edit that was already
+       * in progress when the flag was set.
        */
       private void buildDescendants(Node node) {
         for (Node childNode : node.children) {
           buildDescendants(childNode);
-          node.builder.addChild(childNode.builder.build());
+          Reports.Trace.Node child;
+          synchronized (childNode.builder) {
+            child = childNode.builder.build();
+          }
+          synchronized (node.builder) {
+            node.builder.addChild(child);
+          }
         }
       }
 

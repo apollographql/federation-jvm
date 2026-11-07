@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.apollographql.federation.graphqljava.FileUtils;
+import com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.FederatedTracingState.ProtoBuilderTree;
 import com.google.protobuf.InvalidProtocolBufferException;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
@@ -21,9 +22,6 @@ import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -415,55 +413,33 @@ class FederatedTracingInstrumentationTest {
   }
 
   @Test
-  void testEditAfterProtoConversionThrows() throws Exception {
-    Class<?> treeClass =
-        Class.forName(
-            "com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation"
-                + "$FederatedTracingState$ProtoBuilderTree");
-    Constructor<?> ctor = treeClass.getDeclaredConstructor();
-    ctor.setAccessible(true);
-    Object tree = ctor.newInstance();
-    Method editBuilder =
-        treeClass.getDeclaredMethod("editBuilder", ResultPath.class, Consumer.class);
-    editBuilder.setAccessible(true);
-    Method toProto = treeClass.getDeclaredMethod("toProto");
-    toProto.setAccessible(true);
+  void testEditAfterProtoConversionThrows() {
+    ProtoBuilderTree tree = new ProtoBuilderTree();
 
     ResultPath fieldPath = ResultPath.rootPath().segment("widgets");
     Consumer<Reports.Trace.Node.Builder> setName = builder -> builder.setResponseName("widgets");
-    editBuilder.invoke(tree, fieldPath, setName);
+    tree.editBuilder(fieldPath, setName);
 
-    Reports.Trace.Node proto = (Reports.Trace.Node) toProto.invoke(tree);
+    Reports.Trace.Node proto = tree.toProto();
     assertEquals(1, proto.getChildCount());
     assertEquals("widgets", proto.getChild(0).getResponseName());
     // Conversion is idempotent.
-    assertEquals(proto, toProto.invoke(tree));
+    assertEquals(proto, tree.toProto());
 
-    InvocationTargetException thrown =
-        assertThrows(
-            InvocationTargetException.class, () -> editBuilder.invoke(tree, fieldPath, setName));
-    assertTrue(thrown.getCause() instanceof RuntimeException);
-    assertEquals("Cannot edit builder after protobuf conversion.", thrown.getCause().getMessage());
+    RuntimeException thrown =
+        assertThrows(RuntimeException.class, () -> tree.editBuilder(fieldPath, setName));
+    assertEquals("Cannot edit builder after protobuf conversion.", thrown.getMessage());
   }
 
   @Test
-  void testMissingNonIndexAncestorThrows() throws Exception {
-    Class<?> treeClass =
-        Class.forName(
-            "com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation"
-                + "$FederatedTracingState$ProtoBuilderTree");
-    Constructor<?> ctor = treeClass.getDeclaredConstructor();
-    ctor.setAccessible(true);
-    Object tree = ctor.newInstance();
-    Method editBuilder =
-        treeClass.getDeclaredMethod("editBuilder", ResultPath.class, Consumer.class);
-    editBuilder.setAccessible(true);
+  void testMissingNonIndexAncestorThrows() {
+    ProtoBuilderTree tree = new ProtoBuilderTree();
 
     ResultPath orphan = ResultPath.rootPath().segment("widgets").segment(0).segment("foo");
     Consumer<Reports.Trace.Node.Builder> noop = builder -> {};
-    InvocationTargetException thrown =
-        assertThrows(InvocationTargetException.class, () -> editBuilder.invoke(tree, orphan, noop));
-    assertEquals("Unexpected missing non-index widgets", thrown.getCause().getMessage());
+    RuntimeException thrown =
+        assertThrows(RuntimeException.class, () -> tree.editBuilder(orphan, noop));
+    assertEquals("Unexpected missing non-index widgets", thrown.getMessage());
   }
 
   /**
