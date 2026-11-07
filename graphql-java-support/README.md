@@ -203,8 +203,8 @@ This mode only omits trivial fetches of scalar and enum fields that succeed sync
 
 * non-trivial data fetchers
 * trivial object fields
-* trivial fetches that return a `CompletableFuture` or a publisher, since these may stand for real async work
+* trivial fetches whose value is a `CompletableFuture` or a publisher, since these may stand for real async work
 * trivial fetches that throw, return a `DataFetcherResult` with errors, or return `null`
 
 Errors raised after the fetch, such as scalar or enum coercion errors, aren't recorded on trace nodes in either mode, but in this mode the field's node is also omitted. Field-level metrics, such as
-execution counts and latency, won't be reported for the omitted fetches.
+execution counts and latency, won't be reported for the omitted fetches, and a list whose elements select only omitted fields has no index nodes in the trace.

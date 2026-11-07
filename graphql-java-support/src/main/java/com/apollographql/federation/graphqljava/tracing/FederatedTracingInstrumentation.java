@@ -591,7 +591,8 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
      * <ul>
      *   <li>Its data fetcher is a {@link graphql.TrivialDataFetcher}.
      *   <li>The field's unwrapped type is a scalar or enum.
-     *   <li>The fetched value isn't a {@link CompletableFuture} or a publisher.
+     *   <li>The fetched value itself isn't a {@link CompletableFuture} or a publisher. A list of
+     *       futures counts as a plain list.
      *   <li>The fetch didn't throw or return a {@link DataFetcherResult} with errors.
      *   <li>The fetched value isn't null.
      * </ul>
@@ -602,7 +603,11 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
      *
      * <p>This reduces the cost and size of traces on subgraphs that return large lists of entities.
      * In exchange, field-level metrics such as execution counts and latency won't be reported for
-     * the omitted fetches.
+     * the omitted fetches. A list whose elements select only omitted fields has no index nodes
+     * either, so the trace doesn't show how many elements it had.
+     *
+     * <p>Trivial fetches are handled in {@link #beginFieldFetching} in this mode, so subclasses
+     * that override {@link #beginFieldFetch} are only called for non-trivial fetches.
      */
     OMIT_SUCCESSFUL_TRIVIAL_LEAVES
   }
