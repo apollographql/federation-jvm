@@ -3,14 +3,14 @@ package com.apollographql.federation.graphqljava.tracing;
 import com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.FederatedTracingState.ProtoBuilderTree;
 import graphql.execution.ResultPath;
 import java.util.List;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -20,8 +20,6 @@ import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Group;
-import org.openjdk.jmh.annotations.GroupThreads;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
@@ -29,8 +27,8 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.Blackhole;
 
 /**
  * Benchmark for {@link ProtoBuilderTree}: the path-keyed map implementation it replaced ({@link
@@ -106,110 +104,72 @@ public class ProtoBuilderTreeBenchmark {
   }
 
   // ---------------------------------------------------------------------------------------
-  // Eight threads sharing one tree: each op is one thread writing its 1/8 slice of the items
-  // into a tree that is replaced at a barrier before every invocation, so every field edit is
-  // a first write (a map or trie miss), as it is in a real request. At the end of an
-  // iteration, threads stop arriving at the barrier; the remaining waiters time out, which
-  // breaks the barrier, and the barrier is reset before the next iteration. The handful of
-  // invocations lost that way is noise against the ~1s iteration.
+  // Eight threads sharing one tree: one op builds a complete tree, with the item edits split
+  // into eight slices that run concurrently on a fixed pool of eight threads, as field fetch
+  // callbacks do under AsyncExecutionStrategy. Every field edit is a first write (a map or trie
+  // miss), as it is in a real request. Task submission and the wait for completion cost the
+  // same for both trees.
   // ---------------------------------------------------------------------------------------
 
   @State(Scope.Benchmark)
-  public static class SliceAssigner {
-    final AtomicInteger next = new AtomicInteger();
-  }
+  public static class Pool {
+    ExecutorService executor;
 
-  @State(Scope.Thread)
-  public static class Slice {
-    int from;
-    int to;
+    @Setup(Level.Trial)
+    public void setup() {
+      executor = Executors.newFixedThreadPool(THREADS);
+    }
 
-    @Setup
-    public void setup(SliceAssigner assigner) {
-      int slice = assigner.next.getAndIncrement() % THREADS;
-      int perThread = (ITEMS + THREADS - 1) / THREADS;
-      from = slice * perThread * FIELDS.length;
-      to = Math.min(PATHS.length, (slice + 1) * perThread * FIELDS.length);
+    @TearDown(Level.Trial)
+    public void tearDown() {
+      executor.shutdownNow();
     }
   }
 
-  @State(Scope.Group)
-  public static class SharedOld {
-    @Setup(Level.Iteration)
-    public void reset() {
-      barrier.reset();
-    }
+  static final int PER_SLICE = ((ITEMS + THREADS - 1) / THREADS) * FIELDS.length;
 
-    volatile OldTree tree;
-    final CyclicBarrier barrier =
-        new CyclicBarrier(
-            THREADS,
-            () -> {
-              OldTree t = new OldTree();
-              t.editBuilder(ENTITIES, SET_ANCESTOR);
-              t.editBuilder(CHILDREN, SET_ANCESTOR);
-              tree = t;
-            });
-  }
-
-  @State(Scope.Group)
-  public static class SharedNew {
-    @Setup(Level.Iteration)
-    public void reset() {
-      barrier.reset();
-    }
-
-    volatile ProtoBuilderTree tree;
-    final CyclicBarrier barrier =
-        new CyclicBarrier(
-            THREADS,
-            () -> {
-              ProtoBuilderTree t = new ProtoBuilderTree();
-              t.editBuilder(ENTITIES, SET_ANCESTOR);
-              t.editBuilder(CHILDREN, SET_ANCESTOR);
-              tree = t;
-            });
+  @Benchmark
+  public Reports.Trace.Node oldTreeEightThreads(Pool pool) throws InterruptedException {
+    OldTree tree = new OldTree();
+    tree.editBuilder(ENTITIES, SET_ANCESTOR);
+    tree.editBuilder(CHILDREN, SET_ANCESTOR);
+    runSlices(pool.executor, (path) -> tree.editBuilder(path, b -> setField(b, path)));
+    return tree.toProto();
   }
 
   @Benchmark
-  @Group("oldTreeEightThreads")
-  @GroupThreads(THREADS)
-  public void oldTreeEightThreads(SharedOld shared, Slice slice, Blackhole bh)
-      throws InterruptedException {
-    if (!awaitOrGiveUp(shared.barrier)) {
-      return;
-    }
-    OldTree tree = shared.tree;
-    for (int i = slice.from; i < slice.to; i++) {
-      ResultPath path = PATHS[i];
-      tree.editBuilder(path, b -> setField(b, path));
-    }
-    bh.consume(tree);
+  public Reports.Trace.Node newTreeEightThreads(Pool pool) throws InterruptedException {
+    ProtoBuilderTree tree = new ProtoBuilderTree();
+    tree.editBuilder(ENTITIES, SET_ANCESTOR);
+    tree.editBuilder(CHILDREN, SET_ANCESTOR);
+    runSlices(pool.executor, (path) -> tree.editBuilder(path, b -> setField(b, path)));
+    return tree.toProto();
   }
 
-  @Benchmark
-  @Group("newTreeEightThreads")
-  @GroupThreads(THREADS)
-  public void newTreeEightThreads(SharedNew shared, Slice slice, Blackhole bh)
+  /** Applies {@code edit} to every path, in {@link #THREADS} concurrent slices. */
+  private static void runSlices(ExecutorService executor, Consumer<ResultPath> edit)
       throws InterruptedException {
-    if (!awaitOrGiveUp(shared.barrier)) {
-      return;
+    CountDownLatch done = new CountDownLatch(THREADS);
+    AtomicReference<Throwable> failure = new AtomicReference<>();
+    for (int t = 0; t < THREADS; t++) {
+      int from = t * PER_SLICE;
+      int to = Math.min(PATHS.length, from + PER_SLICE);
+      executor.execute(
+          () -> {
+            try {
+              for (int i = from; i < to; i++) {
+                edit.accept(PATHS[i]);
+              }
+            } catch (Throwable e) {
+              failure.compareAndSet(null, e);
+            } finally {
+              done.countDown();
+            }
+          });
     }
-    ProtoBuilderTree tree = shared.tree;
-    for (int i = slice.from; i < slice.to; i++) {
-      ResultPath path = PATHS[i];
-      tree.editBuilder(path, b -> setField(b, path));
-    }
-    bh.consume(tree);
-  }
-
-  private static boolean awaitOrGiveUp(CyclicBarrier barrier) throws InterruptedException {
-    try {
-      barrier.await(200, TimeUnit.MILLISECONDS);
-      return true;
-    } catch (TimeoutException | BrokenBarrierException e) {
-      // Other group threads have finished the iteration.
-      return false;
+    done.await();
+    if (failure.get() != null) {
+      throw new IllegalStateException(failure.get());
     }
   }
 

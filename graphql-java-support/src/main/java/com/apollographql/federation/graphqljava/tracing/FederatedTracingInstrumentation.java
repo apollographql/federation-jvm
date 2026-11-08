@@ -342,15 +342,17 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
       public void editBuilder(
           ResultPath path, Consumer<Reports.Trace.Node.Builder> builderConsumer) {
         // Checked early so that an edit arriving after conversion does not grow the trie.
-        if (finalized) {
-          throw new RuntimeException("Cannot edit builder after protobuf conversion.");
-        }
+        checkNotFinalized();
         Node node = getOrCreateNode(path, true);
         synchronized (node.builder) {
-          if (finalized) {
-            throw new RuntimeException("Cannot edit builder after protobuf conversion.");
-          }
+          checkNotFinalized();
           builderConsumer.accept(node.builder);
+        }
+      }
+
+      private void checkNotFinalized() {
+        if (finalized) {
+          throw new RuntimeException("Cannot edit builder after protobuf conversion.");
         }
       }
 
@@ -436,6 +438,12 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
           Reports.Trace.Node child;
           synchronized (childNode.builder) {
             child = childNode.builder.build();
+          }
+          if (child.getIdCase() == Reports.Trace.Node.IdCase.ID_NOT_SET) {
+            // A field node created by an edit that raced this conversion and was then rejected
+            // in editBuilder(), so it was never written. Omit it (and anything below it) rather
+            // than emitting a node with neither a response name nor an index.
+            continue;
           }
           synchronized (node.builder) {
             node.builder.addChild(child);
