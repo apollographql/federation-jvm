@@ -1,6 +1,5 @@
 package com.apollographql.federation.graphqljava.tracing;
 
-import com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation.FederatedTracingState.ProtoBuilderTree;
 import graphql.execution.ResultPath;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,12 +30,13 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 
 /**
- * Benchmark for {@link ProtoBuilderTree}: the path-keyed map implementation it replaced ({@link
- * OldTree}) against the current trie.
+ * Benchmark for {@code FederatedTracingState.ProtoBuilderTree}: the path-keyed map and read-write
+ * lock implementation it replaced ({@link OldTree}) against the trie ({@link NewTree}).
  *
  * <p>The shape is an {@code _entities} response with 1,500 list items under {@code
- * /_entities/0/children}, each with two leaf fields. {@link OldTree} is a copy of the previous
- * implementation kept here as a private fixture.
+ * /_entities/0/children}, each with two leaf fields. Both trees are copied here as private fixtures
+ * because the real class is private. {@link NewTree} must be kept identical to {@code
+ * FederatedTracingInstrumentation.FederatedTracingState.ProtoBuilderTree}.
  *
  * <p>Run with {@code ./gradlew :federation-graphql-java-support:jmh}.
  */
@@ -94,7 +94,7 @@ public class ProtoBuilderTreeBenchmark {
 
   @Benchmark
   public Reports.Trace.Node newTreeSingleThread() {
-    ProtoBuilderTree tree = new ProtoBuilderTree();
+    NewTree tree = new NewTree();
     tree.editBuilder(ENTITIES, SET_ANCESTOR);
     tree.editBuilder(CHILDREN, SET_ANCESTOR);
     for (ResultPath path : PATHS) {
@@ -139,7 +139,7 @@ public class ProtoBuilderTreeBenchmark {
 
   @Benchmark
   public Reports.Trace.Node newTreeEightThreads(Pool pool) throws InterruptedException {
-    ProtoBuilderTree tree = new ProtoBuilderTree();
+    NewTree tree = new NewTree();
     tree.editBuilder(ENTITIES, SET_ANCESTOR);
     tree.editBuilder(CHILDREN, SET_ANCESTOR);
     runSlices(pool.executor, (path) -> tree.editBuilder(path, b -> setField(b, path)));
@@ -315,6 +315,162 @@ public class ProtoBuilderTreeBenchmark {
 
       public Node(Reports.Trace.Node.Builder builder) {
         this.builder = builder;
+        this.children = new ConcurrentLinkedQueue<>();
+      }
+    }
+  }
+
+  /** Copy of the current implementation: trie. Keep in sync with the real class. */
+  private static class NewTree {
+    private final Node root;
+    // This flag is used to ensure protobuf conversion occurs once, and that builders can't
+    // be edited afterwards. We intentionally leave this field to be default initialized as
+    // false.
+    //
+    // There is no tree-wide lock. Edits never contend with each other: each field node's
+    // builder is written only by that field's own fetch completion callback; index
+    // placeholder nodes are written once, at creation, before being published through
+    // putIfAbsent(); and root errors are added from beginParse() and beginValidation(),
+    // which complete before execution starts.
+    //
+    // Edits can, however, overlap toProto(). graphql-java normally completes the execution
+    // result (and so calls toProto()) only after every field fetch has completed, but that
+    // is not guaranteed: for example, when the ExecutionInput is cancelled the result is
+    // completed while fetches may still be in flight, and their completion callbacks then
+    // call editBuilder() late. To keep such an edit from mutating a builder while build()
+    // reads it, toProto() sets this flag before building anything and builds each node
+    // inside that node's builder monitor, and editBuilder() re-checks the flag inside the
+    // same monitor. Those monitors are per-node and uncontended, so they add no shared
+    // state to the edit path; the tree-wide lock this replaces was the contended part.
+    private volatile boolean finalized;
+
+    public NewTree() {
+      root = new Node(Reports.Trace.Node.newBuilder());
+    }
+
+    /** Edit builder for the node at the given path (creating it and its parents if needed). */
+    public void editBuilder(ResultPath path, Consumer<Reports.Trace.Node.Builder> builderConsumer) {
+      // Checked early so that an edit arriving after conversion does not grow the trie.
+      checkNotFinalized();
+      Node node = getOrCreateNode(path, true);
+      synchronized (node.builder) {
+        checkNotFinalized();
+        builderConsumer.accept(node.builder);
+      }
+    }
+
+    private void checkNotFinalized() {
+      if (finalized) {
+        throw new RuntimeException("Cannot edit builder after protobuf conversion.");
+      }
+    }
+
+    /**
+     * Get node for the given path in the trie (creating it and its parents if needed).
+     *
+     * <p>This recurses up the path's parent chain to the root, then descends one child lookup per
+     * level on the way back. It never materializes intermediate {@link ResultPath} instances.
+     *
+     * @param isRequested whether {@code path} is the path originally requested, as opposed to one
+     *     of its ancestors
+     */
+    @NotNull
+    private Node getOrCreateNode(ResultPath path, boolean isRequested) {
+      if (path.isRootPath()) {
+        return root;
+      }
+      Node parent = getOrCreateNode(path.getParent(), false);
+      Object segment = path.getSegmentValue();
+      Node child = parent.childrenBySegment.get(segment);
+      if (child != null) {
+        return child;
+      }
+
+      Reports.Trace.Node.Builder childBuilder = Reports.Trace.Node.newBuilder();
+      if (segment instanceof Integer) {
+        childBuilder.setIndex((Integer) segment);
+      } else if (!isRequested) {
+        // We've encountered a field name node that is an ancestor of the requested
+        // node. However, the fetcher for that field name should have ultimately
+        // called getOrCreateNode() on its node before getOrCreateNode() was called
+        // on the requested node, meaning that this field name node should already
+        // be in the trie. Accordingly, we should never encounter such field name
+        // ancestor nodes, and we throw when we do.
+        throw new RuntimeException("Unexpected missing non-index " + segment);
+      }
+      Node childNode = new Node(childBuilder);
+
+      // Note that putIfAbsent() here will give the child node if it already existed,
+      // or null if it didn't (in which case the node passed to putIfAbsent() becomes
+      // the child node). Only the thread that inserted the node adds it to the
+      // parent's ordered children list, so each node appears there exactly once.
+      child = parent.childrenBySegment.putIfAbsent(segment, childNode);
+      if (child == null) {
+        child = childNode;
+        parent.children.add(childNode);
+      }
+      return child;
+    }
+
+    /**
+     * Convert the entire builder tree to protobuf, forming the parent-child relationships as
+     * needed.
+     *
+     * <p>Note that no builder may be edited after this method is called; a late edit throws. This
+     * method is synchronized only so that the one-time conversion is idempotent if it is ever
+     * called concurrently; it is off the per-field hot path.
+     */
+    @NotNull
+    public synchronized Reports.Trace.Node toProto() {
+      if (!finalized) {
+        // Set before building so that no edit can enter a builder monitor after we have
+        // built that builder (see the comment on this field).
+        finalized = true;
+        buildDescendants(root);
+      }
+      synchronized (root.builder) {
+        return root.builder.build();
+      }
+    }
+
+    /**
+     * Recursively build the protobuf builder for the given node, forming the parent-child
+     * relationships between builders of descendant nodes as needed.
+     *
+     * <p>Note that {@link #finalized} must be set before calling this method. Each builder is read
+     * and written only inside its own monitor, so this waits out any edit that was already in
+     * progress when the flag was set.
+     */
+    private void buildDescendants(Node node) {
+      for (Node childNode : node.children) {
+        buildDescendants(childNode);
+        Reports.Trace.Node child;
+        synchronized (childNode.builder) {
+          child = childNode.builder.build();
+        }
+        if (child.getIdCase() == Reports.Trace.Node.IdCase.ID_NOT_SET) {
+          // A field node created by an edit that raced this conversion and was then rejected
+          // in editBuilder(), so it was never written. Omit it (and anything below it) rather
+          // than emitting a node with neither a response name nor an index.
+          continue;
+        }
+        synchronized (node.builder) {
+          node.builder.addChild(child);
+        }
+      }
+    }
+
+    private static class Node {
+      public final Reports.Trace.Node.Builder builder;
+      // Children keyed by result path segment value (String for fields, Integer for list
+      // indices), used for lookup.
+      public final ConcurrentMap<Object, Node> childrenBySegment;
+      // Children in insertion order, used for protobuf output.
+      public final ConcurrentLinkedQueue<Node> children;
+
+      public Node(Reports.Trace.Node.Builder builder) {
+        this.builder = builder;
+        this.childrenBySegment = new ConcurrentHashMap<>();
         this.children = new ConcurrentLinkedQueue<>();
       }
     }

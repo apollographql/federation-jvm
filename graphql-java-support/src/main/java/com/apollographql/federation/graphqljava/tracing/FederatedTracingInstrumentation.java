@@ -187,13 +187,8 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
     return graphQLErrors;
   }
 
-  /**
-   * Stores timing information and a map of nodes for field information.
-   *
-   * <p>Package-private (rather than private) only so that tests and benchmarks in this package can
-   * reach {@link ProtoBuilderTree} directly.
-   */
-  static class FederatedTracingState implements InstrumentationState {
+  /** Stores timing information and a map of nodes for field information. */
+  private static class FederatedTracingState implements InstrumentationState {
     private final Instant startRequestTime;
     private final long startRequestNanos;
     private final ProtoBuilderTree protoBuilderTree;
@@ -311,7 +306,7 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
     }
 
     /** A thread-safe class for storing field information and converting it to a protobuf. */
-    static class ProtoBuilderTree {
+    private static class ProtoBuilderTree {
       private final Node root;
       // This flag is used to ensure protobuf conversion occurs once, and that builders can't
       // be edited afterwards. We intentionally leave this field to be default initialized as
