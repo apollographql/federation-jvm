@@ -447,6 +447,86 @@ class FederatedTracingInstrumentationTest {
   }
 
   @Test
+  void testRejectedEditLeavesNoNodesBehind() throws Exception {
+    Class<?> treeClass =
+        Class.forName(
+            "com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation"
+                + "$FederatedTracingState$ProtoBuilderTree");
+    Constructor<?> ctor = treeClass.getDeclaredConstructor();
+    ctor.setAccessible(true);
+    Object tree = ctor.newInstance();
+    Method editBuilder =
+        treeClass.getDeclaredMethod("editBuilder", ResultPath.class, Consumer.class);
+    editBuilder.setAccessible(true);
+    Method toProto = treeClass.getDeclaredMethod("toProto");
+    toProto.setAccessible(true);
+
+    ResultPath widgets = ResultPath.rootPath().segment("widgets");
+    Consumer<Reports.Trace.Node.Builder> setWidgets = builder -> builder.setResponseName("widgets");
+    editBuilder.invoke(tree, widgets, setWidgets);
+
+    // Conversion happens while the edit is in flight, so the edit must be rejected without
+    // leaving its field node or its new index nodes in the trace.
+    Consumer<Reports.Trace.Node.Builder> convertMidEdit =
+        builder -> {
+          builder.setResponseName("foo");
+          try {
+            toProto.invoke(tree);
+          } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+          }
+        };
+    InvocationTargetException thrown =
+        assertThrows(
+            InvocationTargetException.class,
+            () ->
+                editBuilder.invoke(
+                    tree, widgets.segment(7).segment(0).segment("foo"), convertMidEdit));
+    assertEquals("Cannot edit builder after protobuf conversion.", thrown.getCause().getMessage());
+
+    Reports.Trace.Node proto = (Reports.Trace.Node) toProto.invoke(tree);
+    assertEquals(
+        Reports.Trace.Node.newBuilder()
+            .addChild(Reports.Trace.Node.newBuilder().setResponseName("widgets"))
+            .build(),
+        proto);
+  }
+
+  @Test
+  void testNodeWithoutResponseNameIsKeptWithItsSubtree() throws Exception {
+    Class<?> treeClass =
+        Class.forName(
+            "com.apollographql.federation.graphqljava.tracing.FederatedTracingInstrumentation"
+                + "$FederatedTracingState$ProtoBuilderTree");
+    Constructor<?> ctor = treeClass.getDeclaredConstructor();
+    ctor.setAccessible(true);
+    Object tree = ctor.newInstance();
+    Method editBuilder =
+        treeClass.getDeclaredMethod("editBuilder", ResultPath.class, Consumer.class);
+    editBuilder.setAccessible(true);
+    Method toProto = treeClass.getDeclaredMethod("toProto");
+    toProto.setAccessible(true);
+
+    ResultPath widgets = ResultPath.rootPath().segment("widgets");
+    Consumer<Reports.Trace.Node.Builder> timingsOnly = builder -> builder.setStartTime(1);
+    Consumer<Reports.Trace.Node.Builder> setFoo = builder -> builder.setResponseName("foo");
+    editBuilder.invoke(tree, widgets, timingsOnly);
+    editBuilder.invoke(tree, widgets.segment(0).segment("foo"), setFoo);
+
+    assertEquals(
+        Reports.Trace.Node.newBuilder()
+            .addChild(
+                Reports.Trace.Node.newBuilder()
+                    .setStartTime(1)
+                    .addChild(
+                        Reports.Trace.Node.newBuilder()
+                            .setIndex(0)
+                            .addChild(Reports.Trace.Node.newBuilder().setResponseName("foo"))))
+            .build(),
+        toProto.invoke(tree));
+  }
+
+  @Test
   void testMissingNonIndexAncestorThrows() throws Exception {
     Class<?> treeClass =
         Class.forName(

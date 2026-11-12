@@ -29,7 +29,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -308,38 +307,38 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
     /** A thread-safe class for storing field information and converting it to a protobuf. */
     private static class ProtoBuilderTree {
       private final Node root;
-      // This flag is used to ensure protobuf conversion occurs once, and that builders can't
-      // be edited afterwards. We intentionally leave this field to be default initialized as
-      // false.
-      //
-      // There is no tree-wide lock. Edits never contend with each other: each field node's
-      // builder is written only by that field's own fetch completion callback; index
-      // placeholder nodes are written once, at creation, before being published through
-      // putIfAbsent(); and root errors are added from beginParse() and beginValidation(),
-      // which complete before execution starts.
-      //
-      // Edits can, however, overlap toProto(). graphql-java normally completes the execution
-      // result (and so calls toProto()) only after every field fetch has completed, but that
-      // is not guaranteed: for example, when the ExecutionInput is cancelled the result is
-      // completed while fetches may still be in flight, and their completion callbacks then
-      // call editBuilder() late. To keep such an edit from mutating a builder while build()
-      // reads it, toProto() sets this flag before building anything and builds each node
-      // inside that node's builder monitor, and editBuilder() re-checks the flag inside the
-      // same monitor. Those monitors are per-node and uncontended, so they add no shared
-      // state to the edit path; the tree-wide lock this replaces was the contended part.
+      // Set once, by toProto(). Read it only through checkNotFinalized(), while holding the
+      // monitor of the node being edited or linked to. toProto() takes that same monitor before
+      // it reads a node, so an edit either lands before its node is built or is rejected.
       private volatile boolean finalized;
+      // The converted tree. Assigned only once conversion has succeeded.
+      private Reports.Trace.Node proto;
 
       public ProtoBuilderTree() {
         root = new Node(Reports.Trace.Node.newBuilder());
       }
 
-      /** Edit builder for the node at the given path (creating it and its parents if needed). */
+      /**
+       * Edit builder for the node at the given path (creating it and its parents if needed).
+       *
+       * <p>A new node is edited before it is linked into the trie, together with any index nodes
+       * created for it, so an edit that is rejected because of toProto() leaves the trie unchanged.
+       */
       public void editBuilder(
           ResultPath path, Consumer<Reports.Trace.Node.Builder> builderConsumer) {
-        // Checked early so that an edit arriving after conversion does not grow the trie.
-        checkNotFinalized();
-        Node node = getOrCreateNode(path, true);
-        synchronized (node.builder) {
+        Node parent = path.isRootPath() ? null : find(path.getParent());
+        Node node =
+            path.isRootPath() ? root : parent == null ? null : parent.child(path.getSegmentValue());
+        if (node == null) {
+          Node created = new Node(Reports.Trace.Node.newBuilder());
+          builderConsumer.accept(created.builder);
+          node = link(parent, path, created);
+          if (node == null) {
+            return;
+          }
+          // Another edit linked a node at this path first, so edit that one instead.
+        }
+        synchronized (node) {
           checkNotFinalized();
           builderConsumer.accept(node.builder);
         }
@@ -352,50 +351,53 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
       }
 
       /**
-       * Get node for the given path in the trie (creating it and its parents if needed).
-       *
-       * <p>This recurses up the path's parent chain to the root, then descends one child lookup per
-       * level on the way back. It never materializes intermediate {@link ResultPath} instances.
-       *
-       * @param isRequested whether {@code path} is the path originally requested, as opposed to one
-       *     of its ancestors
+       * Get the node at the given path, or null if it is not in the trie. Lookups take no locks and
+       * never materialize intermediate {@link ResultPath} instances.
        */
-      @NotNull
-      private Node getOrCreateNode(ResultPath path, boolean isRequested) {
+      @Nullable
+      private Node find(ResultPath path) {
         if (path.isRootPath()) {
           return root;
         }
-        Node parent = getOrCreateNode(path.getParent(), false);
+        Node parent = find(path.getParent());
+        return parent == null ? null : parent.child(path.getSegmentValue());
+      }
+
+      /**
+       * Link an unpublished node at the given path, first wrapping it in index nodes for any
+       * missing list-index ancestors so that the whole chain becomes visible in one step.
+       *
+       * @param parent the node at the path's parent, or null if there is none yet
+       * @return null if the node was linked, otherwise the node already at that path
+       */
+      @Nullable
+      private Node link(@Nullable Node parent, ResultPath path, Node node) {
         Object segment = path.getSegmentValue();
-        Node child = parent.childrenBySegment.get(segment);
-        if (child != null) {
-          return child;
+        if (parent == null) {
+          ResultPath parentPath = path.getParent();
+          Object parentSegment = parentPath.getSegmentValue();
+          if (!(parentSegment instanceof Integer)) {
+            // We've encountered a field name node that is an ancestor of the requested
+            // node. However, the fetcher for that field name should have ultimately
+            // called editBuilder() on its node before editBuilder() was called on the
+            // requested node, meaning that this field name node should already be in
+            // the trie. Accordingly, we should never encounter such field name ancestor
+            // nodes, and we throw when we do.
+            throw new RuntimeException("Unexpected missing non-index " + parentSegment);
+          }
+          Node indexNode =
+              new Node(Reports.Trace.Node.newBuilder().setIndex((Integer) parentSegment));
+          indexNode.linkIfAbsent(segment, node);
+          parent = link(find(parentPath.getParent()), parentPath, indexNode);
+          if (parent == null) {
+            return null;
+          }
+          // Another edit linked this index node first, so link under that one instead.
         }
-
-        Reports.Trace.Node.Builder childBuilder = Reports.Trace.Node.newBuilder();
-        if (segment instanceof Integer) {
-          childBuilder.setIndex((Integer) segment);
-        } else if (!isRequested) {
-          // We've encountered a field name node that is an ancestor of the requested
-          // node. However, the fetcher for that field name should have ultimately
-          // called getOrCreateNode() on its node before getOrCreateNode() was called
-          // on the requested node, meaning that this field name node should already
-          // be in the trie. Accordingly, we should never encounter such field name
-          // ancestor nodes, and we throw when we do.
-          throw new RuntimeException("Unexpected missing non-index " + segment);
+        synchronized (parent) {
+          checkNotFinalized();
+          return parent.linkIfAbsent(segment, node);
         }
-        Node childNode = new Node(childBuilder);
-
-        // Note that putIfAbsent() here will give the child node if it already existed,
-        // or null if it didn't (in which case the node passed to putIfAbsent() becomes
-        // the child node). Only the thread that inserted the node adds it to the
-        // parent's ordered children list, so each node appears there exactly once.
-        child = parent.childrenBySegment.putIfAbsent(segment, childNode);
-        if (child == null) {
-          child = childNode;
-          parent.children.add(childNode);
-        }
-        return child;
       }
 
       /**
@@ -403,61 +405,68 @@ public class FederatedTracingInstrumentation extends SimplePerformantInstrumenta
        * needed.
        *
        * <p>Note that no builder may be edited after this method is called; a late edit throws. This
-       * method is synchronized only so that the one-time conversion is idempotent if it is ever
-       * called concurrently; it is off the per-field hot path.
+       * method is synchronized so that the conversion happens once; it is off the per-field hot
+       * path.
        */
       @NotNull
       public synchronized Reports.Trace.Node toProto() {
-        if (!finalized) {
-          // Set before building so that no edit can enter a builder monitor after we have
-          // built that builder (see the comment on this field).
+        if (proto == null) {
           finalized = true;
-          buildDescendants(root);
+          proto = build(root);
         }
-        synchronized (root.builder) {
-          return root.builder.build();
-        }
+        return proto;
       }
 
-      /**
-       * Recursively build the protobuf builder for the given node, forming the parent-child
-       * relationships between builders of descendant nodes as needed.
-       *
-       * <p>Note that {@link #finalized} must be set before calling this method. Each builder is
-       * read and written only inside its own monitor, so this waits out any edit that was already
-       * in progress when the flag was set.
-       */
-      private void buildDescendants(Node node) {
-        for (Node childNode : node.children) {
-          buildDescendants(childNode);
-          Reports.Trace.Node child;
-          synchronized (childNode.builder) {
-            child = childNode.builder.build();
+      /** Recursively convert the given node and its descendants. */
+      private Reports.Trace.Node build(Node node) {
+        synchronized (node) {
+          if (node.children != null) {
+            // Cleared so that a conversion retried after a failure does not add children twice.
+            node.builder.clearChild();
+            for (Node child : node.children) {
+              node.builder.addChild(build(child));
+            }
           }
-          if (child.getIdCase() == Reports.Trace.Node.IdCase.ID_NOT_SET) {
-            // A field node created by an edit that raced this conversion and was then rejected
-            // in editBuilder(), so it was never written. Omit it (and anything below it) rather
-            // than emitting a node with neither a response name nor an index.
-            continue;
-          }
-          synchronized (node.builder) {
-            node.builder.addChild(child);
-          }
+          return node.builder.build();
         }
       }
 
       private static class Node {
         public final Reports.Trace.Node.Builder builder;
         // Children keyed by result path segment value (String for fields, Integer for list
-        // indices), used for lookup.
-        public final ConcurrentMap<Object, Node> childrenBySegment;
-        // Children in insertion order, used for protobuf output.
-        public final ConcurrentLinkedQueue<Node> children;
+        // indices), used for lookup. Both collections are created on the first child, so leaf
+        // nodes carry neither.
+        private volatile ConcurrentMap<Object, Node> childrenBySegment;
+        // Children in insertion order, used for protobuf output. Guarded by this node's monitor.
+        private List<Node> children;
 
         public Node(Reports.Trace.Node.Builder builder) {
           this.builder = builder;
-          this.childrenBySegment = new ConcurrentHashMap<>();
-          this.children = new ConcurrentLinkedQueue<>();
+        }
+
+        @Nullable
+        Node child(Object segment) {
+          ConcurrentMap<Object, Node> bySegment = childrenBySegment;
+          return bySegment == null ? null : bySegment.get(segment);
+        }
+
+        /**
+         * Add a child unless one already exists for the segment, returning the existing child if so
+         * and null otherwise. The caller must hold this node's monitor, unless the node has not
+         * been linked into the trie yet.
+         */
+        @Nullable
+        Node linkIfAbsent(Object segment, Node child) {
+          ConcurrentMap<Object, Node> bySegment = childrenBySegment;
+          if (bySegment == null) {
+            children = new ArrayList<>();
+            childrenBySegment = bySegment = new ConcurrentHashMap<>();
+          }
+          Node existing = bySegment.putIfAbsent(segment, child);
+          if (existing == null) {
+            children.add(child);
+          }
+          return existing;
         }
       }
     }
