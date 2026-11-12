@@ -9,7 +9,7 @@ val annotationsVersion: String by project
 val graphQLJavaVersion: String by project
 val protobufVersion: String by project
 val slf4jVersion: String by project
-val jmhVersion = "1.37"
+val jmhVersion: String by project
 dependencies {
     compileOnly("org.jetbrains:annotations:$annotationsVersion")
     api("com.graphql-java:graphql-java:$graphQLJavaVersion")

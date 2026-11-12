@@ -347,7 +347,12 @@ public class ProtoBuilderTreeBenchmark {
       Node node =
           path.isRootPath() ? root : parent == null ? null : parent.child(path.getSegmentValue());
       if (node == null) {
-        Node created = new Node(Reports.Trace.Node.newBuilder());
+        Reports.Trace.Node.Builder builder = Reports.Trace.Node.newBuilder();
+        Object segment = path.getSegmentValue();
+        if (segment instanceof Integer) {
+          builder.setIndex((Integer) segment);
+        }
+        Node created = new Node(builder);
         builderConsumer.accept(created.builder);
         node = link(parent, path, created);
         if (node == null) {
