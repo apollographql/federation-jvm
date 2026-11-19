@@ -17,11 +17,11 @@ repositories {
     }
 }
 
-val junitVersion: String by project
-val junitPlatformVersion: String by project
+val junitVersion = property("junitVersion") as String
+val junitPlatformVersion = property("junitPlatformVersion") as String
 dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
-    testRuntimeOnly("org.junit.platform", "junit-platform-launcher", junitPlatformVersion)
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
 }
 
 java {

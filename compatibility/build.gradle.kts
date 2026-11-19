@@ -16,16 +16,16 @@ for ((key, value) in properties) {
     project.ext[key.toString()] = value
 }
 
-val annotationsVersion: String by project
+val annotationsVersion = property("annotationsVersion") as String
 dependencies {
-    implementation("com.apollographql.federation", "federation-graphql-java-support")
-    implementation("org.jetbrains", "annotations", annotationsVersion)
-    implementation("org.springframework.boot", "spring-boot-starter-actuator")
-    implementation("org.springframework.boot", "spring-boot-starter-graphql")
-    implementation("org.springframework.boot", "spring-boot-starter-web")
-    testImplementation("org.springframework.boot", "spring-boot-starter-test")
-    testImplementation("org.springframework.boot", "spring-boot-starter-webflux")
-    testImplementation("org.springframework.graphql", "spring-graphql-test")
+    implementation("com.apollographql.federation:federation-graphql-java-support")
+    implementation("org.jetbrains:annotations:$annotationsVersion")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-graphql")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-webflux")
+    testImplementation("org.springframework.graphql:spring-graphql-test")
 }
 
 java {

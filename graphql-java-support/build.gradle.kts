@@ -5,11 +5,11 @@ plugins {
     id("com.google.protobuf") version "0.10.1"
 }
 
-val annotationsVersion: String by project
-val graphQLJavaVersion: String by project
-val protobufVersion: String by project
-val slf4jVersion: String by project
-val jmhVersion: String by project
+val annotationsVersion = property("annotationsVersion") as String
+val graphQLJavaVersion = property("graphQLJavaVersion") as String
+val protobufVersion = property("protobufVersion") as String
+val slf4jVersion = property("slf4jVersion") as String
+val jmhVersion = property("jmhVersion") as String
 dependencies {
     compileOnly("org.jetbrains:annotations:$annotationsVersion")
     api("com.graphql-java:graphql-java:$graphQLJavaVersion")
